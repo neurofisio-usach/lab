@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conectividad local vs. de largo alcance</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --panel:#121826; --panel2:#0f1522; --border:#232c40;
+    --text:#e6ebf5; --muted:#8996ad;
+    --teal:#2dd4bf; --violet:#a78bfa; --amber:#fbbf24;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; padding:20px; line-height:1.45; }
+  .wrap{max-width:980px; margin:0 auto;}
+  header{text-align:center; margin-bottom:20px;}
+  header h1{font-size:1.5rem; margin:0 0 6px 0; color:#fff;}
+  header p{color:var(--muted); margin:0; font-size:0.95rem;}
+  .panel{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px 18px 18px 18px; margin-bottom:18px; }
+  canvas{width:100%; display:block; background:var(--panel2); border-radius:10px; border:1px solid var(--border);}
+  #netCanvas{height:460px; cursor:pointer;}
+  #traceCanvas{height:120px; margin-top:12px;}
+  .ctrlRow{display:flex; align-items:center; gap:10px; margin:14px 0 6px 0; flex-wrap:wrap;}
+  .ctrlRow label{font-size:0.85rem; color:var(--muted);}
+  .sliderLabels{display:flex; justify-content:space-between; font-size:0.72rem; color:var(--muted); margin-top:2px;}
+  input[type=range]{flex:1; accent-color:var(--amber); min-width:200px;}
+  button{ background:#1c2438; color:var(--text); border:1px solid var(--border); padding:8px 14px; border-radius:8px; cursor:pointer; font-size:0.85rem; }
+  button:hover{background:#242f4a;}
+  button.primary{background:#7c3aed; border-color:#7c3aed; color:#fff;}
+  button.primary:hover{background:#8b4bff;}
+  .statusRow{display:flex; gap:16px; margin-top:12px; flex-wrap:wrap;}
+  .stat{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:0.82rem; flex:1; min-width:140px;}
+  .stat b{display:block; font-size:1.05rem; margin-top:2px;}
+  .legend{display:flex; gap:18px; margin-top:10px; font-size:0.78rem; color:var(--muted); flex-wrap:wrap;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{display:inline-block; width:10px; height:10px; border-radius:50%;}
+  .footerNote{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px 18px; font-size:0.88rem; color:#c7d0e0; }
+  .footerNote h3{margin:0 0 8px 0; font-size:0.95rem; color:#fff;}
+  .caveat{margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); color:var(--muted); font-size:0.8rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Procesamiento local vs. integración global</h1>
+    <p>Una hipótesis distinta: no es cuánta inhibición hay, sino cómo está organizada la red — módulos muy conectados entre sí, pero poco conectados a distancia.</p>
+  </header>
+
+  <div class="panel" id="instructions">
+    <h3 style="margin:0 0 10px 0; font-size:1rem; color:#fff;">Cómo usar esta simulación</h3>
+    <ol style="margin:0 0 4px 0; padding-left:20px; font-size:0.88rem; color:#c7d0e0;">
+      <li style="margin-bottom:8px;"><b>Elegí una posición del control</b> "Balance de conectividad" de abajo — dejalo a la izquierda (equilibrada) para la primera prueba.</li>
+      <li style="margin-bottom:8px;"><b>Hacé clic en "Estimular el módulo A."</b> Vas a ver activación (color) extendiéndose desde el Módulo A hacia el resto de la red durante unos segundos, y el gráfico de abajo del mapa se va a ir dibujando en tiempo real.</li>
+      <li style="margin-bottom:8px;"><b>Mirá cuántos módulos se iluminan</b> y qué tan lejos llega el color — eso queda resumido en los números de abajo ("Módulos alcanzados").</li>
+      <li style="margin-bottom:8px;"><b>Hacé clic en "Reiniciar red,"</b> movés el control hacia la derecha (más local, menos largo alcance), y volvé a estimular el Módulo A. Compará: la activación local es igual de fuerte, pero ¿llega igual de lejos?</li>
+      <li>Mover el control reinicia automáticamente la simulación — así cada prueba empieza limpia desde la nueva posición.</li>
+    </ol>
+  </div>
+
+  <div class="panel">
+    <canvas id="netCanvas" width="900" height="460"></canvas>
+    <canvas id="traceCanvas" width="900" height="120"></canvas>
+    <div class="sliderLabels" style="margin-top:2px;">
+      <span>← hace unos segundos</span>
+      <span>ahora →</span>
+    </div>
+
+    <div class="ctrlRow">
+      <label style="min-width:230px;">Balance de conectividad</label>
+      <input type="range" id="mixSlider" min="0" max="100" value="20">
+    </div>
+    <div class="sliderLabels" style="margin-left:0;">
+      <span>Equilibrada (local ↔ largo alcance)</span>
+      <span>Local intensa / largo alcance reducido</span>
+    </div>
+
+    <div class="ctrlRow">
+      <button class="primary" id="stimBtn">Estimular el módulo A</button>
+      <button id="resetBtn">Reiniciar red</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:var(--teal)"></span>Nodo / conexión activa</span>
+      <span><span class="dot" style="background:#3a4560"></span>Conexión local (dentro del módulo)</span>
+      <span><span class="dot" style="background:var(--violet)"></span>Conexión de largo alcance (entre módulos)</span>
+    </div>
+
+    <div class="statusRow">
+      <div class="stat">Activación pico — módulo A (local)<b id="peakLocal">–</b></div>
+      <div class="stat">Activación pico — resto de la red (global)<b id="peakGlobal">–</b></div>
+      <div class="stat">Módulos alcanzados<b id="reached">–</b></div>
+    </div>
+  </div>
+
+  <div class="footerNote">
+    <h3>¿Qué representa esto?</h3>
+    <p>Cada grupo de nodos es un "módulo" (una analogía de una región o circuito local). Dentro de cada módulo las conexiones son densas — así se procesa la información en detalle. Entre módulos hay conexiones de largo alcance, más escasas, que integran esa información a través de la red.</p>
+    <p>La hipótesis de <b>sobreconectividad local / subconectividad de largo alcance</b> (Just, Belmonte y otros) propone que, en algunos perfiles del espectro autista, los circuitos locales están más densamente conectados — lo que puede favorecer un procesamiento local muy detallado y eficiente — mientras que las conexiones de largo alcance entre regiones distantes están reducidas, dificultando la integración de esa información a una escala más global. Movés el control y ves ambos lados del mismo fenómeno: la activación local se mantiene igual de fuerte, pero cada vez le cuesta más "salir" del módulo estimulado.</p>
+    <div class="caveat">
+      Nota: esto es una analogía topológica simplificada, no una simulación de conectividad cerebral real. La evidencia de conectividad en autismo es mixta y depende mucho de la región, la edad y el método de medición — no existe "un" patrón único de conectividad autista. La misma reorganización que aquí dificulta la integración global también puede reflejar procesamiento local más rico, no solo una limitación.
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const netCanvas = document.getElementById('netCanvas');
+  const nctx = netCanvas.getContext('2d');
+  const traceCanvas = document.getElementById('traceCanvas');
+  const tctx = traceCanvas.getContext('2d');
+  const mixSlider = document.getElementById('mixSlider');
+  const stimBtn = document.getElementById('stimBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const peakLocalEl = document.getElementById('peakLocal');
+  const peakGlobalEl = document.getElementById('peakGlobal');
+  const reachedEl = document.getElementById('reached');
+
+  function fitCanvas(c, cssHeight){
+    const ratio = window.devicePixelRatio || 1;
+    const w = c.clientWidth || c.parentElement.clientWidth;
+    c.width = w*ratio; c.height = cssHeight*ratio;
+    const ctx = c.getContext('2d'); ctx.setTransform(ratio,0,0,ratio,0,0);
+    return { w, h: cssHeight };
+  }
+  let netDim = fitCanvas(netCanvas, 460);
+  let traceDim = fitCanvas(traceCanvas, 120);
+  window.addEventListener('resize', () => { netDim = fitCanvas(netCanvas,460); traceDim = fitCanvas(traceCanvas,120); });
+
+  // ---------- graph construction ----------
+  const nModules = 6, nodesPerModule = 6;
+  const N = nModules*nodesPerModule;
+  let rngState = 3;
+  const rng = () => { rngState = (rngState*1103515245+12345)&0x7fffffff; return rngState/0x7fffffff; };
+
+  const localEdges = [];
+  const p_local = 0.55;
+  for (let m=0;m<nModules;m++){
+    for (let i=0;i<nodesPerModule;i++){
+      for (let j=i+1;j<nodesPerModule;j++){
+        if (rng() < p_local) localEdges.push([m*nodesPerModule+i, m*nodesPerModule+j]);
+      }
+    }
+  }
+  const longEdgesAll = [];
+  for (let m1=0;m1<nModules;m1++){
+    for (let m2=m1+1;m2<nModules;m2++){
+      for (let k=0;k<4;k++){
+        const a = m1*nodesPerModule + Math.floor(rng()*nodesPerModule);
+        const b = m2*nodesPerModule + Math.floor(rng()*nodesPerModule);
+        longEdgesAll.push([a,b,m1,m2]);
+      }
+    }
+  }
+
+  // fixed layout: modules around a big circle, nodes around each module center
+  const nodePos = new Array(N);
+  const modCenter = new Array(nModules);
+  const moduleLetters = ['A','B','C','D','E','F'];
+  function layout(){
+    const cx = netDim.w/2, cy = netDim.h/2 - 6;
+    const R1 = Math.min(netDim.w, netDim.h)*0.34;
+    const r2 = Math.min(netDim.w, netDim.h)*0.11;
+    for (let m=0;m<nModules;m++){
+      const ang = -Math.PI/2 + m*(2*Math.PI/nModules);
+      const mx = cx + R1*Math.cos(ang), my = cy + R1*Math.sin(ang);
+      modCenter[m] = {x:mx, y:my, ang};
+      for (let k=0;k<nodesPerModule;k++){
+        const a2 = k*(2*Math.PI/nodesPerModule);
+        nodePos[m*nodesPerModule+k] = { x: mx + r2*Math.cos(a2), y: my + r2*Math.sin(a2) };
+      }
+    }
+  }
+  layout();
+
+  // ---------- simulation state ----------
+  const a = new Float64Array(N).fill(0);
+  const tau = 200, k_gain = 0.004, theta = 0.35;
+  const dt = 5; // ms per substep
+  const seedModule = 0;
+
+  function currentMix(){ return mixSlider.value/100; }
+  function activeLongEdges(){
+    const mix = currentMix();
+    const activeFrac = 1 - mix;
+    const keepCount = Math.round(activeFrac * longEdgesAll.length);
+    // deterministic stable pruning order (by fixed index) so edges don't flicker as slider moves
+    return longEdgesAll.filter((_,idx) => idx < keepCount);
+  }
+
+  function stepSim(){
+    const mix = currentMix();
+    const w_local = 1.0 + 0.6*mix;
+    const w_long  = 1.0 - 0.5*mix;
+    const longActive = activeLongEdges();
+    const input = new Float64Array(N);
+    for (const [i,j] of localEdges){ input[i]+=w_local*a[j]; input[j]+=w_local*a[i]; }
+    for (const [i,j] of longActive){ input[i]+=w_long*a[j]; input[j]+=w_long*a[i]; }
+    for (let i=0;i<N;i++){
+      const eff = Math.max(0, input[i]-theta);
+      const da = -a[i]/tau + k_gain*(1-a[i])*eff;
+      a[i] += dt*da;
+      if (a[i]<0) a[i]=0; if (a[i]>1) a[i]=1;
+    }
+    return longActive;
+  }
+
+  // ---------- drawing ----------
+  function colorForActivation(v){
+    // interpolate from dim slate to bright teal
+    const r = Math.round(35 + v*(45-35));
+    const g = Math.round(45 + v*(212-45));
+    const b = Math.round(65 + v*(191-65));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function drawNet(longActive){
+    nctx.clearRect(0,0,netDim.w, netDim.h);
+    // local edges
+    nctx.lineWidth = 1;
+    for (const [i,j] of localEdges){
+      const act = Math.max(a[i],a[j]);
+      nctx.strokeStyle = act>0.2 ? `rgba(45,212,191,${0.25+0.6*act})` : '#2a3452';
+      nctx.beginPath();
+      nctx.moveTo(nodePos[i].x, nodePos[i].y);
+      nctx.lineTo(nodePos[j].x, nodePos[j].y);
+      nctx.stroke();
+    }
+    // long-range edges (only currently active ones drawn solid; pruned ones drawn as faint dashed ghost)
+    const activeSet = new Set(longActive.map(e => e[0]+'_'+e[1]));
+    for (const [i,j] of longEdgesAll){
+      const key = i+'_'+j;
+      const isActive = activeSet.has(key);
+      const act = Math.max(a[i],a[j]);
+      nctx.beginPath();
+      nctx.moveTo(nodePos[i].x, nodePos[i].y);
+      nctx.lineTo(nodePos[j].x, nodePos[j].y);
+      if (isActive){
+        nctx.lineWidth = 1.6;
+        nctx.strokeStyle = act>0.2 ? `rgba(167,139,250,${0.35+0.6*act})` : 'rgba(167,139,250,0.5)';
+        nctx.setLineDash([]);
+      } else {
+        nctx.lineWidth = 1;
+        nctx.strokeStyle = 'rgba(90,98,130,0.25)';
+        nctx.setLineDash([2,4]);
+      }
+      nctx.stroke();
+      nctx.setLineDash([]);
+    }
+    // module labels
+    nctx.font = '12px Segoe UI, sans-serif';
+    nctx.fillStyle = '#8996ad';
+    nctx.textAlign = 'center';
+    for (let m=0;m<nModules;m++){
+      const c = modCenter[m];
+      const lx = c.x + Math.cos(c.ang)*24, ly = c.y + Math.sin(c.ang)*24 - 4;
+      nctx.fillText('Módulo '+moduleLetters[m] + (m===seedModule?' (estimulado)':''), c.x, c.y - (Math.min(netDim.w,netDim.h)*0.11) - 14);
+    }
+    // nodes
+    for (let i=0;i<N;i++){
+      const v = a[i];
+      const p = nodePos[i];
+      const rad = 5 + v*4;
+      if (v > 0.05){
+        nctx.beginPath();
+        nctx.arc(p.x, p.y, rad+5, 0, 2*Math.PI);
+        nctx.fillStyle = `rgba(45,212,191,${0.15*v})`;
+        nctx.fill();
+      }
+      nctx.beginPath();
+      nctx.arc(p.x, p.y, rad, 0, 2*Math.PI);
+      nctx.fillStyle = colorForActivation(v);
+      nctx.fill();
+    }
+  }
+
+  const histLen = 200;
+  const localHist = new Float64Array(histLen);
+  const globalHist = new Float64Array(histLen);
+
+  function drawTrace(){
+    tctx.clearRect(0,0,traceDim.w, traceDim.h);
+    const colW = traceDim.w/histLen;
+    function drawLine(hist, color){
+      // hist[0] is the most recent sample; draw it at the right edge so time flows left -> right
+      tctx.strokeStyle = color; tctx.lineWidth = 1.6;
+      tctx.beginPath();
+      for (let i=0;i<histLen;i++){
+        const x = (histLen-1-i)*colW, y = traceDim.h - hist[i]*traceDim.h*0.9 - 4;
+        if (i===0) tctx.moveTo(x,y); else tctx.lineTo(x,y);
+      }
+      tctx.stroke();
+    }
+    drawLine(localHist, '#2dd4bf');
+    drawLine(globalHist, '#a78bfa');
+  }
+
+  let peakLocal=0, peakGlobal=0;
+  const moduleReachedFlags = new Array(nModules).fill(false);
+
+  function updateStatsAndHist(){
+    let localAvg=0, globalAvg=0, cnt=0;
+    for (let m=0;m<nModules;m++){
+      let sum=0; for (let k=0;k<nodesPerModule;k++) sum+=a[m*nodesPerModule+k];
+      const avg = sum/nodesPerModule;
+      if (m===seedModule) localAvg = avg;
+      else { globalAvg += avg; cnt++; if (avg>0.15) moduleReachedFlags[m]=true; }
+    }
+    globalAvg/=cnt;
+    if (localAvg>peakLocal) peakLocal=localAvg;
+    if (globalAvg>peakGlobal) peakGlobal=globalAvg;
+    for (let i=histLen-1;i>0;i--){ localHist[i]=localHist[i-1]; globalHist[i]=globalHist[i-1]; }
+    localHist[0]=localAvg; globalHist[0]=globalAvg;
+
+    peakLocalEl.textContent = peakLocal.toFixed(2);
+    peakGlobalEl.textContent = peakGlobal.toFixed(2);
+    const reached = moduleReachedFlags.filter(Boolean).length;
+    reachedEl.textContent = reached + ' / ' + (nModules-1);
+  }
+
+  let frame=0;
+  function tick(){
+    const longActive = stepSim();
+    updateStatsAndHist();
+    frame++;
+    if (frame % 2 === 0){ drawNet(longActive); drawTrace(); }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  function resetSim(){
+    for (let i=0;i<N;i++) a[i]=0;
+    peakLocal=0; peakGlobal=0;
+    for (let m=0;m<nModules;m++) moduleReachedFlags[m]=false;
+    for (let i=0;i<histLen;i++){ localHist[i]=0; globalHist[i]=0; }
+    peakLocalEl.textContent='–'; peakGlobalEl.textContent='–'; reachedEl.textContent='–';
+  }
+
+  stimBtn.addEventListener('click', () => {
+    for (let k=0;k<nodesPerModule;k++) a[seedModule*nodesPerModule+k] = 1.0;
+    peakLocal = 0; peakGlobal = 0;
+    for (let m=0;m<nModules;m++) moduleReachedFlags[m]=false;
+  });
+  resetBtn.addEventListener('click', resetSim);
+  mixSlider.addEventListener('input', resetSim);
+})();
+</script>
+</body>
+</html>

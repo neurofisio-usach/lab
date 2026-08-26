@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registro simulado — crisis epiléptica focal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E8EAEE; --panel:#F5F6F8; --edge:#D3D8DF;
+    --grid:#CFD6DE; --gridMaj:#B7C1CE;
+    --ink:#17293E; --depth:#7C2130;
+    --accent:#1B6E6A; --alert:#A65420;
+    --text:#212B38; --muted:#6B7684;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--text); font-family:var(--sans);
+    padding:18px; min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+  h1{font-size:21px;font-weight:600;margin:0;letter-spacing:-.01em}
+  h1 span{color:var(--muted);font-weight:400}
+
+  .status{
+    font-family:var(--mono);font-size:12px;text-align:right;
+    border-left:2px solid var(--edge);padding-left:14px;min-width:190px;
+  }
+  .status .lab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .status .val{font-size:15px;font-weight:600;color:var(--ink);margin-top:2px}
+  .status .val.ictal{color:var(--depth)}
+  .status .val.post{color:var(--alert)}
+  .status .sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+  .chart{
+    background:var(--panel);border:1px solid var(--edge);border-radius:3px;
+    padding:0;overflow:hidden;position:relative;
+  }
+  canvas{display:block;width:100%;height:auto}
+
+  .controls{
+    margin-top:14px;display:grid;gap:14px;
+    grid-template-columns:minmax(320px,1.4fr) minmax(240px,1fr);
+  }
+  @media(max-width:760px){.controls{grid-template-columns:1fr}}
+
+  .box{background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:14px 16px}
+  .box h2{
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 12px;font-weight:500;
+  }
+
+  .sliderRow{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .sliderRow label{font-size:13.5px;font-weight:500}
+  .sliderRow output{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent)}
+  .sliderRow output.low{color:var(--depth)}
+
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px;border-radius:3px;
+    background:linear-gradient(to right,var(--depth) 0%,var(--depth) 41%,var(--edge) 41%,var(--edge) 100%);
+  }
+  input[type=range]::-moz-range-track{
+    height:6px;border-radius:3px;
+    background:linear-gradient(to right,var(--depth) 0%,var(--depth) 41%,var(--edge) 41%,var(--edge) 100%);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--ink);
+    border:3px solid var(--panel);box-shadow:0 0 0 1px var(--ink);margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:12px;height:12px;border-radius:50%;background:var(--ink);
+    border:3px solid var(--panel);box-shadow:0 0 0 1px var(--ink);
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:-2px}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0}
+
+  .btnRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  button{
+    font-family:var(--sans);font-size:13.5px;font-weight:500;
+    padding:10px 15px;border-radius:3px;border:1px solid var(--ink);
+    background:transparent;color:var(--ink);cursor:pointer;
+    transition:background .12s ease,color .12s ease;
+  }
+  button:hover:not(:disabled){background:var(--ink);color:var(--panel)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.primary{background:var(--depth);border-color:var(--depth);color:#fff}
+  button.primary:hover:not(:disabled){background:#651a26;border-color:#651a26}
+  button.drug{border-color:var(--accent);color:var(--accent)}
+  button.drug:hover:not(:disabled){background:var(--accent);color:#fff}
+  button.big{font-size:16px;font-weight:600;padding:14px 22px;width:100%}
+  kbd{
+    font-family:var(--mono);font-size:10px;border:1px solid currentColor;
+    border-radius:2px;padding:1px 4px;margin-left:6px;opacity:.7
+  }
+
+  .result{
+    font-family:var(--mono);font-size:12.5px;line-height:1.65;
+    border-top:1px solid var(--edge);margin-top:12px;padding-top:11px;color:var(--text);min-height:44px;
+  }
+  .result b{color:var(--depth);font-weight:600}
+  .result .tag{color:var(--muted)}
+
+  .aid{margin-top:14px;background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:16px 18px}
+  .aidHead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--edge);padding-bottom:11px;margin-bottom:14px}
+  .aidTitle{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
+  .aidGrid{display:grid;gap:22px;grid-template-columns:repeat(3,1fr)}
+  @media(max-width:760px){.aidGrid{grid-template-columns:1fr}}
+  .aidGrid h3{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    margin:0 0 9px;padding-bottom:6px;border-bottom:2px solid currentColor}
+  .col.do h3{color:var(--accent)} .col.dont h3{color:var(--depth)} .col.call h3{color:var(--alert)}
+  .aidGrid ul{margin:0;padding-left:16px}
+  .aidGrid li{font-size:13px;line-height:1.5;margin-bottom:6px}
+  .col.do li::marker{color:var(--accent)} .col.dont li::marker{color:var(--depth)}
+  .col.call li::marker{color:var(--alert)}
+  .aidNote{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--alert);
+    margin:11px 0 0;padding-top:9px;border-top:1px solid var(--edge)}
+
+  @media print{
+    body{background:#fff;padding:0}
+    header,.chart,.controls,footer,.noprint{display:none!important}
+    .aid{border:none;padding:0;margin:0}
+    .aidGrid{grid-template-columns:repeat(3,1fr);gap:16px}
+    .aidTitle{font-size:20px}
+    .aidGrid li{font-size:11.5px}
+  }
+
+  footer{
+    margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.6;
+    border-top:1px solid var(--edge);padding-top:11px;
+  }
+  .keyline{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em}
+  .keyline i{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+  .sw{width:14px;height:2px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="eyebrow">Neurofest · simulación con fines divulgativos</p>
+      <h1>Registro simulado de una crisis focal <span>— hipocampo y cuero cabelludo</span></h1>
+    </div>
+    <div class="status">
+      <div class="lab">Estado del circuito</div>
+      <div class="val" id="stateVal">Basal</div>
+      <div class="sub" id="stateSub">inhibición normal</div>
+    </div>
+  </header>
+
+  <div class="chart"><canvas id="cv" width="1600" height="1000"></canvas></div>
+
+  <div class="controls">
+
+    <div class="box">
+      <h2>Control del circuito</h2>
+      <div class="sliderRow">
+        <label for="gs">Fuerza de la inhibición</label>
+        <output id="gsOut">100 %</output>
+      </div>
+      <input type="range" id="gs" min="45" max="130" value="100" step="1"
+             aria-describedby="gsHint">
+      <div class="scale"><span>45 %</span><span>umbral ≈ 80 %</span><span>130 %</span></div>
+      <p class="hint" id="gsHint">Bajo el umbral, el circuito genera crisis por sí solo, sin que nadie apriete nada.</p>
+      <div class="btnRow">
+        <button class="primary" id="btnSeize">Silenciar interneuronas<kbd>Espacio</kbd></button>
+        <button class="drug" id="btnDrug">Aplicar fármaco</button>
+        <button id="btnPause">Pausar</button>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>Lo que parece y no es</h2>
+      <div class="btnRow" style="margin-top:0">
+        <button id="btnBlink">Parpadeo</button>
+        <button id="btnChew">Masticar</button>
+      </div>
+      <p class="hint">Los dos ensucian el registro y ninguno es una crisis. La pista está en el bloque
+      de arriba: el electrodo profundo no los registra, porque no vienen del cerebro.</p>
+    </div>
+
+  </div>
+
+  <section class="aid" id="aid">
+    <div class="aidHead">
+      <div>
+        <p class="eyebrow">Ficha práctica</p>
+        <h2 class="aidTitle">Qué hacer si alguien tiene una crisis</h2>
+      </div>
+      <button class="noprint" id="btnPrint">Imprimir ficha</button>
+    </div>
+    <div class="aidGrid">
+      <div class="col do">
+        <h3>Qué hacer</h3>
+        <ul>
+          <li>Mantener la calma y quedarse con la persona.</li>
+          <li>Mirar la hora: cuánto dura importa más que cualquier otra cosa.</li>
+          <li>Poner algo blando bajo la cabeza y despejar lo duro de alrededor.</li>
+          <li>Aflojar la ropa del cuello y sacarle los lentes.</li>
+          <li>Cuando cesen los movimientos, girarla de lado para que respire bien.</li>
+          <li>Acompañarla hasta que se recupere del todo: puede quedar confusa un rato.</li>
+        </ul>
+      </div>
+      <div class="col dont">
+        <h3>Qué no hacer</h3>
+        <ul>
+          <li>No sujetarla ni intentar frenar los movimientos.</li>
+          <li>No meterle nada en la boca. La lengua no se traga.</li>
+          <li>No darle agua, comida ni remedios hasta que esté bien despierta.</li>
+          <li>No rodearla ni filmarla: darle espacio y privacidad.</li>
+        </ul>
+      </div>
+      <div class="col call">
+        <h3>Cuándo llamar al 131</h3>
+        <ul>
+          <li>La crisis pasa de 5 minutos.</li>
+          <li>Se repite sin que recupere la conciencia entre una y otra.</li>
+          <li>Le cuesta respirar, o no despierta después.</li>
+          <li>Pasó en el agua, o hubo un golpe o una lesión.</li>
+          <li>Es su primera crisis.</li>
+          <li>Está embarazada o tiene diabetes.</li>
+        </ul>
+        <p class="aidNote">131 · SAMU. Ante la duda, llamar.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="keyline">
+      <i><span class="sw" style="background:var(--depth)"></span>Electrodo profundo, hipocampo</i>
+      <i><span class="sw" style="background:var(--ink)"></span>Cuero cabelludo, montaje bipolar</i>
+    </div>
+    <p style="margin:9px 0 0">Las señales se generan en tiempo real con un modelo de poblaciones excitatorias e inhibitorias acopladas: la crisis no está grabada, emerge del desbalance. Simulación con fines divulgativos; no representa el registro de ninguna persona ni sirve para diagnóstico.</p>
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+// ───────────────────────────────────────────────────────────
+// 1. MODELO — 4 poblaciones acopladas (excitatoria / inhibitoria)
+// ───────────────────────────────────────────────────────────
+const DT = 0.0005, SUB = 10, FS = 1/(DT*SUB);   // 200 Hz de muestreo
+const tauE=0.010, tauI=0.020, tauA=0.20, tauSyn=0.80;
+const wee=1.6, wei=1.2, wie=1.5, wii=0.6;
+const gA=0.9, P0=1.2, TH=1.05;
+const kz=0.55, tauZup=7.0, tauZdn=5.0, aZ=4.6;
+const REST=0.842;
+
+const NS=4;
+const gOff=[-0.08,-0.09,0.0,0.06];
+const CW=[[0,0.20,0,0],[0.85,0,0,0],[0.45,1.60,0,0],[0,0,0.78,0]];
+const CD=[[0,0.06,0,0],[0.09,0,0,0],[0.22,0.16,0,0],[0,0,0.38,0]];
+
+const MAXD=Math.round(0.6/DT)+2;
+const hist=[],E=[],I=[],A=[],Z=[],SY=[];
+for(let i=0;i<NS;i++){E[i]=REST;I[i]=REST;A[i]=REST;Z[i]=0;SY[i]=0;hist[i]=new Float32Array(MAXD).fill(REST);}
+let hp=0;
+const CDi=CD.map(r=>r.map(v=>Math.round(v/DT)));
+
+let gUser=1.00, gLocalT=-1, drugT=-1;
+const clamp=(x,a,b)=>x<a?a:(x>b?b:x);
+const relu=x=>x>0?x:0;
+
+function localDrop(t){                     // pulso del botón: baja y se recupera
+  if(gLocalT<0) return 0;
+  const x=t-gLocalT;
+  if(x<0||x>34) return 0;
+  return -1.62*(1-Math.exp(-x/5.0))*Math.exp(-x/8.0);
+}
+const DRUGDUR=10;
+function drugBoost(t){
+  if(drugT<0) return 0;
+  const x=t-drugT;
+  if(x<0||x>DRUGDUR) return 0;
+  // subida y bajada graduales: un escalón brusco produce una deflexión
+  // simultánea en todos los canales que se confunde con un evento real
+  const f=1.429*(1-Math.exp(-x/1.6))*Math.exp(-x/3.2);
+  // cierre suave para que el efecto llegue a cero sin salto al final
+  const taper=x<7.5?1:0.5*(1+Math.cos(Math.PI*(x-7.5)/2.5));
+  return f*taper;
+}
+
+let simT=0;
+function stepModel(){
+  for(let s=0;s<SUB;s++){
+    const gl=localDrop(simT), db=drugBoost(simT);
+    for(let i=0;i<NS;i++){
+      let raw=0;
+      for(let j=0;j<NS;j++){
+        const w=CW[i][j];
+        if(w>0){ const idx=((hp-CDi[i][j])%MAXD+MAXD)%MAXD; raw+=w*relu(hist[j][idx]-TH); }
+      }
+      SY[i]+=DT*(raw-SY[i])/tauSyn;
+      const geff=clamp(gUser+gOff[i]+(i===0?gl:0)+db+kz*Z[i]-SY[i],0.15,1.9);
+      const nE=E[i]+DT*(-E[i]+clamp(wee*E[i]-wei*geff*I[i]-gA*A[i]+P0,0,1.6))/tauE;
+      const nI=I[i]+DT*(-I[i]+clamp(wie*E[i]-wii*geff*I[i],0,1.6))/tauI;
+      A[i]+=DT*(-A[i]+E[i])/tauA;
+      E[i]=nE; I[i]=nI;
+      const dr=relu(E[i]-TH);
+      Z[i]+=DT*(aZ*dr-Z[i])/(dr>0.02?tauZup:tauZdn);
+    }
+    for(let i=0;i<NS;i++) hist[i][hp]=E[i];
+    hp=(hp+1)%MAXD;
+    simT+=DT;
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+// 2. CANALES — mezcla de fuentes + EEG de fondo
+// ───────────────────────────────────────────────────────────
+const CH=[
+ {n:"HIPi 1–2", d:1, w:[1.00,0.15,0.00,0.00], lp:0.55, g:0.62, al:0.00, nz:0.160, sp:1.00, bl:0.00, em:0.00},
+ {n:"HIPi 2–3", d:1, w:[0.55,0.85,0.05,0.00], lp:0.55, g:0.62, al:0.00, nz:0.160, sp:0.75, bl:0.00, em:0.00},
+ {n:"HIPi 3–4", d:1, w:[0.15,1.00,0.15,0.00], lp:0.50, g:0.62, al:0.00, nz:0.150, sp:0.45, bl:0.00, em:0.00},
+ {n:"HIPd 1–2", d:1, w:[0.00,0.00,0.01,1.00], lp:0.50, g:0.62, al:0.00, nz:0.150, sp:0.00, bl:0.00, em:0.00},
+ {n:"Fp1–F7",  d:0, w:[0.01,0.01,0.26,0.00], lp:0.10, g:1.30, al:0.10, nz:0.052, sp:0.10, bl:1.00, em:0.30},
+ {n:"F7–T3",   d:0, w:[0.02,0.03,0.80,0.00], lp:0.10, g:1.30, al:0.16, nz:0.046, sp:0.26, bl:0.30, em:0.95},
+ {n:"T3–T5",   d:0, w:[0.02,0.03,0.90,0.00], lp:0.10, g:1.30, al:0.26, nz:0.044, sp:0.30, bl:0.06, em:0.80},
+ {n:"T5–O1",   d:0, w:[0.01,0.02,0.44,0.00], lp:0.12, g:1.30, al:0.60, nz:0.042, sp:0.12, bl:0.00, em:0.22},
+ {n:"Fp2–F8",  d:0, w:[0.00,0.00,0.02,0.20], lp:0.10, g:1.30, al:0.10, nz:0.052, sp:0.00, bl:1.00, em:0.30},
+ {n:"F8–T4",   d:0, w:[0.00,0.00,0.03,0.58], lp:0.10, g:1.30, al:0.16, nz:0.046, sp:0.00, bl:0.30, em:0.95},
+ {n:"T4–T6",   d:0, w:[0.00,0.00,0.03,0.66], lp:0.10, g:1.30, al:0.26, nz:0.044, sp:0.00, bl:0.06, em:0.80},
+ {n:"T6–O2",   d:0, w:[0.00,0.00,0.01,0.30], lp:0.12, g:1.30, al:0.58, nz:0.042, sp:0.00, bl:0.00, em:0.22},
+];
+const NC=CH.length;
+const WINSEC=9, W=Math.round(WINSEC*FS);
+const buf=CH.map(()=>new Float32Array(W));
+let head=0;
+
+const st=CH.map(()=>({lp:0,pink:0,dc:0,ph:Math.random()*6.28,env:0.6,envT:0}));
+let spikes=[], nextSpike=2.2+Math.random()*4;
+let blinks=[], chews=[], nextBlink=3.5+Math.random()*5;
+
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(6.283185*v);}
+
+function blinkShape(x){                        // parpadeo: deflexión lenta y frontal
+  if(x<0||x>0.42) return 0;
+  return Math.exp(-Math.pow((x-0.13)/0.070,2))-0.20*Math.exp(-Math.pow((x-0.30)/0.090,2));
+}
+function chewEnv(x){                          // masticación: ráfaga muscular ritmica
+  if(x<0||x>2.1) return 0;
+  const env=Math.pow(Math.sin(Math.PI*x/2.1),1.4);
+  return env*(0.45+0.55*Math.abs(Math.sin(Math.PI*2.3*x)));
+}
+function spikeShape(x){                       // punta–onda interictal
+  if(x<0||x>0.34) return 0;
+  const pk=Math.exp(-Math.pow((x-0.022)/0.014,2));
+  const sw=-0.42*Math.exp(-Math.pow((x-0.115)/0.058,2));
+  return pk+sw;
+}
+
+let sampleCount=0;
+function pushSample(){
+  const t=simT;
+  const ictal=(E[0]>TH+0.02)||(E[2]>TH+0.02);
+  if(!ictal && t>nextSpike && Z[0]<0.15){              // espigas interictales espontáneas
+    spikes.push(t); nextSpike=t+2.0+Math.random()*6.0;
+    if(spikes.length>6) spikes.shift();
+  }
+  let spV=0;
+  for(const s0 of spikes) spV+=spikeShape(t-s0);
+  if(t>nextBlink){ blinks.push(t); nextBlink=t+3.0+Math.random()*6.0;
+    if(blinks.length>4) blinks.shift(); }
+  let blV=0; for(const b0 of blinks) blV+=blinkShape(t-b0);
+  let emV=0; for(const c0 of chews) emV+=chewEnv(t-c0);
+  if(chews.length && t-chews[0]>2.4) chews.shift();
+
+  for(let c=0;c<NC;c++){
+    const C=CH[c], S=st[c];
+    let src=0, zc=0;
+    for(let j=0;j<NS;j++) if(C.w[j]){ src+=C.w[j]*(E[j]-REST); zc+=C.w[j]*Z[j]; }
+    // depresión postictal: sólo en la región que participó de la crisis
+    const supp=1-0.80*Math.min(1,zc*1.6);
+    S.lp+=C.lp*(src-S.lp);                              // conducción de volumen
+    S.pink=0.93*S.pink+0.07*gauss();
+    let bg=(S.pink*2.1+gauss()*0.30)*C.nz;
+    S.envT+=1/FS;
+    const env=0.55+0.45*Math.sin(S.envT*0.9+c);
+    bg+=C.al*0.085*env*Math.sin(6.283185*(9.6+0.5*Math.sin(S.envT*0.31))*t+S.ph);
+    if(C.d) bg+=0.055*Math.sin(6.283185*42*t+S.ph*2.1)*(0.5+0.5*Math.sin(S.envT*1.7));
+    let sv=S.lp*C.g;
+    if(C.d && Math.abs(sv)>1e-6){                       // afila la morfologia ictal
+      const m=Math.abs(sv)/0.30;
+      sv=Math.sign(sv)*Math.pow(m,1.30)*0.30;
+    }
+    let art=blV*C.bl*0.26;                              // parpadeo
+    if(emV>0) art+=emV*C.em*0.20*gauss();               // actividad muscular
+    const v=sv + bg*supp + spV*C.sp*0.20*supp + art;
+    S.dc+=0.0100*(v-S.dc);                              // pasa-altos ~0,3 Hz, como un EEG real
+    buf[c][head]=v-S.dc;
+  }
+  head=(head+1)%W;
+  sampleCount++;
+}
+
+// ───────────────────────────────────────────────────────────
+// 3. ESTADO, ANOTACIONES Y JUEGO
+// ───────────────────────────────────────────────────────────
+let anns=[];                                   // {t,type}
+let onsetDeep=-1, onsetSurf=-1, seizing=false, seizeStart=-1, lastAbove=-1e9;
+
+function updateEvents(){
+  const deepOn=E[0]>TH+0.15||E[1]>TH+0.15;
+  const surfOn=E[2]>TH+0.10;
+  if(deepOn && !seizing){
+    seizing=true; seizeStart=simT; onsetDeep=simT; onsetSurf=-1; lastAbove=simT;
+    anns.push({t:simT,type:"deep"});
+  }
+  if(seizing && surfOn && onsetSurf<0){
+    onsetSurf=simT; anns.push({t:simT,type:"surf"});
+  }
+  if(deepOn||surfOn) lastAbove=simT;
+  // histéresis: la actividad ictal oscila y cruza el umbral en cada valle,
+  // así que la crisis sólo termina tras 1,5 s continuos por debajo
+  if(seizing && simT-lastAbove>1.5) seizing=false;
+  anns=anns.filter(a=>simT-a.t<WINSEC+1);
+}
+
+const stateVal=document.getElementById("stateVal"), stateSub=document.getElementById("stateSub");
+function updateStatus(){
+  let lab,sub,cls="";
+  const zz=Z[0];
+  if(seizing){
+    cls="ictal";
+    if(onsetSurf<0){ lab="Inicio focal"; sub="solo el electrodo profundo lo ve"; }
+    else if(simT-seizeStart>25){ lab="Crisis sostenida"; sub="el circuito no logra detenerse solo"; }
+    else { lab="Crisis en curso"; sub=`superficie +${(onsetSurf-onsetDeep).toFixed(1)} s · dura ${(simT-seizeStart).toFixed(1)} s`; }
+  } else if(zz>0.12){
+    cls="post"; lab="Postictal"; sub="actividad deprimida, recuperándose";
+  } else if(gUser<0.80){
+    lab="Inhibición insuficiente"; sub="el circuito puede iniciar solo";
+  } else { lab="Basal"; sub="inhibición normal"; }
+  stateVal.textContent=lab; stateVal.className="val "+cls; stateSub.textContent=sub;
+  const onDrug=drugT>=0&&simT-drugT<DRUGDUR;
+  btnDrug.disabled=onDrug;
+  btnDrug.textContent=onDrug?`Fármaco actuando · ${Math.ceil(DRUGDUR-(simT-drugT))} s`:"Aplicar fármaco";
+}
+
+// ───────────────────────────────────────────────────────────
+// 4. DIBUJO
+// ───────────────────────────────────────────────────────────
+const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+const CSS={w:0,h:0};
+function resize(){
+  const r=cv.parentElement.getBoundingClientRect();
+  const w=Math.max(360,r.width);
+  const h=clamp(Math.round(w*0.52),420,640);
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  cv.style.height=h+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  CSS.w=w; CSS.h=h;
+}
+window.addEventListener("resize",resize);
+
+const PADL=94, PADR=14, PADT=26, PADB=22, GAPB=16;
+
+function draw(){
+  const w=CSS.w,h=CSS.h;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="#F5F6F8"; ctx.fillRect(0,0,w,h);
+
+  const px=PADL, pw=w-PADL-PADR, py=PADT, ph=h-PADT-PADB;
+  const nD=4, nS=8;
+  const rowH=(ph-GAPB)/NC;
+  const blockD=rowH*nD, blockS=rowH*nS;
+
+  // franjas de bloque
+  ctx.fillStyle="#EFE7E8"; ctx.fillRect(px,py,pw,blockD);
+  ctx.fillStyle="#EDEFF3"; ctx.fillRect(px,py+blockD+GAPB,pw,blockS);
+
+  // rejilla: 1 s mayor, 0.2 s menor
+  ctx.lineWidth=1;
+  for(let s=0;s<=WINSEC;s+=0.2){
+    const x=Math.round(px+(s/WINSEC)*pw)+.5;
+    ctx.strokeStyle=(Math.abs(s%1)<1e-6)?"#B7C1CE":"#D9DEE5";
+    ctx.beginPath();ctx.moveTo(x,py);ctx.lineTo(x,py+blockD);
+    ctx.moveTo(x,py+blockD+GAPB);ctx.lineTo(x,py+ph);ctx.stroke();
+  }
+
+  // etiquetas de bloque
+  ctx.font="500 9px 'IBM Plex Mono',monospace";
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  ctx.fillStyle="#7C2130"; ctx.fillText("PROFUNDIDAD · HIPOCAMPO",px+4,py-8);
+  ctx.fillStyle="#6B7684"; ctx.fillText("SUPERFICIE · CUERO CABELLUDO",px+4,py+blockD+GAPB-6);
+  ctx.textAlign="right";
+  ctx.fillText(WINSEC+" s",px+pw,py-8);
+
+  // trazados
+  for(let c=0;c<NC;c++){
+    const isD=CH[c].d===1;
+    const yTop=py+(isD?0:GAPB)+c*rowH;
+    const yMid=yTop+rowH/2;
+    const amp=rowH*(isD?0.46:0.44)/(isD?0.95:0.42);
+
+    ctx.font="400 10.5px 'IBM Plex Mono',monospace";
+    ctx.textAlign="right"; ctx.textBaseline="middle";
+    ctx.fillStyle=isD?"#7C2130":"#5C6774";
+    ctx.fillText(CH[c].n,px-10,yMid);
+
+    ctx.strokeStyle=isD?"#7C2130":"#17293E";
+    ctx.lineWidth=isD?1.15:1;
+    ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.beginPath();
+    const b=buf[c], step=pw/(W-1);
+    for(let i=0;i<W;i++){
+      const v=b[(head+i)%W];
+      const y=clamp(yMid-v*amp,yTop+1.5,yTop+rowH-1.5);
+      const x=px+i*step;
+      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // anotaciones sobre el papel
+  const t0=simT-WINSEC;
+  const drawn=[];
+  for(const a of anns){
+    const f=(a.t-t0)/WINSEC;
+    if(f<0||f>1) continue;
+    const x=Math.round(px+f*pw)+.5;
+    // si dos marcas caen cerca, se escalonan para no superponer los rótulos
+    let lvl=0;
+    while(drawn.some(d=>d.lvl===lvl&&Math.abs(d.x-x)<160)) lvl++;
+    drawn.push({x,lvl});
+    const col=a.type==="deep"?"#7C2130":"#17293E";
+    const lab=a.type==="deep"?"inicio eléctrico en el hipocampo":"aparece en superficie";
+    ctx.save();
+    ctx.strokeStyle=col; ctx.lineWidth=1.2; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(x,py); ctx.lineTo(x,py+ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=col;
+    ctx.beginPath();ctx.moveTo(x,py+ph);ctx.lineTo(x-4,py+ph+7);ctx.lineTo(x+4,py+ph+7);ctx.closePath();ctx.fill();
+    ctx.font="500 9px 'IBM Plex Mono',monospace";
+    ctx.textBaseline="alphabetic";
+    const tw=ctx.measureText(lab).width;
+    ctx.textAlign=(x+tw+8>px+pw)?"right":"left";
+    ctx.fillText(lab,(x+tw+8>px+pw)?x-5:x+5,py+ph-4-lvl*14);
+    ctx.restore();
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+// 5. BUCLE
+// ───────────────────────────────────────────────────────────
+let paused=false, last=performance.now(), acc=0;
+function frame(now){
+  const dtr=Math.min((now-last)/1000,0.25); last=now;
+  if(!paused){
+    acc+=dtr;
+    const per=1/FS;
+    let n=0;
+    while(acc>=per && n<400){ stepModel(); pushSample(); updateEvents(); acc-=per; n++; }
+    updateStatus();
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+// calentamiento: llega al punto fijo y llena la ventana antes de mostrar
+resize();
+for(let k=0;k<Math.round(3*FS);k++){stepModel();}
+for(let k=0;k<W;k++){stepModel();pushSample();}
+anns=[];seizing=false;onsetDeep=-1;onsetSurf=-1;lastAbove=-1e9;
+draw();
+requestAnimationFrame(frame);
+
+// ───────────────────────────────────────────────────────────
+// 6. CONTROLES
+// ───────────────────────────────────────────────────────────
+const gs=document.getElementById("gs"), gsOut=document.getElementById("gsOut");
+function paintSlider(){
+  const v=+gs.value, f=((v-45)/85*100).toFixed(1);
+  const thr=((80-45)/85*100).toFixed(1);
+  const bg=`linear-gradient(to right,#7C2130 0%,#7C2130 ${thr}%,#D3D8DF ${thr}%,#D3D8DF 100%)`;
+  gs.style.setProperty("--bg",bg);
+  gs.style.background="transparent";
+  const track=`background:${bg}`;
+  gsOut.textContent=v+" %";
+  gsOut.className=v<80?"low":"";
+  gs.style.setProperty("background-image","none");
+  styleTrack(bg);
+}
+let styleEl=document.createElement("style"); document.head.appendChild(styleEl);
+function styleTrack(bg){
+  styleEl.textContent=
+   `input[type=range]::-webkit-slider-runnable-track{background:${bg}!important}`+
+   `input[type=range]::-moz-range-track{background:${bg}!important}`;
+}
+gs.addEventListener("input",()=>{gUser=+gs.value/100;paintSlider();});
+paintSlider();
+
+const btnSeize=document.getElementById("btnSeize");
+const btnDrug=document.getElementById("btnDrug");
+const btnPause=document.getElementById("btnPause");
+document.getElementById("btnPrint").addEventListener("click",()=>window.print());
+document.getElementById("btnBlink").addEventListener("click",()=>{
+  for(let i=0;i<3;i++) blinks.push(simT+i*0.55);
+  if(blinks.length>8) blinks.splice(0,blinks.length-8);
+});
+document.getElementById("btnChew").addEventListener("click",()=>{ chews.push(simT); });
+
+function triggerSeizure(){ gLocalT=simT; }
+btnSeize.addEventListener("click",()=>{ triggerSeizure(); });
+btnDrug.addEventListener("click",()=>{ if(drugT<0||simT-drugT>DRUGDUR) drugT=simT; });
+btnPause.addEventListener("click",()=>{
+  paused=!paused; btnPause.textContent=paused?"Continuar":"Pausar"; last=performance.now();
+});
+document.addEventListener("keydown",e=>{
+  if(e.code!=="Space") return;
+  // si el foco está en un botón, dejar que el botón reciba la pulsación
+  const a=document.activeElement;
+  if(a&&a.tagName==="BUTTON") return;
+  e.preventDefault();
+  triggerSeizure();
+});
+
+
+</script>
+</body>
+</html>

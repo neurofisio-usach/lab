@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red neuronal en vivo — 200 neuronas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E8EAEE; --panel:#F5F6F8; --edge:#D3D8DF;
+    --grid:#CFD6DE; --gridMaj:#B7C1CE;
+    --ink:#17293E; --depth:#7C2130;
+    --accent:#1B6E6A; --alert:#A65420;
+    --text:#212B38; --muted:#6B7684;
+    --exc:#1B6E6A; --inh:#A63A3A;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--text); font-family:var(--sans);
+    padding:18px; min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+  h1{font-size:21px;font-weight:600;margin:0;letter-spacing:-.01em}
+  h1 span{color:var(--muted);font-weight:400}
+
+  .status{
+    font-family:var(--mono);font-size:12px;text-align:right;
+    border-left:2px solid var(--edge);padding-left:14px;min-width:210px;
+  }
+  .status .lab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .status .val{font-size:15px;font-weight:600;color:var(--ink)}
+  .status .val.crisis{color:var(--depth)}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--edge); border-radius:3px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .panel-title{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 10px; display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .panel-title .legend{display:flex; gap:14px; font-size:10px; letter-spacing:0}
+  .legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+
+  canvas{display:block; width:100%; background:var(--paper); border-radius:2px}
+  #raster{height:400px}
+  #lfpHipp{height:110px}
+  #lfpCortex{height:110px; margin-top:2px}
+
+  .controls{
+    display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin-top:4px;
+  }
+  .control-group{flex:1; min-width:240px}
+  .control-group label{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px;
+    color:var(--muted); margin-bottom:6px; letter-spacing:.02em;
+  }
+  .control-group label b{color:var(--ink); font-weight:600}
+  input[type=range]{
+    width:100%; -webkit-appearance:none; appearance:none; height:6px; border-radius:3px;
+    background:linear-gradient(to right, var(--depth) 0%, var(--alert) 35%, var(--accent) 100%);
+    outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--ink); border:3px solid var(--paper); box-shadow:0 0 0 1px var(--edge); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background:var(--ink); border:3px solid var(--paper);
+    box-shadow:0 0 0 1px var(--edge); cursor:pointer;
+  }
+
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap}
+  button{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;
+    padding:9px 14px; border-radius:3px; border:1px solid var(--edge); background:var(--panel);
+    color:var(--ink); cursor:pointer; transition:background .15s, color .15s, border-color .15s;
+  }
+  button:hover{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+  button.primary{background:var(--depth); color:var(--paper); border-color:var(--depth)}
+  button.primary:hover{background:#5e1826}
+  button:disabled{opacity:.45; cursor:default; pointer-events:none}
+
+  .stats-row{display:flex; gap:0; margin-top:12px; border-top:1px solid var(--edge)}
+  .stat{flex:1; padding:10px 14px 2px; border-right:1px solid var(--edge)}
+  .stat:last-child{border-right:none}
+  .stat .lab{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .stat .num{font-family:var(--mono); font-size:19px; font-weight:600; color:var(--ink); margin-top:2px}
+
+  .explain{font-size:13px; line-height:1.55; color:var(--text)}
+  .explain b{color:var(--ink)}
+  .explain .tag{
+    display:inline-block; font-family:var(--mono); font-size:10px; padding:1px 6px;
+    border-radius:8px; margin-right:4px; letter-spacing:.03em;
+  }
+  .tag.exc{background:rgba(27,110,106,.14); color:var(--exc)}
+  .tag.inh{background:rgba(166,58,58,.14); color:var(--inh)}
+
+  footer{font-family:var(--mono); font-size:10px; color:var(--muted); text-align:center; margin-top:6px; letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="eyebrow">Estación Neurofest — simulación en vivo</p>
+      <h1>Red de 200 neuronas <span>— sincronía y crisis</span></h1>
+    </div>
+    <div class="status">
+      <div class="lab">Estado de la red</div>
+      <div class="val" id="stateLabel">Actividad basal</div>
+    </div>
+  </header>
+
+  <div class="panel">
+    <p class="panel-title">
+      <span>Actividad de toda la red (raster, 200 neuronas)</span>
+      <span class="legend">
+        <span><span class="dot" style="background:var(--exc)"></span>Excitatoria (piramidal)</span>
+        <span><span class="dot" style="background:var(--inh)"></span>Inhibitoria (interneurona)</span>
+      </span>
+    </p>
+    <div style="position:relative">
+      <canvas id="raster"></canvas>
+      <div id="rasterLabels" style="position:absolute; left:0; top:0; pointer-events:none"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">
+      <span>Electrodos: hipocampal (local) vs. no-hipocampal (distante)</span>
+    </p>
+    <p class="panel-title" style="margin-top:0; margin-bottom:4px; text-transform:none; letter-spacing:0; font-size:11px">Hipocampal — electrodo local, cerca de las células</p>
+    <canvas id="lfpHipp"></canvas>
+    <p class="panel-title" style="margin-top:10px; margin-bottom:4px; text-transform:none; letter-spacing:0; font-size:11px">No hipocampal — electrodo distante, señal atenuada y filtrada por el tejido</p>
+    <canvas id="lfpCortex"></canvas>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">Controles</p>
+    <div class="controls">
+      <div class="control-group">
+        <label>Fuerza de la inhibición (interneuronas) <b id="inhibVal">100%</b></label>
+        <input type="range" id="inhibSlider" min="0" max="120" value="100">
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="btnCrisis">Disparar crisis automática</button>
+        <button id="btnPause">Pausar</button>
+        <button id="btnReset">Reiniciar red</button>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="lab">Frecuencia media</div><div class="num" id="statRate">— Hz</div></div>
+      <div class="stat"><div class="lab">Sincronía (pico simultáneo)</div><div class="num" id="statSync">—</div></div>
+      <div class="stat"><div class="lab">Tiempo</div><div class="num" id="statTime">0.0 s</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">¿Qué estás viendo?</p>
+    <p class="explain">
+      Esta versión simula <b>200 neuronas divididas en dos poblaciones</b> (100 hipocampales +
+      100 corticales, cada una con la misma mezcla 80/20 excitatorias/inhibitorias), con un
+      modelo distinto al de las otras estaciones (AdEx en vez de Izhikevich) y conexiones
+      dispersas. El <b>deslizador de inhibición</b> actúa solo sobre las interneuronas del
+      hipocampo — la corteza mantiene su propia inhibición intacta todo el tiempo. Por eso,
+      al bajar el deslizador (o presionar "Disparar crisis automática"), vas a ver la crisis
+      <b>empezar arriba, en el hipocampo</b> (mitad superior del raster), y recién después
+      <b>propagarse hacia abajo, a la corteza</b> — con una demora real y de forma más débil,
+      tal como pasa en una crisis del lóbulo temporal que empieza focal y después generaliza.
+      Los dos "electrodos" de abajo muestran lo mismo: el <b>hipocampal</b> es un registro
+      local y nítido de esa población; el <b>no hipocampal</b> es un registro más lejano,
+      atenuado y suavizado de la corteza, que se activa después y con menor amplitud — se
+      puede ver claramente el retraso entre ambos trazos.
+    </p>
+  </div>
+
+  <footer>MODELO DE JUGUETE · hipocampo (80 exc + 20 inh) → corteza (80 exc + 20 inh), AdEx, conectividad dispersa · no representa un paciente real</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- network size: two populations ----------------
+  // Hippocampal (H) and cortical/non-hippocampal (C), each keeping the same 80/20 E/I mix as
+  // the original single-population design. p_conn is doubled (0.1->0.2) relative to the old
+  // single-network file to compensate for each sub-population being half the size -- confirmed
+  // in prototyping that otherwise average in-degree drops and recruitment weakens substantially.
+  const N_EH = 80, N_IH = 20, N_H = N_EH + N_IH;   // hippocampal: indices [0, N_H)
+  const N_EC = 80, N_IC = 20, N_C = N_EC + N_IC;   // cortical:    indices [N_H, N)
+  const N = N_H + N_C;
+  function isExcIdx(i){ return i < N_EH || (i >= N_H && i < N_H + N_EC); }
+
+  // ---------------- AdEx parameters ----------------
+  // Validated single-neuron catalog (Naud et al. 2008 style): RS (adapting) for excitatory,
+  // FS (~no adaptation) for inhibitory -- same distinction the Izhikevich files used.
+  const C      = new Float64Array(N).fill(200.0);
+  const gL     = new Float64Array(N).fill(10.0);
+  const EL     = new Float64Array(N).fill(-70.0);
+  const VT     = new Float64Array(N).fill(-50.0);
+  const deltaT = new Float64Array(N).fill(2.0);
+  const tauw   = new Float64Array(N).fill(30.0);
+  const a_adapt = new Float64Array(N); // excitatory only
+  const b_adapt = new Float64Array(N); // excitatory only
+  const Vr     = new Float64Array(N);
+  const Vcut   = new Float64Array(N).fill(0.0);
+  for (let i=0;i<N;i++){
+    if (isExcIdx(i)){ a_adapt[i]=2.0; b_adapt[i]=60.0; Vr[i]=-58.0; }
+    else            { a_adapt[i]=0.0; b_adapt[i]=0.0;  Vr[i]=-70.0; }
+  }
+
+  const tau_syn_E = 5.0, tau_syn_I = 10.0;
+  const E_rev_E = 0.0, E_rev_I = -80.0;
+  const p_conn = 0.2;
+  const w_E = 1.2, w_I_base = 12.0;
+  // H -> C spillover: real (if modest) excitatory coupling, validated safe at baseline. This is
+  // what gives the cortical trace genuine organic influence from hippocampus, rather than being
+  // a purely scripted, disconnected trace -- see p_conn_HC/w_HC below, applied only from H's
+  // excitatory neurons onward, no C -> H feedback in this design.
+  const p_conn_HC = 0.05, w_HC = 1.2;
+  const I_mu = 230.0, I_sigma = 65.0;
+
+  let rngState = 999999999;
+  function rnd(){
+    rngState |= 0; rngState = (rngState + 0x6D2B79F5) | 0;
+    let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function randn(){
+    let u=0,v=0; while(u===0) u=rnd(); while(v===0) v=rnd();
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  }
+
+  // ---------------- sparse connectivity (CSR-style adjacency lists) ----------------
+  // Dense NxN matrices don't scale; at N=200 the actual cost driver is the number of real
+  // synapses, not N^2 potential ones. Each spike walks only its own precomputed target list.
+  function buildCSR(nSources, nTargets, pC){
+    const lists = [];
+    let total = 0;
+    for (let s=0; s<nSources; s++){
+      const list = [];
+      for (let t=0; t<nTargets; t++) if (rnd() < pC) list.push(t);
+      lists.push(list); total += list.length;
+    }
+    const offsets = new Int32Array(nSources+1);
+    const targets = new Int32Array(total);
+    let idx = 0;
+    for (let s=0; s<nSources; s++){
+      offsets[s] = idx;
+      for (const t of lists[s]) targets[idx++] = t;
+    }
+    offsets[nSources] = idx;
+    return {offsets, targets};
+  }
+
+  let v, w, gE, gI, spikedPrev;
+  let EH_csr, IH_csr, EC_csr, IC_csr, HC_csr;
+
+  // ---------------- electrode readouts ----------------
+  // Now that H and C are genuine anatomically-distinct sub-populations, the electrodes map onto
+  // them directly: hippocampal = local, unfiltered signal from H; non-hippocampal = smoothed and
+  // attenuated signal from C (volume conduction to a more distant site). Because C only has its
+  // own intact inhibition and a modest H->C spillover (see the state machine below), the cortical
+  // trace should show a genuinely delayed, weaker secondary response -- not just a differently
+  // filtered copy of the same shared event.
+  let lfpAccumHipp = 0;   // sum of -Isyn over H only
+  let lfpAccumAll = 0;    // sum of -Isyn over C only (name kept from the single-population version)
+  let corticalSmoothed = 0;
+  const CORTICAL_TAU_MS = 3.0;
+  const CORTICAL_GAIN = 0.5;
+
+  function buildNetwork(){
+    EH_csr = buildCSR(N_EH, N_H, p_conn);      // EH -> all H (local indices)
+    IH_csr = buildCSR(N_IH, N_H, p_conn);      // IH -> all H
+    EC_csr = buildCSR(N_EC, N_C, p_conn);      // EC -> all C (local indices)
+    IC_csr = buildCSR(N_IC, N_C, p_conn);      // IC -> all C
+    HC_csr = buildCSR(N_EH, N_C, p_conn_HC);   // EH -> all C (spillover, local C indices)
+    v = new Float64Array(N); w = new Float64Array(N);
+    for (let i=0;i<N;i++) v[i] = EL[i] + 5*randn();
+    gE = new Float64Array(N); gI = new Float64Array(N);
+    spikedPrev = new Uint8Array(N);
+    corticalSmoothed = 0;
+    corticalSmoothed = 0;
+  }
+  buildNetwork();
+
+  // ---------------- inhibition control: hippocampus (manual slider / auto-crisis button) ----------------
+  let inhibScale = 1.0;
+  let autoRamp = null;
+
+  function scheduledAutoScale(tSec){
+    const t = tSec - autoRamp.startT;
+    const D = autoRamp;
+    if (t < D.hold1) return 1.0;
+    if (t < D.hold1 + D.rampDown) return 1.0 - 0.95*((t-D.hold1)/D.rampDown);
+    if (t < D.hold1 + D.rampDown + D.holdLow) return 0.05;
+    if (t < D.hold1 + D.rampDown + D.holdLow + D.rampUp) {
+      const tt = t - (D.hold1 + D.rampDown + D.holdLow);
+      return 0.05 + 0.95*(tt/D.rampUp);
+    }
+    return null;
+  }
+
+  // ---------------- inhibition control: cortex (delayed, shallower, driven by H) ----------------
+  // Cortex keeps its own intact inhibition (scale_C = 1.0) unless hippocampus has been "low"
+  // (below H_TRIGGER_THRESH) for at least C_LAG_MS continuously -- at that point cortex runs its
+  // OWN scripted dip: shallower (never below C_DIP, vs hippocampus's 0.05) and shorter. This is
+  // deliberately a bounded, timer-driven envelope rather than emergent threshold-crossing --
+  // prototyping found that emergent coupling strong enough to recruit cortex reliably gave
+  // near-zero delay (cortex followed within milliseconds), while coupling weak enough to show a
+  // visible delay often failed to recruit cortex at all, or (with a slower NMDA-like pathway)
+  // leaked baseline instability from hippocampus's normal resting firing. This mechanism, unlike
+  // that one, is safe by construction: bounded duration, bounded depth, matches the same validated
+  // pattern used everywhere else in this project. Works the same way whether hippocampus's dip was
+  // triggered by the slider or the auto-crisis button.
+  let hLowSince = null;
+  let cState = 'quiet';  // quiet | ramp_down | hold | ramp_up
+  let cStateTimer = 0;
+  const H_TRIGGER_THRESH = 0.5;
+  const C_LAG_MS = 2000, C_RAMP_MS = 2500, C_HOLD_MS = 3500, C_RAMPUP_MS = 2500, C_DIP = 0.35;
+
+  function updateScaleC(scaleH){
+    if (scaleH < H_TRIGGER_THRESH){
+      if (hLowSince === null) hLowSince = simTimeMs;
+    } else {
+      hLowSince = null;
+    }
+    let scaleC;
+    if (cState === 'quiet'){
+      if (hLowSince !== null && (simTimeMs - hLowSince) >= C_LAG_MS){
+        cState = 'ramp_down'; cStateTimer = 0;
+      }
+      scaleC = 1.0;
+    } else if (cState === 'ramp_down'){
+      cStateTimer += dt;
+      scaleC = 1.0 - (1.0-C_DIP)*(cStateTimer/C_RAMP_MS);
+      if (cStateTimer >= C_RAMP_MS){ cState = 'hold'; cStateTimer = 0; }
+    } else if (cState === 'hold'){
+      cStateTimer += dt;
+      scaleC = C_DIP;
+      if (cStateTimer >= C_HOLD_MS){ cState = 'ramp_up'; cStateTimer = 0; }
+    } else { // ramp_up
+      cStateTimer += dt;
+      const frac = Math.min(1.0, cStateTimer/C_RAMPUP_MS);
+      scaleC = C_DIP + (1.0-C_DIP)*frac;
+      if (frac >= 1.0){ cState = 'quiet'; cStateTimer = 0; }
+    }
+    return scaleC;
+  }
+
+  // ---------------- sim state ----------------
+  const dt = 0.1; // ms -- AdEx needs finer resolution than Izhikevich's dt=0.5 (no sub-stepping used here)
+  let simTimeMs = 0;
+  let running = true;
+
+  const decay_E = Math.exp(-dt/tau_syn_E), decay_I = Math.exp(-dt/tau_syn_I);
+  const CORT_DECAY = Math.exp(-dt/CORTICAL_TAU_MS);
+
+  // slowly-adapting baseline (DC) estimate for each electrode, subtracted before display
+  // compression. Without this, a persistent operating-point offset (net inward/outward current
+  // at rest isn't zero) pins the trace near one edge of the tanh curve, hiding almost all of the
+  // real fluctuation in the saturated region -- exactly the "not centered / too zoomed" bug.
+  let hippBaselineEst = 0, cortexBaselineEst = 0;
+  const BASELINE_TAU_MS = 2500; // slow enough to preserve seizure contrast, fast enough to re-center
+  const BASELINE_DECAY = Math.exp(-dt/BASELINE_TAU_MS);
+
+  let rateWindowSpikes = 0, rateWindowMs = 0;
+  let lastMaxSim = 0;
+
+  // pre-allocated per-frame buffers -- allocating a new object + array on every single dt-step
+  // (10,000/sec at dt=0.1ms) turned out to be the actual bottleneck, not the physics itself
+  // (confirmed: pure physics alone runs at >7x realtime). Reusing fixed buffers avoids the
+  // garbage-collection pressure that was causing it.
+  const MAX_STEPS_PER_FRAME = 700;   // 60ms cap / 0.1ms dt, with margin
+  const MAX_SPIKES_PER_FRAME = 50000; // generous; extreme sustained bursts could exceed this, in
+                                       // which case a few raster dots are silently dropped for that
+                                       // frame only -- harmless graceful degradation, not a crash
+  const bufOffsetMs = new Float64Array(MAX_STEPS_PER_FRAME);
+  const bufLfpHippY = new Float64Array(MAX_STEPS_PER_FRAME);
+  const bufLfpCortexY = new Float64Array(MAX_STEPS_PER_FRAME);
+  const spikeStepIdx = new Int32Array(MAX_SPIKES_PER_FRAME);
+  const spikeNeuronIdx = new Int32Array(MAX_SPIKES_PER_FRAME);
+
+  function step(){
+    let scaleH;
+    if (autoRamp){
+      const s = scheduledAutoScale(simTimeMs/1000);
+      if (s === null){ autoRamp = null; scaleH = inhibScale; }
+      else { scaleH = s; document.getElementById('inhibSlider').value = Math.round(s*100); updateInhibLabel(s*100); }
+    } else {
+      scaleH = inhibScale;
+    }
+    const scaleC = updateScaleC(scaleH);
+
+    // conductance decay
+    for (let i=0;i<N;i++){ gE[i]*=decay_E; gI[i]*=decay_I; }
+
+    // spike-driven sparse propagation: walk only the target lists of neurons that just spiked.
+    // EH projects within H AND (spillover) onward to C; IH only within H (scaled by scaleH);
+    // EC/IC stay within C (IC scaled by scaleC, its own intact-but-dippable inhibition).
+    for (let s=0; s<N_EH; s++){
+      if (spikedPrev[s]){
+        for (let k=EH_csr.offsets[s]; k<EH_csr.offsets[s+1]; k++) gE[EH_csr.targets[k]] += w_E;
+        for (let k=HC_csr.offsets[s]; k<HC_csr.offsets[s+1]; k++) gE[N_H + HC_csr.targets[k]] += w_HC;
+      }
+    }
+    for (let s=0; s<N_IH; s++){
+      if (spikedPrev[N_EH+s]){
+        const add = w_I_base*scaleH;
+        for (let k=IH_csr.offsets[s]; k<IH_csr.offsets[s+1]; k++) gI[IH_csr.targets[k]] += add;
+      }
+    }
+    for (let s=0; s<N_EC; s++){
+      if (spikedPrev[N_H+s]){
+        for (let k=EC_csr.offsets[s]; k<EC_csr.offsets[s+1]; k++) gE[N_H + EC_csr.targets[k]] += w_E;
+      }
+    }
+    for (let s=0; s<N_IC; s++){
+      if (spikedPrev[N_H+N_EC+s]){
+        const add = w_I_base*scaleC;
+        for (let k=IC_csr.offsets[s]; k<IC_csr.offsets[s+1]; k++) gI[N_H + IC_csr.targets[k]] += add;
+      }
+    }
+
+    let simultaneous = 0;
+    lfpAccumHipp = 0; lfpAccumAll = 0;
+    for (let i=0;i<N;i++){
+      const Isyn = gE[i]*(E_rev_E - v[i]) + gI[i]*(E_rev_I - v[i]);
+      const Iext = I_mu + I_sigma*randn();
+      const Itot = Isyn + Iext;
+
+      // clamp the value fed into the exponential itself -- beyond Vcut the neuron has already
+      // spiked conceptually, so bounding it here is both safe and physically meaningless to skip
+      const v_for_exp = Math.min(v[i], Vcut[i]);
+      const expTerm = gL[i]*deltaT[i]*Math.exp((v_for_exp - VT[i]) / deltaT[i]);
+      const dv = (-gL[i]*(v[i]-EL[i]) + expTerm - w[i] + Itot) / C[i];
+      const dw = (a_adapt[i]*(v[i]-EL[i]) - w[i]) / tauw[i];
+
+      let vi = v[i] + dt*dv;
+      // CRITICAL: clamp immediately after the update, BEFORE checking threshold. Without this,
+      // a strong enough transient can push the exponential term to numerical infinity within a
+      // single step, producing NaN that silently evades the v>=Vcut reset check (NaN comparisons
+      // are always false) -- confirmed experimentally during prototyping. This one line is what
+      // makes AdEx as safe as the clamped Izhikevich implementation.
+      if (vi > 20) vi = 20; if (vi < -100) vi = -100;
+      let wi = w[i] + dt*dw;
+
+      let sp = 0;
+      if (vi >= Vcut[i]){ sp = 1; vi = Vr[i]; wi += b_adapt[i]; simultaneous++; }
+      v[i] = vi; w[i] = wi;
+      spikedPrev[i] = sp;
+      if (i < N_H) lfpAccumHipp -= Isyn;
+      else lfpAccumAll -= Isyn;
+    }
+
+    rateWindowSpikes += simultaneous; rateWindowMs += dt;
+    if (simultaneous > lastMaxSim) lastMaxSim = simultaneous;
+    corticalSmoothed = corticalSmoothed*CORT_DECAY + lfpAccumAll*(1-CORT_DECAY);
+    hippBaselineEst = hippBaselineEst*BASELINE_DECAY + lfpAccumHipp*(1-BASELINE_DECAY);
+    cortexBaselineEst = cortexBaselineEst*BASELINE_DECAY + (corticalSmoothed*CORTICAL_GAIN)*(1-BASELINE_DECAY);
+
+    simTimeMs += dt;
+    return simultaneous;
+  }
+
+  // ---------------- canvases (scrolling oscilloscope style) ----------------
+  const rasterCv = document.getElementById('raster');
+  const lfpHippCv = document.getElementById('lfpHipp');
+  const lfpCortexCv = document.getElementById('lfpCortex');
+  const rasterCtx = rasterCv.getContext('2d');
+  const lfpHippCtx = lfpHippCv.getContext('2d');
+  const lfpCortexCtx = lfpCortexCv.getContext('2d');
+
+  function sizeCanvas(cv){
+    const rect = cv.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(rect.width*dpr);
+    cv.height = Math.round(rect.height*dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w:rect.width, h:rect.height, dpr};
+  }
+  let rasterDim = sizeCanvas(rasterCv);
+  let lfpHippDim = sizeCanvas(lfpHippCv);
+  let lfpCortexDim = sizeCanvas(lfpCortexCv);
+  rasterCtx.imageSmoothingEnabled = false;
+  lfpHippCtx.imageSmoothingEnabled = false;
+  lfpCortexCtx.imageSmoothingEnabled = false;
+
+  window.addEventListener('resize', ()=>{
+    rasterDim = sizeCanvas(rasterCv); lfpHippDim = sizeCanvas(lfpHippCv); lfpCortexDim = sizeCanvas(lfpCortexCv);
+    rasterCtx.imageSmoothingEnabled = false; lfpHippCtx.imageSmoothingEnabled = false; lfpCortexCtx.imageSmoothingEnabled = false;
+    clearCanvases(); renderRasterLabels();
+  });
+
+  function paperColor(){ return getComputedStyle(document.documentElement).getPropertyValue('--paper'); }
+
+  function clearCanvases(){
+    const paper = paperColor();
+    rasterCtx.fillStyle = paper; rasterCtx.fillRect(0,0,rasterDim.w,rasterDim.h);
+    lfpHippCtx.fillStyle = paper; lfpHippCtx.fillRect(0,0,lfpHippDim.w,lfpHippDim.h);
+    lfpCortexCtx.fillStyle = paper; lfpCortexCtx.fillRect(0,0,lfpCortexDim.w,lfpCortexDim.h);
+    lfpHippLastY = lfpHippDim.h/2;
+    lfpCortexLastY = lfpCortexDim.h/2;
+  }
+  let lfpHippLastY = 60, lfpCortexLastY = 55;
+
+  const TIME_WINDOW_MS = 7000;
+  const rowH_ratio = () => rasterDim.h / (N+2);
+
+  clearCanvases();
+
+  // static H/C divider + labels (HTML overlay, not drawn into the scrolling canvas -- otherwise
+  // they'd scroll away with everything else)
+  const rasterLabelsEl = document.getElementById('rasterLabels');
+  function renderRasterLabels(){
+    rasterLabelsEl.innerHTML = '';
+    rasterLabelsEl.style.width = rasterDim.w + 'px';
+    rasterLabelsEl.style.height = rasterDim.h + 'px';
+    const rowH = rowH_ratio();
+    const boundaryY = N_H * rowH;
+    const sep = document.createElement('div');
+    sep.style.position='absolute'; sep.style.left='0'; sep.style.top=boundaryY+'px';
+    sep.style.width='100%'; sep.style.borderTop='1px dashed var(--edge)';
+    rasterLabelsEl.appendChild(sep);
+    const mkLabel = (text, top) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      div.style.position='absolute'; div.style.right='6px'; div.style.top=top+'px';
+      div.style.fontFamily='var(--mono)'; div.style.fontSize='10px'; div.style.letterSpacing='.08em';
+      div.style.color='var(--muted)'; div.style.opacity='0.8';
+      rasterLabelsEl.appendChild(div);
+    };
+    mkLabel('HIPOCAMPO', 4);
+    mkLabel('NO HIPOCAMPAL', boundaryY + 4);
+  }
+  renderRasterLabels();
+
+  function drawSegment(pxShift, stepCount, spikeCount){
+    rasterCtx.setTransform(1,0,0,1,0,0);
+    rasterCtx.drawImage(rasterCv, -pxShift*rasterDim.dpr, 0);
+    rasterCtx.setTransform(rasterDim.dpr,0,0,rasterDim.dpr,0,0);
+
+    lfpHippCtx.setTransform(1,0,0,1,0,0);
+    lfpHippCtx.drawImage(lfpHippCv, -pxShift*lfpHippDim.dpr, 0);
+    lfpHippCtx.setTransform(lfpHippDim.dpr,0,0,lfpHippDim.dpr,0,0);
+
+    lfpCortexCtx.setTransform(1,0,0,1,0,0);
+    lfpCortexCtx.drawImage(lfpCortexCv, -pxShift*lfpCortexDim.dpr, 0);
+    lfpCortexCtx.setTransform(lfpCortexDim.dpr,0,0,lfpCortexDim.dpr,0,0);
+
+    const paper = paperColor();
+    rasterCtx.fillStyle = paper; rasterCtx.fillRect(rasterDim.w-pxShift-1, 0, pxShift+2, rasterDim.h);
+    lfpHippCtx.fillStyle = paper; lfpHippCtx.fillRect(lfpHippDim.w-pxShift-1, 0, pxShift+2, lfpHippDim.h);
+    lfpCortexCtx.fillStyle = paper; lfpCortexCtx.fillRect(lfpCortexDim.w-pxShift-1, 0, pxShift+2, lfpCortexDim.h);
+
+    const rowH = rowH_ratio();
+    const excColor = getComputedStyle(document.documentElement).getPropertyValue('--exc');
+    const inhColor = getComputedStyle(document.documentElement).getPropertyValue('--inh');
+    const inkColor = getComputedStyle(document.documentElement).getPropertyValue('--ink');
+    const rasterRight = rasterDim.w - 1;
+    const hippRight = lfpHippDim.w - 1;
+    const cortexRight = lfpCortexDim.w - 1;
+    const pxPerMs = rasterDim.w / TIME_WINDOW_MS;
+
+    // raster ticks: grouped by color to minimize strokeStyle/beginPath churn. Row order is
+    // [EH, IH, EC, IC] by construction (matches the neuron index layout), so hippocampus fills
+    // the top half of the raster and cortex the bottom half -- visually reinforcing which
+    // population ignites first.
+    rasterCtx.lineWidth = 1.0;
+    rasterCtx.strokeStyle = excColor;
+    rasterCtx.beginPath();
+    for (let k=0;k<spikeCount;k++){
+      const idx = spikeNeuronIdx[k];
+      if (!isExcIdx(idx)) continue;
+      const x = (rasterRight - pxShift) + bufOffsetMs[spikeStepIdx[k]]*pxPerMs;
+      const y0 = (idx+1)*rowH;
+      rasterCtx.moveTo(x, y0-rowH*0.42);
+      rasterCtx.lineTo(x, y0+rowH*0.42);
+    }
+    rasterCtx.stroke();
+    rasterCtx.strokeStyle = inhColor;
+    rasterCtx.beginPath();
+    for (let k=0;k<spikeCount;k++){
+      const idx = spikeNeuronIdx[k];
+      if (isExcIdx(idx)) continue;
+      const x = (rasterRight - pxShift) + bufOffsetMs[spikeStepIdx[k]]*pxPerMs;
+      const y0 = (idx+1)*rowH;
+      rasterCtx.moveTo(x, y0-rowH*0.42);
+      rasterCtx.lineTo(x, y0+rowH*0.42);
+    }
+    rasterCtx.stroke();
+
+    // hippocampal (local) electrode trace
+    lfpHippCtx.strokeStyle = inkColor;
+    lfpHippCtx.lineWidth = 1.1;
+    lfpHippCtx.beginPath();
+    lfpHippCtx.moveTo(hippRight - pxShift, lfpHippLastY);
+    for (let s=0;s<stepCount;s++){
+      const x = (hippRight - pxShift) + bufOffsetMs[s]*pxPerMs;
+      lfpHippCtx.lineTo(x, bufLfpHippY[s]);
+    }
+    lfpHippCtx.stroke();
+    if (stepCount>0) lfpHippLastY = bufLfpHippY[stepCount-1];
+
+    // non-hippocampal (distant, smoothed+attenuated) electrode trace
+    lfpCortexCtx.strokeStyle = inkColor;
+    lfpCortexCtx.lineWidth = 1.1;
+    lfpCortexCtx.beginPath();
+    lfpCortexCtx.moveTo(cortexRight - pxShift, lfpCortexLastY);
+    for (let s=0;s<stepCount;s++){
+      const x = (cortexRight - pxShift) + bufOffsetMs[s]*pxPerMs;
+      lfpCortexCtx.lineTo(x, bufLfpCortexY[s]);
+    }
+    lfpCortexCtx.stroke();
+    if (stepCount>0) lfpCortexLastY = bufLfpCortexY[stepCount-1];
+  }
+
+  // ---------------- main loop ----------------
+  let lastFrameTime = null;
+  let accumulatorMs = 0;
+  const MAX_STEP_MS = 60;
+
+  const rateEl = document.getElementById('statRate');
+  const syncEl = document.getElementById('statSync');
+  const timeEl = document.getElementById('statTime');
+  const stateEl = document.getElementById('stateLabel');
+  const inhibSlider = document.getElementById('inhibSlider');
+  const inhibVal = document.getElementById('inhibVal');
+
+  function updateInhibLabel(pct){ inhibVal.textContent = Math.round(pct) + '%'; }
+
+  inhibSlider.addEventListener('input', ()=>{
+    inhibScale = inhibSlider.value/100;
+    updateInhibLabel(inhibSlider.value);
+    if (autoRamp) autoRamp = null;
+  });
+
+  document.getElementById('btnCrisis').addEventListener('click', ()=>{
+    autoRamp = {startT: simTimeMs/1000, hold1:1.0, rampDown:3.5, holdLow:4.0, rampUp:3.0};
+  });
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    buildNetwork();
+    simTimeMs = 0; autoRamp = null; inhibScale = inhibSlider.value/100;
+    hLowSince = null; cState = 'quiet'; cStateTimer = 0;
+    lfpAccumHipp = 0; lfpAccumAll = 0; corticalSmoothed = 0; hippBaselineEst = 0; cortexBaselineEst = 0; rateWindowSpikes=0; rateWindowMs=0; lastMaxSim=0;
+    clearCanvases(); renderRasterLabels();
+  });
+  const btnPause = document.getElementById('btnPause');
+  btnPause.addEventListener('click', ()=>{
+    running = !running;
+    btnPause.textContent = running ? 'Pausar' : 'Reanudar';
+    if (running) lastFrameTime = null;
+  });
+
+  let statTimerMs = 0;
+
+  // Logarithmic (not tanh) compression for the electrode displays: baseline (~2500) and crisis
+  // (up to ~180000) deviations differ by up to 75x -- tanh's hard asymptote either flattens
+  // baseline or clips crisis into a dead flat square wave (confirmed both failure modes visually
+  // during tuning). Log compression keeps growing, just slower and slower, so crisis still shows
+  // real wiggle near the top instead of a hard ceiling, while staying close to linear (sensitive)
+  // for small deviations.
+  const LOG_K = 800;
+  const LOG_NORM = Math.log(1 + 187000/LOG_K) / 0.9; // measured crisis max maps to ~90% of range, leaving headroom
+  function logCompress(dev){
+    const s = dev < 0 ? -1 : 1;
+    return s * Math.log(1 + Math.abs(dev)/LOG_K) / LOG_NORM;
+  }
+
+  function frame(ts){
+    requestAnimationFrame(frame);
+    if (!running) return;
+    if (lastFrameTime === null) lastFrameTime = ts;
+    let deltaMs = ts - lastFrameTime;
+    lastFrameTime = ts;
+    if (deltaMs > MAX_STEP_MS) deltaMs = MAX_STEP_MS;
+    accumulatorMs += deltaMs;
+
+    const buffer = [];
+    let simulatedMs = 0;
+    const midYHipp = lfpHippDim.h/2;
+    const midYCortex = lfpCortexDim.h/2;
+
+    let stepCount = 0, spikeCount = 0;
+    while (accumulatorMs >= dt && stepCount < MAX_STEPS_PER_FRAME){
+      const simultaneous = step();
+
+      for (let i=0;i<N;i++){
+        if (spikedPrev[i] && spikeCount < MAX_SPIKES_PER_FRAME){
+          spikeStepIdx[spikeCount] = stepCount;
+          spikeNeuronIdx[spikeCount] = i;
+          spikeCount++;
+        }
+      }
+
+      const hippY = midYHipp - (lfpHippDim.h/2-4)*logCompress(lfpAccumHipp - hippBaselineEst);
+      const cortexY = midYCortex - (lfpCortexDim.h/2-4)*logCompress(corticalSmoothed*CORTICAL_GAIN - cortexBaselineEst);
+
+      simulatedMs += dt;
+      bufOffsetMs[stepCount] = simulatedMs;
+      bufLfpHippY[stepCount] = hippY;
+      bufLfpCortexY[stepCount] = cortexY;
+
+      stepCount++;
+      accumulatorMs -= dt;
+    }
+    if (simulatedMs <= 0) return;
+
+    const pxPerMs = rasterDim.w / TIME_WINDOW_MS;
+    const pxShift = simulatedMs * pxPerMs;
+    drawSegment(pxShift, stepCount, spikeCount);
+
+    statTimerMs += simulatedMs;
+    if (statTimerMs >= 200){
+      const rateHz = rateWindowMs>0 ? (rateWindowSpikes/N)/(rateWindowMs/1000) : 0;
+      rateEl.textContent = rateHz.toFixed(1) + ' Hz';
+      syncEl.textContent = lastMaxSim + ' / ' + N;
+      timeEl.textContent = (simTimeMs/1000).toFixed(1) + ' s';
+
+      const syncFrac = lastMaxSim/N;
+      if (syncFrac > 0.06){
+        stateEl.textContent = 'CRISIS — sincronía alta';
+        stateEl.classList.add('crisis');
+      } else if (syncFrac > 0.035){
+        stateEl.textContent = 'Transición…';
+        stateEl.classList.remove('crisis');
+      } else {
+        stateEl.textContent = 'Actividad basal';
+        stateEl.classList.remove('crisis');
+      }
+
+      rateWindowSpikes = 0; rateWindowMs = 0;
+      lastMaxSim = Math.max(0, lastMaxSim - 1);
+      statTimerMs = 0;
+    }
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

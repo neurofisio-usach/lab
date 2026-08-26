@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red neuronal en vivo — crisis espontáneas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E8EAEE; --panel:#F5F6F8; --edge:#D3D8DF;
+    --grid:#CFD6DE; --gridMaj:#B7C1CE;
+    --ink:#17293E; --depth:#7C2130;
+    --accent:#1B6E6A; --alert:#A65420;
+    --text:#212B38; --muted:#6B7684;
+    --exc:#1B6E6A; --inh:#A63A3A;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--text); font-family:var(--sans);
+    padding:18px; min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+  h1{font-size:21px;font-weight:600;margin:0;letter-spacing:-.01em}
+  h1 span{color:var(--muted);font-weight:400}
+
+  .status{
+    font-family:var(--mono);font-size:12px;text-align:right;
+    border-left:2px solid var(--edge);padding-left:14px;min-width:210px;
+  }
+  .status .lab{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .status .val{font-size:15px;font-weight:600;color:var(--ink)}
+  .status .val.crisis{color:var(--depth)}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--edge); border-radius:3px;
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .panel-title{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 10px; display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .panel-title .legend{display:flex; gap:14px; font-size:10px; letter-spacing:0}
+  .legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+
+  canvas{display:block; width:100%; background:var(--paper); border-radius:2px}
+  #membrane{height:330px}
+  #raster{height:110px}
+  #lfp{height:90px; margin-top:2px}
+
+  .controls{
+    display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin-top:4px;
+  }
+  .control-group{flex:1; min-width:240px}
+  .control-group label{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px;
+    color:var(--muted); margin-bottom:6px; letter-spacing:.02em;
+  }
+  .control-group label b{color:var(--ink); font-weight:600}
+  input[type=range]{
+    width:100%; -webkit-appearance:none; appearance:none; height:6px; border-radius:3px;
+    background:linear-gradient(to right, var(--depth) 0%, var(--alert) 35%, var(--accent) 100%);
+    outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--ink); border:3px solid var(--paper); box-shadow:0 0 0 1px var(--edge); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background:var(--ink); border:3px solid var(--paper);
+    box-shadow:0 0 0 1px var(--edge); cursor:pointer;
+  }
+
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap}
+  button{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;
+    padding:9px 14px; border-radius:3px; border:1px solid var(--edge); background:var(--panel);
+    color:var(--ink); cursor:pointer; transition:background .15s, color .15s, border-color .15s;
+  }
+  button:hover{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+  button.primary{background:var(--depth); color:var(--paper); border-color:var(--depth)}
+  button.primary:hover{background:#5e1826}
+  button:disabled{opacity:.45; cursor:default; pointer-events:none}
+
+  .stats-row{display:flex; gap:0; margin-top:12px; border-top:1px solid var(--edge)}
+  .stat{flex:1; padding:10px 14px 2px; border-right:1px solid var(--edge)}
+  .stat:last-child{border-right:none}
+  .stat .lab{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .stat .num{font-family:var(--mono); font-size:19px; font-weight:600; color:var(--ink); margin-top:2px}
+
+  .explain{font-size:13px; line-height:1.55; color:var(--text)}
+  .explain b{color:var(--ink)}
+  .explain .tag{
+    display:inline-block; font-family:var(--mono); font-size:10px; padding:1px 6px;
+    border-radius:8px; margin-right:4px; letter-spacing:.03em;
+  }
+  .tag.exc{background:rgba(27,110,106,.14); color:var(--exc)}
+  .tag.inh{background:rgba(166,58,58,.14); color:var(--inh)}
+
+  footer{font-family:var(--mono); font-size:10px; color:var(--muted); text-align:center; margin-top:6px; letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="eyebrow">Estación Neurofest — simulación en vivo</p>
+      <h1>Red con crisis espontáneas <span>— sin tocar nada, la red se autorregula</span></h1>
+    </div>
+    <div class="status">
+      <div class="lab">Estado de la red</div>
+      <div class="val" id="stateLabel">Actividad basal</div>
+    </div>
+  </header>
+
+  <div class="panel">
+    <p class="panel-title">
+      <span>Voltaje de membrana de neuronas individuales — mirá cómo se sincronizan</span>
+      <span class="legend">
+        <span><span class="dot" style="background:var(--exc)"></span>Excitatoria (piramidal)</span>
+        <span><span class="dot" style="background:var(--inh)"></span>Inhibitoria (interneurona)</span>
+      </span>
+    </p>
+    <div style="position:relative">
+      <canvas id="membrane"></canvas>
+      <div id="membraneLabels" style="position:absolute; left:0; top:0; pointer-events:none"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">
+      <span>Actividad de toda la red (raster, 40 neuronas)</span>
+    </p>
+    <canvas id="raster"></canvas>
+    <p class="panel-title" style="margin-top:10px">Señal de "electrodo" (actividad poblacional)</p>
+    <canvas id="lfp"></canvas>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">Controles</p>
+    <div class="controls">
+      <div class="control-group">
+        <label>Presión hacia la próxima crisis <b id="pressureVal">0%</b></label>
+        <div style="width:100%; height:6px; border-radius:3px; background:var(--edge); overflow:hidden">
+          <div id="pressureBar" style="height:100%; width:0%; background:linear-gradient(to right, var(--accent), var(--alert), var(--depth)); transition:width .15s"></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="btnForce">Forzar crisis ahora</button>
+        <button id="btnPause">Pausar</button>
+        <button id="btnReset">Reiniciar red</button>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="lab">Frecuencia media</div><div class="num" id="statRate">— Hz</div></div>
+      <div class="stat"><div class="lab">Sincronía (pico simultáneo)</div><div class="num" id="statSync">—</div></div>
+      <div class="stat"><div class="lab">Tiempo</div><div class="num" id="statTime">0.0 s</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">¿Qué estás viendo?</p>
+    <p class="explain">
+      Esta red no necesita que nadie la toque. Internamente acumula lentamente una
+      "presión" hacia la próxima crisis (barra de abajo) — como si algo, con el tiempo,
+      fuera acercando a la red al límite de lo que su inhibición basal puede sostener.
+      Cuando la presión llega al máximo, la inhibición baja bruscamente, las
+      <span class="tag exc">excitatorias</span> arrastran a toda la red a disparar
+      sincronizadas, y vas a ver los picos de las 5 neuronas de arriba
+      <b>alinearse verticalmente</b> — eso es la crisis. Después de unos segundos la
+      inhibición se restablece y la red vuelve a su estado basal. El ciclo empieza de
+      nuevo, con un intervalo que varía un poco cada vez — igual que en un cerebro real,
+      no es un metrónomo perfecto.
+    </p>
+  </div>
+
+  <footer>MODELO DE JUGUETE · 32 excitatorias + 8 inhibitorias (Izhikevich) · no representa un paciente real</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- network ----------------
+  const N_E = 32, N_I = 8, N = N_E + N_I;
+  const a = new Float64Array(N), b = new Float64Array(N), c = new Float64Array(N), d = new Float64Array(N);
+  for (let i=0;i<N_E;i++){ a[i]=0.02; b[i]=0.2; c[i]=-65; d[i]=8; }
+  for (let i=N_E;i<N;i++){ a[i]=0.1; b[i]=0.2; c[i]=-65; d[i]=2; }
+
+  const tau_E = 5.0, tau_I = 10.0;
+  const E_rev_E = 0.0, E_rev_I = -80.0;
+  const p_conn = 0.25;
+  const w_E = 0.05, w_I_base = 2.5;
+  const I_mu = 4.5, I_sigma = 1.5;
+
+  let rngState = 999999999;
+  function rnd(){ // simple deterministic PRNG (mulberry32)
+    rngState |= 0; rngState = (rngState + 0x6D2B79F5) | 0;
+    let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function randn(){
+    let u=0,v=0; while(u===0) u=rnd(); while(v===0) v=rnd();
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  }
+
+  let Conn_from_E, Conn_from_I; // Conn_from_E[target*N_E+source]
+  let v, u, gE, gI, spikedPrev;
+
+  // neurons whose membrane potential we trace individually (3 excitatory + 2 inhibitory)
+  const selIdx = [2, 14, 27, N_E+1, N_E+5];
+  const selIsSel = new Uint8Array(N);
+  selIdx.forEach(i => selIsSel[i] = 1);
+  const selPos = new Int32Array(N).fill(-1);
+  selIdx.forEach((idx,p) => selPos[idx] = p);
+  const lastStepMembrane = new Float64Array(selIdx.length);
+  const NUM_LANES = selIdx.length;
+
+  function buildNetwork(){
+    Conn_from_E = new Float64Array(N*N_E);
+    Conn_from_I = new Float64Array(N*N_I);
+    for (let t=0;t<N;t++){
+      for (let s=0;s<N_E;s++) if (rnd() < p_conn) Conn_from_E[t*N_E+s] = w_E;
+      for (let s=0;s<N_I;s++) if (rnd() < p_conn) Conn_from_I[t*N_I+s] = w_I_base;
+    }
+    v = new Float64Array(N); u = new Float64Array(N);
+    for (let i=0;i<N;i++){ v[i] = -65 + 10*randn(); u[i] = b[i]*v[i]; }
+    gE = new Float64Array(N); gI = new Float64Array(N);
+    spikedPrev = new Uint8Array(N);
+  }
+  buildNetwork();
+
+  // ---------------- spontaneous seizure state machine ----------------
+  // A plain timer-driven trigger: pressure builds slowly and, once it crosses 1, runs the
+  // exact same scripted, TIME-BOUNDED dip already validated in the manual-trigger version
+  // (fixed hold duration -- no activity-dependent early termination). Kept deliberately
+  // simple: an activity-dependent feedback mechanism was tried and dropped after testing
+  // showed it could occasionally leave the network permanently stuck in a high-firing state
+  // depending on how strongly a given random network happened to ignite.
+  const dt = 0.5; // ms
+  const DIP_SCALE = 0.05, DIP_RAMP_MS = 3500, DIP_HOLD_MS = 4000, RAMP_UP_MS = 3000;
+  const PRESSURE_TAU_BASE_MS = 18000;
+
+  let seizureState = 'quiet';  // quiet | ramp_down | hold | ramp_up
+  let stateTimerMs = 0;
+  let pressure = 0;             // 0..1, crosses 1 to trigger the next episode
+  let pressureTauMs = PRESSURE_TAU_BASE_MS * (0.7 + 0.6*rnd());
+  let forceRequested = false;
+
+  function updateSeizureState(){
+    if (forceRequested && seizureState==='quiet'){ pressure = 1.0; forceRequested = false; }
+    let scale;
+    if (seizureState==='quiet'){
+      pressure += dt/pressureTauMs;
+      scale = 1.0;
+      if (pressure >= 1.0){ seizureState='ramp_down'; stateTimerMs=0; }
+    } else if (seizureState==='ramp_down'){
+      stateTimerMs += dt;
+      scale = 1.0 - (1.0-DIP_SCALE)*(stateTimerMs/DIP_RAMP_MS);
+      if (stateTimerMs >= DIP_RAMP_MS){ seizureState='hold'; stateTimerMs=0; }
+    } else if (seizureState==='hold'){
+      stateTimerMs += dt;
+      scale = DIP_SCALE;
+      if (stateTimerMs >= DIP_HOLD_MS){ seizureState='ramp_up'; stateTimerMs=0; }
+    } else { // ramp_up
+      stateTimerMs += dt;
+      const frac = Math.min(1.0, stateTimerMs/RAMP_UP_MS);
+      scale = DIP_SCALE + (1.0-DIP_SCALE)*frac;
+      if (frac >= 1.0){
+        seizureState='quiet'; pressure=0;
+        pressureTauMs = PRESSURE_TAU_BASE_MS * (0.7 + 0.6*rnd());
+      }
+    }
+    return scale;
+  }
+
+  // ---------------- sim state ----------------
+  let simTimeMs = 0;
+  let running = true;
+
+  const decay_E = Math.exp(-dt/tau_E), decay_I = Math.exp(-dt/tau_I);
+  const spikesE = new Float64Array(N_E), spikesI = new Float64Array(N_I);
+
+  // rolling stats
+  let rateWindowSpikes = 0, rateWindowMs = 0;
+  let lastMaxSim = 0, maxSimDecay = 0;
+
+  function step(){
+    const scale = updateSeizureState();
+
+    // conductance decay + input from previous spikes
+    for (let i=0;i<N;i++){ gE[i]*=decay_E; gI[i]*=decay_I; }
+    for (let tI=0;tI<N;tI++){
+      let accE = 0, accI = 0;
+      const baseE = tI*N_E, baseI = tI*N_I;
+      for (let s=0;s<N_E;s++) accE += Conn_from_E[baseE+s]*spikesE[s];
+      for (let s=0;s<N_I;s++) accI += Conn_from_I[baseI+s]*spikesI[s];
+      gE[tI]+=accE; gI[tI]+=accI*scale;
+    }
+
+    let simultaneous = 0;
+    for (let i=0;i<N;i++){
+      const Isyn = gE[i]*(E_rev_E - v[i]) + gI[i]*(E_rev_I - v[i]);
+      const Iext = I_mu + I_sigma*randn();
+      const Itot = Isyn + Iext;
+      let vi = v[i], ui = u[i];
+      for (let k=0;k<2;k++){
+        vi = vi + (dt/2)*(0.04*vi*vi + 5*vi + 140 - ui + Itot);
+        if (vi > 60) vi = 60; if (vi < -100) vi = -100;
+        ui = ui + (dt/2)*(a[i]*(b[i]*vi - ui));
+      }
+      let sp = 0;
+      let displayV = vi;
+      if (vi >= 30){ sp = 1; displayV = 35; vi = c[i]; ui = ui + d[i]; simultaneous++; }
+      v[i] = vi; u[i] = ui;
+      spikedPrev[i] = sp;
+      lfpAccum -= Isyn; // for population signal
+      if (selIsSel[i]) lastStepMembrane[selPos[i]] = displayV;
+    }
+    for (let i=0;i<N_E;i++) spikesE[i] = spikedPrev[i];
+    for (let i=0;i<N_I;i++) spikesI[i] = spikedPrev[N_E+i];
+
+    rateWindowSpikes += simultaneous; rateWindowMs += dt;
+    if (simultaneous > lastMaxSim) lastMaxSim = simultaneous;
+    maxSimDecay += dt;
+
+    simTimeMs += dt;
+    return {simultaneous, scale};
+  }
+  let lfpAccum = 0;
+
+  // ---------------- canvases (scrolling oscilloscope style) ----------------
+  const rasterCv = document.getElementById('raster');
+  const lfpCv = document.getElementById('lfp');
+  const membraneCv = document.getElementById('membrane');
+  const rasterCtx = rasterCv.getContext('2d');
+  const lfpCtx = lfpCv.getContext('2d');
+  const membraneCtx = membraneCv.getContext('2d');
+
+  function sizeCanvas(cv){
+    const rect = cv.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(rect.width*dpr);
+    cv.height = Math.round(rect.height*dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w:rect.width, h:rect.height, dpr};
+  }
+  let rasterDim = sizeCanvas(rasterCv);
+  let lfpDim = sizeCanvas(lfpCv);
+  let membraneDim = sizeCanvas(membraneCv);
+  // disable smoothing: repeated sub-pixel self-blit (the scroll effect) would otherwise
+  // resample/blur the image a little more on every single frame, compounding into visible blur
+  rasterCtx.imageSmoothingEnabled = false;
+  lfpCtx.imageSmoothingEnabled = false;
+  membraneCtx.imageSmoothingEnabled = false;
+  window.addEventListener('resize', ()=>{
+    rasterDim = sizeCanvas(rasterCv); lfpDim = sizeCanvas(lfpCv); membraneDim = sizeCanvas(membraneCv);
+    rasterCtx.imageSmoothingEnabled = false; lfpCtx.imageSmoothingEnabled = false; membraneCtx.imageSmoothingEnabled = false;
+    clearCanvases(); renderLabels();
+  });
+
+  function paperColor(){ return getComputedStyle(document.documentElement).getPropertyValue('--paper'); }
+
+  function clearCanvases(){
+    const paper = paperColor();
+    rasterCtx.fillStyle = paper; rasterCtx.fillRect(0,0,rasterDim.w,rasterDim.h);
+    lfpCtx.fillStyle = paper; lfpCtx.fillRect(0,0,lfpDim.w,lfpDim.h);
+    membraneCtx.fillStyle = paper; membraneCtx.fillRect(0,0,membraneDim.w,membraneDim.h);
+    lfpLastY = lfpDim.h/2;
+    for (let i=0;i<NUM_LANES;i++) membraneLastY[i] = laneY(i, -65);
+  }
+  let lfpLastY = 60;
+  const membraneLastY = new Float64Array(NUM_LANES);
+
+  const TIME_WINDOW_MS = 7000; // visible window
+  const rowH_ratio = () => rasterDim.h / (N+2);
+
+  const laneH = () => membraneDim.h / NUM_LANES;
+  function laneY(lane, vVal){
+    // maps v in [-90, 35] to within this lane's band (spike near top)
+    const h = laneH();
+    const top = lane*h, frac = (vVal - (-90)) / (35 - (-90));
+    const clamped = Math.max(0, Math.min(1, frac));
+    return top + h*(1 - clamped)*0.92 + h*0.04; // small margin top/bottom
+  }
+  clearCanvases();
+
+  // static lane labels (HTML overlay, not drawn into the scrolling canvas)
+  const labelsEl = document.getElementById('membraneLabels');
+  function renderLabels(){
+    labelsEl.innerHTML = '';
+    labelsEl.style.width = membraneDim.w + 'px';
+    labelsEl.style.height = membraneDim.h + 'px';
+    const h = laneH();
+    for (let lane=0; lane<NUM_LANES; lane++){
+      const isExc = selIdx[lane] < N_E;
+      const div = document.createElement('div');
+      div.textContent = (isExc ? 'EXC ' : 'INH ') + (lane+1);
+      div.style.position = 'absolute';
+      div.style.left = '6px';
+      div.style.top = (lane*h + 4) + 'px';
+      div.style.fontFamily = 'var(--mono)';
+      div.style.fontSize = '10px';
+      div.style.letterSpacing = '.06em';
+      div.style.color = isExc ? 'var(--exc)' : 'var(--inh)';
+      div.style.opacity = '0.75';
+      labelsEl.appendChild(div);
+      if (lane>0){
+        const sep = document.createElement('div');
+        sep.style.position='absolute'; sep.style.left='0'; sep.style.top=(lane*h)+'px';
+        sep.style.width='100%'; sep.style.borderTop='1px dashed var(--edge)';
+        labelsEl.appendChild(sep);
+      }
+    }
+  }
+  renderLabels();
+
+  function drawSegment(pxShift, buffer){
+    // shift all three canvases once. drawImage self-blit must happen in raw device-pixel
+    // space (identity transform) -- doing it through the dpr-scaled transform causes the
+    // image to be resampled slightly every frame, which compounds into visible blur.
+    rasterCtx.setTransform(1,0,0,1,0,0);
+    rasterCtx.drawImage(rasterCv, -pxShift*rasterDim.dpr, 0);
+    rasterCtx.setTransform(rasterDim.dpr,0,0,rasterDim.dpr,0,0);
+
+    lfpCtx.setTransform(1,0,0,1,0,0);
+    lfpCtx.drawImage(lfpCv, -pxShift*lfpDim.dpr, 0);
+    lfpCtx.setTransform(lfpDim.dpr,0,0,lfpDim.dpr,0,0);
+
+    membraneCtx.setTransform(1,0,0,1,0,0);
+    membraneCtx.drawImage(membraneCv, -pxShift*membraneDim.dpr, 0);
+    membraneCtx.setTransform(membraneDim.dpr,0,0,membraneDim.dpr,0,0);
+
+    const paper = paperColor();
+    rasterCtx.fillStyle = paper; rasterCtx.fillRect(rasterDim.w-pxShift-1, 0, pxShift+2, rasterDim.h);
+    lfpCtx.fillStyle = paper; lfpCtx.fillRect(lfpDim.w-pxShift-1, 0, pxShift+2, lfpDim.h);
+    membraneCtx.fillStyle = paper; membraneCtx.fillRect(membraneDim.w-pxShift-1, 0, pxShift+2, membraneDim.h);
+
+    // lane separators / labels redrawn each shift-strip pass would be wasteful; draw once statically instead
+    const rowH = rowH_ratio();
+    const excColor = getComputedStyle(document.documentElement).getPropertyValue('--exc');
+    const inhColor = getComputedStyle(document.documentElement).getPropertyValue('--inh');
+    const rasterRight = rasterDim.w - 1;
+    const lfpRight = lfpDim.w - 1;
+    const membraneRight = membraneDim.w - 1;
+    const pxPerMs = rasterDim.w / TIME_WINDOW_MS;
+
+    let prevLfpX = lfpRight - pxShift, prevLfpY = lfpLastY;
+    const prevMemX = new Float64Array(NUM_LANES).fill(membraneRight - pxShift);
+    const prevMemY = membraneLastY.slice();
+
+    for (const entry of buffer){
+      const x = (rasterRight - pxShift) + entry.offsetMs*pxPerMs;
+
+      // raster ticks
+      for (const idx of entry.spikes){
+        rasterCtx.strokeStyle = idx < N_E ? excColor : inhColor;
+        rasterCtx.lineWidth = 1.1;
+        rasterCtx.beginPath();
+        const y0 = (idx+1)*rowH;
+        rasterCtx.moveTo(x, y0-rowH*0.4);
+        rasterCtx.lineTo(x, y0+rowH*0.4);
+        rasterCtx.stroke();
+      }
+
+      // LFP line
+      const xL = (lfpRight - pxShift) + entry.offsetMs*pxPerMs;
+      lfpCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink');
+      lfpCtx.lineWidth = 1.1;
+      lfpCtx.beginPath();
+      lfpCtx.moveTo(prevLfpX, prevLfpY);
+      lfpCtx.lineTo(xL, entry.lfpY);
+      lfpCtx.stroke();
+      prevLfpX = xL; prevLfpY = entry.lfpY;
+
+      // membrane traces
+      const xM = (membraneRight - pxShift) + entry.offsetMs*pxPerMs;
+      for (let lane=0; lane<NUM_LANES; lane++){
+        membraneCtx.strokeStyle = selIdx[lane] < N_E ? excColor : inhColor;
+        membraneCtx.lineWidth = 1.2;
+        membraneCtx.beginPath();
+        membraneCtx.moveTo(prevMemX[lane], prevMemY[lane]);
+        membraneCtx.lineTo(xM, entry.memY[lane]);
+        membraneCtx.stroke();
+        prevMemX[lane] = xM; prevMemY[lane] = entry.memY[lane];
+      }
+    }
+    lfpLastY = prevLfpY;
+    for (let lane=0; lane<NUM_LANES; lane++) membraneLastY[lane] = prevMemY[lane];
+  }
+
+  // ---------------- main loop ----------------
+  let lastFrameTime = null;
+  let accumulatorMs = 0;
+  const MAX_STEP_MS = 60; // cap to avoid spiral of death on tab refocus
+
+  const rateEl = document.getElementById('statRate');
+  const syncEl = document.getElementById('statSync');
+  const timeEl = document.getElementById('statTime');
+  const stateEl = document.getElementById('stateLabel');
+  const pressureVal = document.getElementById('pressureVal');
+  const pressureBar = document.getElementById('pressureBar');
+
+  document.getElementById('btnForce').addEventListener('click', ()=>{
+    forceRequested = true;
+  });
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    buildNetwork();
+    simTimeMs = 0;
+    seizureState = 'quiet'; stateTimerMs = 0; pressure = 0;
+    pressureTauMs = PRESSURE_TAU_BASE_MS * (0.7 + 0.6*rnd());
+    lfpAccum = 0; rateWindowSpikes=0; rateWindowMs=0; lastMaxSim=0; maxSimDecay=0;
+    clearCanvases();
+  });
+  const btnPause = document.getElementById('btnPause');
+  btnPause.addEventListener('click', ()=>{
+    running = !running;
+    btnPause.textContent = running ? 'Pausar' : 'Reanudar';
+    if (running) lastFrameTime = null;
+  });
+
+  let statTimerMs = 0;
+
+  function frame(ts){
+    requestAnimationFrame(frame);
+    if (!running) return;
+    if (lastFrameTime === null) lastFrameTime = ts;
+    let deltaMs = ts - lastFrameTime;
+    lastFrameTime = ts;
+    if (deltaMs > MAX_STEP_MS) deltaMs = MAX_STEP_MS;
+    accumulatorMs += deltaMs;
+
+    const buffer = [];
+    let simulatedMs = 0;
+    const midY = lfpDim.h/2;
+    // soft (tanh) compression instead of a hard clip: stays close to linear near baseline
+    // (knee ~ a few baseline standard deviations) and gracefully compresses large seizure
+    // peaks toward the edge instead of flat-topping them.
+    const lfpKnee = 350;
+
+    while (accumulatorMs >= dt){
+      lfpAccum = 0;
+      const {simultaneous, scale} = step();
+      const spikes = [];
+      for (let i=0;i<N;i++) if (spikedPrev[i]) spikes.push(i);
+
+      let lfpY = midY - (lfpDim.h/2-4)*Math.tanh(lfpAccum/lfpKnee);
+
+      const memY = new Float64Array(NUM_LANES);
+      for (let lane=0; lane<NUM_LANES; lane++) memY[lane] = laneY(lane, lastStepMembrane[lane]);
+
+      simulatedMs += dt;
+      buffer.push({offsetMs: simulatedMs, spikes, lfpY, memY});
+      accumulatorMs -= dt;
+    }
+    if (simulatedMs <= 0) return;
+
+    const pxPerMs = rasterDim.w / TIME_WINDOW_MS;
+    const pxShift = simulatedMs * pxPerMs;
+    drawSegment(pxShift, buffer);
+
+    // stats update ~5x/sec
+    statTimerMs += simulatedMs;
+    if (statTimerMs >= 200){
+      const rateHz = rateWindowMs>0 ? (rateWindowSpikes/N)/(rateWindowMs/1000) : 0;
+      rateEl.textContent = rateHz.toFixed(1) + ' Hz';
+      syncEl.textContent = lastMaxSim + ' / ' + N;
+      timeEl.textContent = (simTimeMs/1000).toFixed(1) + ' s';
+
+      const pressurePct = Math.min(1, pressure) * 100;
+      pressureVal.textContent = Math.round(pressurePct) + '%';
+      pressureBar.style.width = pressurePct + '%';
+
+      if (seizureState === 'hold'){
+        stateEl.textContent = 'CRISIS — sincronía alta';
+        stateEl.classList.add('crisis');
+      } else if (seizureState === 'ramp_down'){
+        stateEl.textContent = 'Iniciando crisis…';
+        stateEl.classList.remove('crisis');
+      } else if (seizureState === 'ramp_up'){
+        stateEl.textContent = 'Recuperando…';
+        stateEl.classList.remove('crisis');
+      } else {
+        stateEl.textContent = 'Actividad basal';
+        stateEl.classList.remove('crisis');
+      }
+
+      rateWindowSpikes = 0; rateWindowMs = 0;
+      lastMaxSim = Math.max(0, lastMaxSim - 1); // slower decay so the label stays readable
+      statTimerMs = 0;
+    }
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

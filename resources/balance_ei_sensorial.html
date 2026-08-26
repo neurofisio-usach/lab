@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balance E/I y filtrado sensorial</title>
+<style>
+  :root{
+    --bg: #0f1720;
+    --panel: #16212c;
+    --panel-border: #223140;
+    --teal: #4fd1c5;
+    --teal-dim: #2c7a72;
+    --amber: #f0b429;
+    --violet: #9f7aea;
+    --text: #e6edf3;
+    --text-dim: #94a3b8;
+    --grid: #1e2b38;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px; background:var(--bg); color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap{max-width:1100px; margin:0 auto;}
+  h1{font-size:1.5rem; margin:0 0 4px 0; font-weight:600;}
+  .subtitle{color:var(--text-dim); font-size:0.95rem; margin:0 0 20px 0; max-width:760px; line-height:1.5;}
+  .layout{display:grid; grid-template-columns: 1fr 300px; gap:16px;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} }
+  .panel{
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:10px;
+    padding:14px 16px; margin-bottom:16px;
+  }
+  .panel h2{font-size:0.8rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-dim); margin:0 0 10px 0; font-weight:600;}
+  canvas{width:100%; display:block; background:var(--grid); border-radius:6px;}
+  .controls{display:flex; flex-direction:column; gap:8px;}
+  .slider-row{display:flex; align-items:center; gap:12px;}
+  input[type=range]{flex:1; accent-color: var(--teal);}
+  .slider-labels{display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-dim);}
+  .gain-value{font-variant-numeric: tabular-nums; font-size:1.6rem; font-weight:600; color:var(--teal); text-align:center; margin:6px 0;}
+  .metric{display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--panel-border);}
+  .metric:last-child{border-bottom:none;}
+  .metric-label{font-size:0.8rem; color:var(--text-dim);}
+  .metric-value{font-size:1.15rem; font-variant-numeric: tabular-nums; font-weight:600;}
+  .metric-value.snr{color:var(--teal);}
+  .metric-value.cv{color:var(--amber);}
+  .legend{display:flex; gap:16px; font-size:0.75rem; color:var(--text-dim); margin-top:8px;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .dot{width:8px; height:8px; border-radius:50%; display:inline-block;}
+  .info{font-size:0.85rem; line-height:1.6; color:var(--text-dim);}
+  .info strong{color:var(--text);}
+  .info p{margin:0 0 10px 0;}
+  .info p:last-child{margin-bottom:0;}
+  button{
+    background:var(--panel-border); color:var(--text); border:1px solid #2f4356; border-radius:6px;
+    padding:8px 14px; font-size:0.85rem; cursor:pointer;
+  }
+  button:hover{background:#2f4356;}
+  .footer-note{
+    font-size:0.75rem; color:var(--text-dim); border-top:1px solid var(--panel-border);
+    padding-top:12px; margin-top:8px; line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Balance excitación/inhibición y filtrado de señales sensoriales</h1>
+  <p class="subtitle">Una misma red de neuronas principales e interneuronas, procesando el mismo estímulo repetido. Ajusta la ganancia inhibitoria y observa cómo cambia la relación entre la señal y el ruido de fondo.</p>
+
+  <div class="layout">
+    <div class="left">
+      <div class="panel">
+        <h2>Actividad de la red (ráster)</h2>
+        <canvas id="rasterCanvas" width="1200" height="420"></canvas>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--teal)"></span>Células principales</span>
+          <span><span class="dot" style="background:var(--amber)"></span>Interneuronas</span>
+          <span><span class="dot" style="background:var(--violet)"></span>Estímulo</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Tasa poblacional en el tiempo</h2>
+        <canvas id="traceCanvas" width="1200" height="160"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2>Respuestas alineadas al estímulo (últimos 6 ensayos)</h2>
+        <canvas id="alignedCanvas" width="1200" height="320"></canvas>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--teal)"></span>Células principales</span>
+          <span><span class="dot" style="background:var(--amber)"></span>Interneuronas (escala propia)</span>
+          <span><span class="dot" style="background:var(--violet)"></span>Estímulo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="panel">
+        <h2>Control</h2>
+        <div class="controls">
+          <div class="gain-value" id="gainLabel">70%</div>
+          <div class="slider-row">
+            <input type="range" id="inhibSlider" min="0" max="100" value="70">
+          </div>
+          <div class="slider-labels">
+            <span>Ganancia inhibitoria baja</span>
+            <span>Ganancia inhibitoria alta</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button id="pauseBtn" style="flex:1;">Pausar</button>
+            <button id="resetBtn" style="flex:1;">Reiniciar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Lectura en vivo</h2>
+        <div class="metric">
+          <span class="metric-label">Razón señal/ruido (SNR)</span>
+          <span class="metric-value snr" id="snrValue">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Variabilidad entre ensayos (CV)</span>
+          <span class="metric-value cv" id="cvValue">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Tasa espontánea basal</span>
+          <span class="metric-value" id="baselineValue">–</span>
+        </div>
+      </div>
+
+      <div class="panel info">
+        <h2>¿Qué estás viendo?</h2>
+        <p>Cada barra vertical del ráster es un potencial de acción. Entre estímulos, la red tiene actividad espontánea de fondo — <strong>ese es el ruido</strong>. Cuando llega el estímulo (franja violeta), la actividad sube — <strong>esa es la señal</strong>.</p>
+        <p>La ganancia inhibitoria regula cuánto controlan las interneuronas esa actividad de fondo. Con ganancia inhibitoria más baja, el ruido de fondo es mayor y más variable de un ensayo a otro, por lo que cuesta más distinguir la señal. Con ganancia más alta, el fondo es más silencioso y regular, y la misma señal se detecta con mayor claridad.</p>
+        <div class="footer-note">
+          Este es un modelo simplificado de un mecanismo propuesto para el procesamiento sensorial en autismo: alteraciones en la ganancia inhibitoria de circuitos hipocampales y corticales (aportada en gran parte por interneuronas) pueden modificar cómo se separa la señal del ruido. No representa a ninguna persona en particular ni un eje de "peor a mejor" — cada punto de operación tiene fortalezas distintas: una ganancia inhibitoria más baja también puede significar mayor sensibilidad a estímulos inesperados o débiles.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Model parameters ----------------
+  const NP = 60, NI = 15;
+  const tauP = 20, tauI = 10;
+  const THRESH = 1.0;
+  const REFRACTORY_P = 3, REFRACTORY_I = 2;
+  const BASELINE_DRIVE = 0.032;
+  const STIM_DRIVE = 0.055;
+  const W_PI = 0.045;
+  const STIM_PERIOD = 700, STIM_DUR = 120;
+  const TAU_FAST_EMA = 6, TAU_SLOW_EMA = 45;
+
+  let inhibGainSlider = 70;
+  let paused = false;
+
+  let vP = new Float64Array(NP);
+  let vI = new Float64Array(NI);
+  let refP = new Int32Array(NP);
+  let refI = new Int32Array(NI);
+  for (let i=0;i<NP;i++) vP[i] = Math.random()*0.5;
+  for (let i=0;i<NI;i++) vI[i] = Math.random()*0.5;
+
+  let principalRateEMA = 0;
+  let inhibPoolEMA = 0;
+  let smoothedRate = 0;
+  let smoothedRateI = 0;
+  let simTime = 0;
+
+  // rolling buffer of population rate, 1 sample per ms, keep last 5000ms
+  const RATE_BUF_LEN = 5000;
+  let rateBuf = new Float64Array(RATE_BUF_LEN);
+  let rateBufI = new Float64Array(RATE_BUF_LEN);
+  let rateBufIdx = 0;
+
+  // spike event buffers for raster (rolling window)
+  const RASTER_WINDOW_MS = 4000;
+  let spikeEventsP = []; // {t, idx}
+  let spikeEventsI = [];
+
+  // trial tracking
+  let lastStimOnsetHandled = -1;
+  let currentSNR = null, currentCV = null, currentBaselineHz = null;
+  let recentPeaks = [];       // last up to 8 peak values, for CV
+  let alignedTrials = [];     // last up to 6 principal-rate arrays, relative to stim onset
+  let alignedTrialsI = [];    // last up to 6 interneuron-rate arrays, relative to stim onset
+
+  function getInhibGain(){ return 0.10 + (inhibGainSlider/100) * 1.60; }
+  function getNoiseAmp(){ const noiseScale = 1 - 0.006*inhibGainSlider; return 0.40*noiseScale; }
+
+  function stepMs(){
+    const t = simTime;
+    const phase = t % STIM_PERIOD;
+    const stimActive = phase < STIM_DUR;
+    const inhibGain = getInhibGain();
+    const noiseAmp = getNoiseAmp();
+
+    let spikesP = 0, spikesI = 0;
+
+    for (let i=0;i<NP;i++){
+      if (refP[i] > 0){ refP[i]--; continue; }
+      const inhibCurrent = inhibGain * inhibPoolEMA * 0.9;
+      const dv = (-vP[i]/tauP) + BASELINE_DRIVE + (stimActive?STIM_DRIVE:0) + noiseAmp*(Math.random()-0.5) - inhibCurrent;
+      vP[i] += dv;
+      if (vP[i] < 0) vP[i] = 0;
+      if (vP[i] >= THRESH){
+        spikesP++;
+        vP[i] = 0;
+        refP[i] = REFRACTORY_P;
+        spikeEventsP.push({t, idx:i});
+      }
+    }
+
+    for (let j=0;j<NI;j++){
+      if (refI[j] > 0){ refI[j]--; continue; }
+      const dv = (-vI[j]/tauI) + W_PI*principalRateEMA + 0.06*(Math.random()-0.5);
+      vI[j] += dv;
+      if (vI[j] < 0) vI[j] = 0;
+      if (vI[j] >= THRESH){
+        spikesI++;
+        vI[j] = 0;
+        refI[j] = REFRACTORY_I;
+        spikeEventsI.push({t, idx:j});
+      }
+    }
+
+    principalRateEMA += (spikesP - principalRateEMA)/TAU_FAST_EMA;
+    inhibPoolEMA += (spikesI - inhibPoolEMA)/TAU_SLOW_EMA;
+
+    const instRate = (spikesP/NP)*1000;
+    smoothedRate += (instRate - smoothedRate)/4;
+
+    const instRateI = (spikesI/NI)*1000;
+    smoothedRateI += (instRateI - smoothedRateI)/4;
+
+    rateBuf[rateBufIdx % RATE_BUF_LEN] = smoothedRate;
+    rateBufI[rateBufIdx % RATE_BUF_LEN] = smoothedRateI;
+    rateBufIdx++;
+
+    // prune old spike events
+    const cutoff = t - RASTER_WINDOW_MS;
+    if (spikeEventsP.length && spikeEventsP[0].t < cutoff){
+      let k=0; while(k<spikeEventsP.length && spikeEventsP[k].t < cutoff) k++;
+      spikeEventsP.splice(0,k);
+    }
+    if (spikeEventsI.length && spikeEventsI[0].t < cutoff){
+      let k=0; while(k<spikeEventsI.length && spikeEventsI[k].t < cutoff) k++;
+      spikeEventsI.splice(0,k);
+    }
+
+    // trial detection: at stim onset (phase==0), analyze the PREVIOUS full cycle's data if enough history exists
+    if (phase === 0 && t !== lastStimOnsetHandled && t >= 300){
+      lastStimOnsetHandled = t;
+      analyzeTrial(t);
+    }
+
+    simTime++;
+  }
+
+  function rateAt(buf, msAgoStart, msAgoEnd){
+    // returns array of smoothed-rate samples for [t-msAgoStart, t-msAgoEnd)
+    // msAgoStart > msAgoEnd, both measured back from current rateBufIdx
+    const out = [];
+    for (let back = msAgoStart; back > msAgoEnd; back--){
+      const idx = (rateBufIdx - back + RATE_BUF_LEN*10) % RATE_BUF_LEN;
+      out.push(buf[idx]);
+    }
+    return out;
+  }
+
+  function analyzeTrial(onsetT){
+    // baseline: 150ms before onset ; response: 150ms after onset (but onset just happened, so "after" isn't available yet)
+    // Instead: analyze the cycle that just completed, i.e. use data currently in buffer relative to NOW (which equals onset of new cycle)
+    // baseline window = [-150,-0) relative to now praticamente coincide con onset; response window of PREVIOUS stim = [-STIM_PERIOD+... ] complexity.
+    // Simpler robust approach: baseline = the 150ms immediately preceding this new onset (post-response settle),
+    // response = the 150ms immediately following the PREVIOUS onset, which is STIM_PERIOD ms ago from now.
+    const base = rateAt(rateBuf, 150, 0); // last 150ms up to now
+    const respStart = STIM_PERIOD; // ms ago when previous stim started
+    const resp = rateAt(rateBuf, respStart, respStart-150);
+
+    if (base.length < 100 || resp.length < 100) return;
+
+    const mean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+    const std = arr => { const m=mean(arr); return Math.sqrt(arr.reduce((a,b)=>a+(b-m)**2,0)/arr.length); };
+    const baseMean = mean(base), baseStd = Math.max(std(base), 0.3);
+    const peak = Math.max(...resp);
+    const signal = peak - baseMean;
+    const snr = signal/baseStd;
+
+    currentSNR = snr;
+    currentBaselineHz = baseMean;
+
+    recentPeaks.push(peak);
+    if (recentPeaks.length > 8) recentPeaks.shift();
+    if (recentPeaks.length >= 3){
+      const mp = mean(recentPeaks);
+      const sp = std(recentPeaks);
+      currentCV = sp/mp;
+    }
+
+    // build aligned trace for the PREVIOUS trial: from -100ms (pre-onset) to +400ms (post-onset), relative to (onsetT - STIM_PERIOD)
+    const alignStart = STIM_PERIOD + 100; // ms ago = start of aligned window
+    const alignEnd = STIM_PERIOD - 400;   // ms ago = end of aligned window
+    if (alignEnd >= 0){
+      const trace = rateAt(rateBuf, alignStart, alignEnd);
+      alignedTrials.push(trace);
+      if (alignedTrials.length > 6) alignedTrials.shift();
+
+      const traceI = rateAt(rateBufI, alignStart, alignEnd);
+      alignedTrialsI.push(traceI);
+      if (alignedTrialsI.length > 6) alignedTrialsI.shift();
+    }
+  }
+
+  // ---------------- Rendering ----------------
+  const rasterCanvas = document.getElementById('rasterCanvas');
+  const traceCanvas = document.getElementById('traceCanvas');
+  const alignedCanvas = document.getElementById('alignedCanvas');
+  const rCtx = rasterCanvas.getContext('2d');
+  const tCtx = traceCanvas.getContext('2d');
+  const aCtx = alignedCanvas.getContext('2d');
+
+  function resizeCanvas(cv){
+    const ratio = window.devicePixelRatio || 1;
+    const rect = cv.getBoundingClientRect();
+    cv.width = rect.width * ratio;
+    cv.height = cv.height; // keep intrinsic height attr as CSS-scaled baseline; we set below explicitly
+  }
+
+  function drawRaster(){
+    const W = rasterCanvas.width, H = rasterCanvas.height;
+    rCtx.clearRect(0,0,W,H);
+    const now = simTime;
+    const windowMs = RASTER_WINDOW_MS;
+
+    // stimulus shading
+    rCtx.fillStyle = 'rgba(159,122,234,0.14)';
+    for (let cycleStart = now - (now % STIM_PERIOD); cycleStart > now - windowMs; cycleStart -= STIM_PERIOD){
+      const onsetAgo = now - cycleStart;
+      const x0 = W * (1 - onsetAgo/windowMs);
+      const x1 = W * (1 - (onsetAgo - STIM_DUR)/windowMs);
+      rCtx.fillRect(x0, 0, Math.max(1,x1-x0), H);
+    }
+
+    const gap = H*0.02;
+    const rowH_P = (H*0.72)/NP;
+    const rowH_I = (H*0.26)/NI;
+    const offsetI = H*0.72 + gap;
+
+    rCtx.fillStyle = '#4fd1c5';
+    for (const ev of spikeEventsP){
+      const age = now - ev.t;
+      if (age > windowMs) continue;
+      const x = W * (1 - age/windowMs);
+      const y = ev.idx * rowH_P;
+      rCtx.fillRect(x, y, 2, Math.max(2,rowH_P*0.92));
+    }
+
+    rCtx.fillStyle = '#f0b429';
+    for (const ev of spikeEventsI){
+      const age = now - ev.t;
+      if (age > windowMs) continue;
+      const x = W * (1 - age/windowMs);
+      const y = offsetI + ev.idx * rowH_I;
+      rCtx.fillRect(x, y, 2, Math.max(2,rowH_I*0.92));
+    }
+  }
+
+  function drawTrace(){
+    const W = traceCanvas.width, H = traceCanvas.height;
+    tCtx.clearRect(0,0,W,H);
+    const windowMs = 4000;
+    const maxRate = 120;
+
+    // stim shading
+    const now = simTime;
+    tCtx.fillStyle = 'rgba(159,122,234,0.14)';
+    for (let cycleStart = now - (now % STIM_PERIOD); cycleStart > now - windowMs; cycleStart -= STIM_PERIOD){
+      const onsetAgo = now - cycleStart;
+      const x0 = W * (1 - onsetAgo/windowMs);
+      const x1 = W * (1 - (onsetAgo - STIM_DUR)/windowMs);
+      tCtx.fillRect(x0, 0, Math.max(1,x1-x0), H);
+    }
+
+    // gridlines
+    tCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+    tCtx.lineWidth = 1;
+    for (let g=0; g<=4; g++){
+      const y = H - (g/4)*H;
+      tCtx.beginPath(); tCtx.moveTo(0,y); tCtx.lineTo(W,y); tCtx.stroke();
+    }
+
+    tCtx.strokeStyle = '#4fd1c5';
+    tCtx.lineWidth = 1.5;
+    tCtx.beginPath();
+    const samples = rateAt(rateBuf, windowMs, 0);
+    for (let i=0;i<samples.length;i++){
+      const x = W * (i/samples.length);
+      const y = H - Math.min(1, samples[i]/maxRate)*H;
+      if (i===0) tCtx.moveTo(x,y); else tCtx.lineTo(x,y);
+    }
+    tCtx.stroke();
+  }
+
+  function drawAligned(){
+    const W = alignedCanvas.width, H = alignedCanvas.height;
+    aCtx.clearRect(0,0,W,H);
+    const maxRateP = 120;   // principal cells: own scale
+    const maxRateI = 180;   // interneurons: own scale (fewer cells -> larger instantaneous swings)
+    const totalMs = 500; // -100 to +400
+
+    // stimulus window shading: onset at t=0, offset at t=STIM_DUR
+    const onsetX = W * (100/totalMs);
+    const offsetX = W * ((100+STIM_DUR)/totalMs);
+    aCtx.fillStyle = 'rgba(159,122,234,0.14)';
+    aCtx.fillRect(onsetX, 0, offsetX-onsetX, H);
+
+    aCtx.strokeStyle = 'rgba(159,122,234,0.5)';
+    aCtx.lineWidth = 1;
+    aCtx.beginPath(); aCtx.moveTo(onsetX,0); aCtx.lineTo(onsetX,H); aCtx.stroke();
+    aCtx.beginPath(); aCtx.moveTo(offsetX,0); aCtx.lineTo(offsetX,H); aCtx.stroke();
+
+    aCtx.fillStyle = 'rgba(148,163,184,0.6)';
+    aCtx.font = '11px sans-serif';
+    aCtx.fillText('inicio', onsetX+5, 14);
+    aCtx.fillText('fin', offsetX+5, 14);
+
+    const colorsP = ['rgba(79,209,197,0.25)','rgba(79,209,197,0.35)','rgba(79,209,197,0.45)','rgba(79,209,197,0.55)','rgba(79,209,197,0.7)','rgba(79,209,197,0.95)'];
+    const colorsI = ['rgba(240,180,41,0.25)','rgba(240,180,41,0.35)','rgba(240,180,41,0.45)','rgba(240,180,41,0.55)','rgba(240,180,41,0.7)','rgba(240,180,41,0.95)'];
+
+    alignedTrials.forEach((trace, ti) => {
+      aCtx.strokeStyle = colorsP[ti] || colorsP[colorsP.length-1];
+      aCtx.lineWidth = ti === alignedTrials.length-1 ? 2 : 1.3;
+      aCtx.beginPath();
+      for (let i=0;i<trace.length;i++){
+        const x = W * (i/trace.length);
+        const y = H - Math.min(1, trace[i]/maxRateP)*H;
+        if (i===0) aCtx.moveTo(x,y); else aCtx.lineTo(x,y);
+      }
+      aCtx.stroke();
+    });
+
+    alignedTrialsI.forEach((trace, ti) => {
+      aCtx.strokeStyle = colorsI[ti] || colorsI[colorsI.length-1];
+      aCtx.lineWidth = ti === alignedTrialsI.length-1 ? 1.6 : 1;
+      aCtx.beginPath();
+      for (let i=0;i<trace.length;i++){
+        const x = W * (i/trace.length);
+        const y = H - Math.min(1, trace[i]/maxRateI)*H;
+        if (i===0) aCtx.moveTo(x,y); else aCtx.lineTo(x,y);
+      }
+      aCtx.stroke();
+    });
+  }
+
+  function updateReadouts(){
+    document.getElementById('snrValue').textContent = currentSNR !== null ? currentSNR.toFixed(1) : '–';
+    document.getElementById('cvValue').textContent = currentCV !== null ? currentCV.toFixed(2) : '–';
+    document.getElementById('baselineValue').textContent = currentBaselineHz !== null ? currentBaselineHz.toFixed(1) + ' Hz' : '–';
+  }
+
+  // ---------------- Animation loop ----------------
+  let lastFrameTime = performance.now();
+  function frame(now){
+    if (paused){
+      lastFrameTime = now; // keep dt from ballooning once resumed
+      requestAnimationFrame(frame);
+      return;
+    }
+
+    let dt = now - lastFrameTime;
+    lastFrameTime = now;
+    dt = Math.min(dt, 100); // avoid spiral of death on tab-switch
+    let stepsToRun = Math.round(dt);
+    stepsToRun = Math.min(stepsToRun, 60);
+    for (let s=0; s<stepsToRun; s++) stepMs();
+
+    drawRaster();
+    drawTrace();
+    drawAligned();
+    updateReadouts();
+
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------- Controls ----------------
+  const slider = document.getElementById('inhibSlider');
+  const gainLabel = document.getElementById('gainLabel');
+  slider.addEventListener('input', () => {
+    inhibGainSlider = parseInt(slider.value, 10);
+    gainLabel.textContent = inhibGainSlider + '%';
+  });
+
+  const pauseBtn = document.getElementById('pauseBtn');
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? 'Reanudar' : 'Pausar';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    vP = new Float64Array(NP);
+    vI = new Float64Array(NI);
+    refP = new Int32Array(NP);
+    refI = new Int32Array(NI);
+    for (let i=0;i<NP;i++) vP[i] = Math.random()*0.5;
+    for (let i=0;i<NI;i++) vI[i] = Math.random()*0.5;
+    principalRateEMA = 0; inhibPoolEMA = 0; smoothedRate = 0; smoothedRateI = 0; simTime = 0;
+    rateBuf = new Float64Array(RATE_BUF_LEN); rateBufI = new Float64Array(RATE_BUF_LEN); rateBufIdx = 0;
+    spikeEventsP = []; spikeEventsI = [];
+    lastStimOnsetHandled = -1;
+    currentSNR = null; currentCV = null; currentBaselineHz = null;
+    recentPeaks = []; alignedTrials = []; alignedTrialsI = [];
+  });
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

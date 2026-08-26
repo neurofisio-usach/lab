@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PV vs SST: un solo circuito, dos formas de inhibición</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --panel:#121826; --panel2:#0f1522; --border:#232c40;
+    --text:#e6ebf5; --muted:#8996ad;
+    --teal:#2dd4bf; --tealDim:#155e56;
+    --red:#f87171; --redDim:#7a2323;
+    --amber:#fbbf24;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; padding:20px; line-height:1.45; }
+  .wrap{max-width:980px; margin:0 auto;}
+  header{text-align:center; margin-bottom:20px;}
+  header h1{font-size:1.5rem; margin:0 0 6px 0; color:#fff;}
+  header p{color:var(--muted); margin:0; font-size:0.95rem;}
+  .panel{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px 18px 18px 18px; margin-bottom:18px; }
+  .panel h3{margin:0 0 10px 0; font-size:1rem; color:#fff;}
+  canvas{width:100%; display:block; background:var(--panel2); border-radius:10px; border:1px solid var(--border);}
+  #netCanvas{height:280px;}
+  .ctrlRow{display:flex; align-items:center; gap:10px; margin:14px 0 4px 0; flex-wrap:wrap;}
+  .ctrlRow label{font-size:0.85rem; color:var(--muted); min-width:230px;}
+  input[type=range]{flex:1; accent-color:var(--amber); min-width:160px;}
+  .val{font-variant-numeric:tabular-nums; font-size:0.85rem; min-width:42px; text-align:right; color:#fff;}
+  button{ background:#1c2438; color:var(--text); border:1px solid var(--border); padding:8px 14px; border-radius:8px; cursor:pointer; font-size:0.85rem; }
+  button:hover{background:#242f4a;}
+  button.primary{background:#7c3aed; border-color:#7c3aed; color:#fff;}
+  button.primary:hover{background:#8b4bff;}
+  .statusRow{display:flex; gap:16px; margin-top:12px; flex-wrap:wrap;}
+  .stat{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:0.82rem; flex:1; min-width:140px;}
+  .stat b{display:block; font-size:1.05rem; margin-top:2px;}
+  .legend{display:flex; gap:18px; margin-top:10px; font-size:0.78rem; color:var(--muted); flex-wrap:wrap;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%;}
+  .footerNote{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px 18px; font-size:0.88rem; color:#c7d0e0; }
+  .footerNote h3{margin:0 0 8px 0; font-size:0.95rem; color:#fff;}
+  .caveat{margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); color:var(--muted); font-size:0.8rem;}
+  ol{margin:0; padding-left:20px; font-size:0.88rem; color:#c7d0e0;}
+  ol li{margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Un circuito, dos frenos distintos</h1>
+    <p>La misma red de neuronas puede fallar de dos maneras muy distintas, según qué interneurona esté afectada.</p>
+  </header>
+
+  <div class="panel">
+    <h3>Cómo usar esta simulación</h3>
+    <ol>
+      <li><b>Ganancia PV</b> controla el freno rápido sobre el disparo. Bajala mientras mirás el gráfico: la red pasa de disparar de forma irregular a sincronizarse en descargas periódicas — la firma de una crisis.</li>
+      <li><b>Ganancia SST</b> controla un freno lento que se refuerza con el uso. Para verlo hace falta estimular la red varias veces seguidas: subí la ganancia SST, dejá la ganancia PV alta (para no cruzar en crisis), y hacé clic en "Enviar tren de estímulos repetidos." El ráster se congela durante el tren (para que no salte) — mirá la línea ámbar y los números de abajo, que sí se actualizan pulso a pulso.</li>
+      <li>Compará la 1ª y la última respuesta del tren en los números de abajo. Con SST alto, la respuesta se achica con la repetición (habituación). Con SST bajo, cada pulso genera una respuesta igual de grande.</li>
+    </ol>
+  </div>
+
+  <div class="panel">
+    <canvas id="netCanvas" width="900" height="280"></canvas>
+    <div class="sliderLabels" style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--muted); margin-top:2px;">
+      <span>← hace unos segundos</span>
+      <span>ahora →</span>
+    </div>
+
+    <div class="ctrlRow">
+      <label for="pvSlider"><span class="dot" style="background:var(--red)"></span>Ganancia PV (freno rápido / soma)</label>
+      <input type="range" id="pvSlider" min="0" max="100" value="100">
+      <span class="val" id="pvVal">100%</span>
+    </div>
+    <div class="ctrlRow">
+      <label for="sstSlider"><span class="dot" style="background:var(--teal)"></span>Ganancia SST (freno lento / dendrita)</label>
+      <input type="range" id="sstSlider" min="0" max="100" value="0">
+      <span class="val" id="sstVal">0%</span>
+    </div>
+
+    <div class="ctrlRow">
+      <button class="primary" id="pulseBtn">Enviar tren de estímulos repetidos</button>
+      <button id="resetBtn">Reiniciar red</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:var(--teal)"></span>Neurona excitatoria</span>
+      <span><span class="dot" style="background:var(--red)"></span>Interneurona (inhibitoria)</span>
+      <span><span class="dot" style="background:var(--amber)"></span>Tasa de disparo poblacional</span>
+    </div>
+
+    <div class="statusRow">
+      <div class="stat">Tasa de disparo actual<b id="rateNow">–</b></div>
+      <div class="stat">Estado de red<b id="netState">–</b></div>
+      <div class="stat">1ª respuesta del tren<b id="firstResp">–</b></div>
+      <div class="stat">Última respuesta del tren<b id="lastResp">–</b></div>
+      <div class="stat">¿Hubo habituación?<b id="habitFlag">–</b></div>
+    </div>
+  </div>
+
+  <div class="footerNote">
+    <h3>¿Qué representa esto?</h3>
+    <p><b style="color:var(--red)">PV+ (perisomática):</b> inhibe el cuerpo de la neurona, frena rápido, mantiene la red desincronizada. Si falla, la excitación recurrente recluta a toda la red en descargas sincronizadas — el mecanismo de red detrás de una crisis epiléptica, y el foco del trabajo del laboratorio en epilepsia hipocampal.</p>
+    <p><b style="color:var(--teal)">SST+ (dendrítica):</b> no apaga la respuesta de golpe, regula su ganancia y se refuerza con el uso — permite que la red "aprenda" a responder menos a algo que se repite. Si falla, no hay crisis, pero cada estímulo repetido sigue generando una respuesta igual de grande: una falla de filtrado, un mecanismo propuesto para el procesamiento sensorial atípico reportado en autismo.</p>
+    <div class="caveat">
+      Nota: en esta versión ambos mecanismos actúan sobre la misma red simplificada con fines educativos — no es una simulación validada de un cerebro autista ni una representación de "el" mecanismo del autismo. Son dos hipótesis mecanísticas disociables, no dos poblaciones de personas.
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('netCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function fitCanvas(c, cssHeight){
+    const ratio = window.devicePixelRatio || 1;
+    const w = c.clientWidth || c.parentElement.clientWidth;
+    c.width = w*ratio; c.height = cssHeight*ratio;
+    const cctx = c.getContext('2d'); cctx.setTransform(ratio,0,0,ratio,0,0);
+    return { w, h: cssHeight };
+  }
+  let dim = fitCanvas(canvas, 280);
+  window.addEventListener('resize', () => { dim = fitCanvas(canvas, 280); });
+
+  const pvSlider = document.getElementById('pvSlider');
+  const sstSlider = document.getElementById('sstSlider');
+  const pvVal = document.getElementById('pvVal');
+  const sstVal = document.getElementById('sstVal');
+  const pulseBtn = document.getElementById('pulseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const rateNowEl = document.getElementById('rateNow');
+  const netStateEl = document.getElementById('netState');
+  const firstRespEl = document.getElementById('firstResp');
+  const lastRespEl = document.getElementById('lastResp');
+  const habitFlagEl = document.getElementById('habitFlag');
+
+  pvSlider.addEventListener('input', () => pvVal.textContent = pvSlider.value+'%');
+  sstSlider.addEventListener('input', () => sstVal.textContent = sstSlider.value+'%');
+
+  // ---------- network ----------
+  const N_E=32, N_I=8, N=N_E+N_I;
+  const a = new Float64Array(N), b = new Float64Array(N), c = new Float64Array(N), d = new Float64Array(N);
+  for (let i=0;i<N_E;i++){ a[i]=0.02; b[i]=0.2; c[i]=-65; d[i]=8; }
+  for (let i=N_E;i<N;i++){ a[i]=0.1; b[i]=0.2; c[i]=-65; d[i]=2; }
+  let v = new Float64Array(N), u = new Float64Array(N);
+  let rngState = 42;
+  const rng = () => { rngState = (rngState*1103515245+12345)&0x7fffffff; return rngState/0x7fffffff; };
+  function initNet(){
+    for (let i=0;i<N;i++){ v[i]=-65+10*(rng()-0.5); u[i]=b[i]*v[i]; }
+  }
+  initNet();
+
+  const p_conn = 0.25, w_E = 0.05, w_I_base = 2.5, W_SCALE = 70;
+  const targets = [];
+  for (let i=0;i<N;i++){ const t=[]; for (let j=0;j<N;j++){ if (i!==j && rng()<p_conn) t.push(j); } targets.push(t); }
+
+  let refrac = new Float64Array(N);
+  let Isyn = new Float64Array(N);
+  const tau_syn = 6, dt = 0.5, subSteps = 4, sdt = dt/subSteps;
+  const I_BASELINE = 5.0;
+  let extraStim = 0; // transient additive drive during a pulse
+
+  let sstState = { R: 0, F: 0 };
+
+  function stepNetwork(pvGain, sstGain){
+    const w_I = w_I_base * pvGain;
+    const sstSuppress = sstGain * 9.0 * sstState.R * (0.25 + sstState.F);
+    const I_eff = Math.max(0, I_BASELINE + extraStim - sstSuppress);
+    const fired = new Uint8Array(N);
+    for (let ss=0; ss<subSteps; ss++){
+      const justFired = new Uint8Array(N);
+      for (let i=0;i<N;i++){
+        if (refrac[i] > 0){ refrac[i]-=sdt; continue; }
+        const I = I_eff + Isyn[i] + 3*(rng()-0.5);
+        let dv = 0.04*v[i]*v[i] + 5*v[i] + 140 - u[i] + I;
+        v[i] += sdt*dv;
+        u[i] += sdt*a[i]*(b[i]*v[i]-u[i]);
+        if (v[i] > 30){ v[i]=c[i]; u[i]+=d[i]; fired[i]=1; justFired[i]=1; refrac[i]=2; }
+        if (v[i] < -90) v[i] = -90;
+      }
+      for (let i=0;i<N;i++){ Isyn[i] += sdt*(-Isyn[i]/tau_syn); }
+      for (let i=0;i<N;i++){
+        if (justFired[i]){
+          const w = (i < N_E ? w_E*W_SCALE : -w_I*W_SCALE);
+          for (const j of targets[i]) Isyn[j] += w;
+        }
+      }
+    }
+    const firedIdx = [];
+    let tot = 0;
+    for (let i=0;i<N;i++){ if (fired[i]){ firedIdx.push(i); tot++; } }
+    const rate = tot/N;
+    sstState.R += dt*(-sstState.R/80 + 4.0*rate);
+    sstState.F += dt*(-sstState.F/1500 + 1.4*rate);
+    return { firedIdx, tot };
+  }
+
+  // ---------- drawing: raster (top) + rate trace (bottom) ----------
+  const histLen = 400;
+  const rateHist = new Float64Array(histLen);
+  let rasterCols = [];
+
+  function draw(){
+    ctx.clearRect(0,0,dim.w, dim.h);
+    const rasterH = dim.h*0.62;
+    const colW = dim.w/histLen;
+    for (let ci=0; ci<rasterCols.length; ci++){
+      const x = ci*colW; // index 0 = oldest (left), last index = newest (right) — matches the trace below
+      for (const idx of rasterCols[ci]){
+        const isExc = idx < N_E;
+        const rowFrac = isExc ? (idx/N_E) : (0.7 + 0.3*((idx-N_E)/N_I));
+        const y = rowFrac * rasterH;
+        ctx.fillStyle = isExc ? '#2dd4bf' : '#f87171';
+        ctx.fillRect(x, y, Math.max(1.2,colW*0.9), isExc?2.2:2.6);
+      }
+    }
+    ctx.strokeStyle = '#232c40';
+    ctx.beginPath(); ctx.moveTo(0, rasterH*0.7); ctx.lineTo(dim.w, rasterH*0.7); ctx.stroke();
+    drawTraceOnly();
+  }
+
+  function drawTraceOnly(){
+    // redraws just the bottom rate-trace strip, leaving the raster above untouched —
+    // used during the pulse train so the raster stays frozen and doesn't jump.
+    const rasterH = dim.h*0.62, traceH = dim.h*0.30, gap = dim.h*0.06;
+    const colW = dim.w/histLen;
+    const traceY0 = rasterH + gap;
+    ctx.clearRect(0, traceY0-2, dim.w, dim.h-(traceY0-2));
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const maxRate = 60;
+    for (let i=0;i<histLen;i++){
+      const val = rateHist[i];
+      const x = (histLen-1-i)*colW;
+      const y = traceY0 + traceH - Math.min(1,val/maxRate)*traceH;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  let winSpikes=0, winStepCount=0, lastRateHz=0;
+  let animCounter = 0;
+
+  function idleTick(){
+    if (running){ requestAnimationFrame(idleTick); return; } // pulse train has its own stepping loop
+    const pvGain = pvSlider.value/100;
+    const sstGain = sstSlider.value/100;
+    const { firedIdx, tot } = stepNetwork(pvGain, sstGain);
+    rasterCols.push(firedIdx);
+    if (rasterCols.length > histLen) rasterCols.shift();
+
+    winSpikes += tot; winStepCount++;
+    if (winStepCount >= 20){
+      lastRateHz = (winSpikes/N) / (winStepCount*dt/1000);
+      winSpikes=0; winStepCount=0;
+    }
+    for (let i=histLen-1;i>0;i--) rateHist[i]=rateHist[i-1];
+    rateHist[0]=lastRateHz;
+
+    animCounter++;
+    if (animCounter % 4 === 0){
+      draw();
+      rateNowEl.textContent = lastRateHz.toFixed(1)+' Hz';
+      const synced = lastRateHz > 28;
+      netStateEl.textContent = synced ? 'Hipersincronía (tipo crisis)' : 'Desincronizada (normal)';
+      netStateEl.style.color = synced ? '#fca5a5' : '#86efac';
+    }
+    requestAnimationFrame(idleTick);
+  }
+  requestAnimationFrame(idleTick);
+
+  // ---------- pulse train (SST / habituation demo) ----------
+  // The raster stays frozen (showing the network state right when the train started) so it
+  // doesn't jump around; the rate trace and live counters keep updating so you still see each
+  // pulse's response as it happens.
+  let running = false;
+  async function runPulseTrain(){
+    if (running) return;
+    running = true;
+    pulseBtn.disabled = true;
+    const nPulses = 6, isi_ms = 700, pulse_dur = 40, resp_window = 100;
+    const responses = [];
+    const pvGain = pvSlider.value/100;
+
+    for (let p=0; p<nPulses; p++){
+      netStateEl.textContent = `Pulso ${p+1} de ${nPulses}...`;
+      netStateEl.style.color = '#fbbf24';
+      let resp = 0;
+      const steps = isi_ms/dt;
+      for (let tt=0; tt<steps; tt++){
+        const t_ms = tt*dt;
+        const sstGain = sstSlider.value/100;
+        extraStim = (t_ms < pulse_dur) ? 10.0 : 0;
+        const { tot } = stepNetwork(pvGain, sstGain);
+        if (t_ms < resp_window) resp += tot;
+
+        winSpikes += tot; winStepCount++;
+        if (winStepCount >= 20){ lastRateHz=(winSpikes/N)/(winStepCount*dt/1000); winSpikes=0; winStepCount=0; }
+        for (let i=histLen-1;i>0;i--) rateHist[i]=rateHist[i-1];
+        rateHist[0]=lastRateHz;
+      }
+      extraStim = 0;
+      responses.push(resp);
+      rateNowEl.textContent = lastRateHz.toFixed(1)+' Hz';
+      drawTraceOnly();
+      await new Promise(res => setTimeout(res, 250));
+    }
+    firstRespEl.textContent = responses[0] + ' disparos';
+    lastRespEl.textContent = responses[nPulses-1] + ' disparos';
+    const drop = 1 - (responses[nPulses-1] / Math.max(1, responses[0]));
+    const habituated = drop > 0.25;
+    habitFlagEl.textContent = habituated ? 'Sí' : 'No';
+    habitFlagEl.style.color = habituated ? '#86efac' : '#fca5a5';
+    running = false;
+    pulseBtn.disabled = false;
+  }
+  pulseBtn.addEventListener('click', runPulseTrain);
+
+  resetBtn.addEventListener('click', () => {
+    initNet();
+    refrac = new Float64Array(N);
+    Isyn = new Float64Array(N);
+    sstState = { R:0, F:0 };
+    rasterCols = [];
+    for (let i=0;i<histLen;i++) rateHist[i]=0;
+    firstRespEl.textContent='–'; lastRespEl.textContent='–'; habitFlagEl.textContent='–';
+    habitFlagEl.style.color='';
+  });
+})();
+</script>
+</body>
+</html>
