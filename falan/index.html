@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FALAN Media Hub</title>
+<style>
+  :root {
+    --navy: #0B2542;
+    --blue: #2F6E9E;
+    --lightblue: #8FC1DC;
+    --gold: #E2A33D;
+    --cream: #F7F5EF;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--cream);
+    color: var(--navy);
+  }
+  header {
+    background: var(--navy);
+    padding: 40px 20px;
+    text-align: center;
+    border-bottom: 5px solid var(--gold);
+  }
+  header h1 {
+    color: var(--cream);
+    margin: 0;
+    font-size: 2em;
+    letter-spacing: 0.5px;
+  }
+  header p {
+    color: var(--lightblue);
+    margin-top: 8px;
+    font-size: 1em;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+  .card {
+    display: block;
+    background: white;
+    border: 1px solid #ddd;
+    border-left: 6px solid var(--blue);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    text-decoration: none;
+    color: var(--navy);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-left-color 0.15s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(11, 37, 66, 0.15);
+    border-left-color: var(--gold);
+  }
+  .card h2 {
+    margin: 0 0 6px 0;
+    font-size: 1.15em;
+    color: var(--navy);
+  }
+  .card p {
+    margin: 0;
+    color: #555;
+    font-size: 0.95em;
+  }
+  footer {
+    text-align: center;
+    padding: 24px;
+    color: #888;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FALAN Media Hub</h1>
+  <p>Quick links to program media</p>
+</header>
+
+<main>
+
+  <a class="card" href="NoFlags.html">
+    <h2>Falling Names Video (no flags)</h2>
+    <p>Participant names animation, no flag icons.</p>
+  </a>
+
+  <a class="card" href="app.html">
+    <h2>Room Display Slideshow</h2>
+    <p>Four-screen auto-advancing loop for room displays.</p>
+  </a>
+
+  <a class="card" href="Full_Loop.html">
+    <h2>Full Loop — Room Slides</h2>
+    <p>Complete slideshow cycle, all screens in sequence.</p>
+  </a>
+
+</main>
+
+<footer>
+  FALAN Latin American Training Program in Neuroscience
+</footer>
+
+</body>
+</html>
