@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cómo miramos un rostro — dos ejes de la mirada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#11141a;
+    --panel:#1a1f28;
+    --paper:#212733;
+    --paper-2:#262d3a;
+    --text:#e9ecf1;
+    --muted:#94a0b4;
+    --border:#323a49;
+    --eyes:#5fd3ff;
+    --core:#ffc266;
+    --contour:#c39bff;
+    --periphery:#ff6b7a;
+    --accent:#5fd3ff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans',sans-serif;
+    padding:20px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:1.35rem;font-weight:600;margin:0 0 4px;}
+  .subtitle{color:var(--muted);font-size:0.92rem;margin:0 0 18px;line-height:1.5;max-width:760px;}
+  .grid{
+    display:grid;
+    grid-template-columns:460px 1fr;
+    gap:18px;
+  }
+  @media (max-width:840px){
+    .grid{grid-template-columns:1fr;}
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+  }
+  .stage-wrap{position:relative;}
+  canvas#stage{
+    width:100%;
+    display:block;
+    border-radius:8px;
+    background:var(--paper);
+  }
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 16px;
+    margin-top:10px;
+    font-size:0.78rem;
+    color:var(--muted);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .controls label{
+    display:block;
+    font-size:0.85rem;
+    font-weight:500;
+    margin:14px 0 4px;
+  }
+  .controls label:first-child{margin-top:0;}
+  .axis-desc{
+    font-size:0.76rem;
+    color:var(--muted);
+    margin:0 0 6px;
+    line-height:1.4;
+  }
+  input[type=range]{
+    width:100%;
+    accent-color:var(--accent);
+  }
+  .axis-endpoints{
+    display:flex;
+    justify-content:space-between;
+    font-size:0.7rem;
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+    margin-top:2px;
+  }
+  button#regen{
+    margin-top:16px;
+    width:100%;
+    padding:9px 12px;
+    background:var(--paper-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:7px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.85rem;
+    cursor:pointer;
+  }
+  button#regen:hover{border-color:var(--accent);}
+  .metrics{margin-top:18px;}
+  .metrics h3{font-size:0.85rem;font-weight:600;margin:0 0 10px;color:var(--text);}
+  .bar-row{margin-bottom:9px;}
+  .bar-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:0.74rem;
+    color:var(--muted);
+    margin-bottom:3px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .bar-track{
+    height:9px;
+    background:var(--paper-2);
+    border-radius:5px;
+    overflow:hidden;
+    position:relative;
+  }
+  .bar-fill{
+    height:100%;
+    border-radius:5px;
+    transition:width 0.35s ease;
+  }
+  .callout{
+    margin-top:16px;
+    padding:12px 13px;
+    background:var(--paper-2);
+    border-left:3px solid var(--accent);
+    border-radius:6px;
+    font-size:0.76rem;
+    color:var(--muted);
+    line-height:1.55;
+  }
+  .callout b{color:var(--text);}
+  footer{
+    margin-top:20px;
+    font-size:0.72rem;
+    color:var(--muted);
+    border-top:1px solid var(--border);
+    padding-top:12px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cómo miramos un rostro: dos ejes independientes</h1>
+  <p class="subtitle">
+    Cada punto es una fijación ocular simulada. Varias "personas" simuladas exploran el mismo rostro
+    al mismo tiempo — la variación entre ellas es real y esperada, no un error del modelo.
+    Mueve los dos controles para explorar cómo cambian los patrones de exploración visual.
+  </p>
+
+  <div class="grid">
+    <div class="panel stage-wrap">
+      <canvas id="stage" width="440" height="560"></canvas>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--eyes)"></span>ojos</span>
+        <span><span class="dot" style="background:var(--core)"></span>nariz / boca</span>
+        <span><span class="dot" style="background:var(--contour)"></span>contorno</span>
+        <span><span class="dot" style="background:var(--periphery)"></span>periferia</span>
+      </div>
+    </div>
+
+    <div class="panel controls">
+      <label for="gazeAxis">Compromiso ocular</label>
+      <p class="axis-desc">Cuánto atraen los ojos la mirada durante la exploración del rostro.</p>
+      <input type="range" id="gazeAxis" min="0" max="100" value="50">
+      <div class="axis-endpoints"><span>evitación</span><span>fijación típica</span></div>
+
+      <label for="localAxis">Ponderación local–configural</label>
+      <p class="axis-desc">Si la mirada se mantiene circulando entre ojos–nariz–boca, o se dispersa hacia contorno y periferia.</p>
+      <input type="range" id="localAxis" min="0" max="100" value="50">
+      <div class="axis-endpoints"><span>configural</span><span>featural / local</span></div>
+
+      <button id="regen">Nueva generación de visitantes</button>
+
+      <div class="metrics">
+        <h3>Tiempo de fijación por región (promedio, n=60 simulaciones)</h3>
+        <div id="bars"></div>
+      </div>
+
+      <div class="callout">
+        <b>Sobre la honestidad del modelo:</b> en la evidencia real estos efectos son modestos y con
+        mucha superposición entre personas. Un metaanálisis encontró una correlación de apenas
+        r ≈ −0.30 entre tiempo de fijación en los ojos y severidad social, y los rasgos autistas
+        explican solo 4–10% de la varianza en cuánto se mira la mitad inferior del rostro en
+        población general. La diferencia entre grupos es del mismo orden que la variación entre
+        individuos típicos. Este simulador exagera los extremos para que el patrón sea visible —
+        no representa la magnitud real del efecto.
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Modelo de juguete con fines educativos. Genera trayectorias de mirada mediante un proceso
+    estocástico de saliencia ponderada con inhibición de retorno; no reproduce datos de eye-tracking
+    de ningún estudio específico. Los dos ejes representan, de forma simplificada, dos mecanismos
+    propuestos y debatidos en la literatura (evitación ocular / procesamiento featural), que pueden
+    disociarse entre personas. Laboratorio de Neurofisiología, USACH.
+  </footer>
+</div>
+
+<script src="engine.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  function px(x){ return 60 + x*320; }
+  function py(y){ return 40 + y*480; }
+
+  const CAT_COLOR = {
+    eyes: '#5fd3ff',
+    core_other: '#ffc266',
+    contour: '#c39bff',
+    periphery: '#ff6b7a'
+  };
+
+  function drawFace(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(233,236,241,0.35)';
+    ctx.lineWidth = 2;
+    // face oval
+    ctx.beginPath();
+    ctx.ellipse(px(0.5), (py(0.12)+py(0.95))/2, (px(0.78)-px(0.22))/2, (py(0.95)-py(0.12))/2, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // ears
+    ctx.beginPath();
+    ctx.ellipse(px(0.16), py(0.5), 10, 22, 0, 0, Math.PI*2);
+    ctx.ellipse(px(0.84), py(0.5), 10, 22, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // eyebrows
+    ctx.beginPath();
+    ctx.moveTo(px(0.30), py(0.36)); ctx.quadraticCurveTo(px(0.38), py(0.33), px(0.46), py(0.36));
+    ctx.moveTo(px(0.54), py(0.36)); ctx.quadraticCurveTo(px(0.62), py(0.33), px(0.70), py(0.36));
+    ctx.stroke();
+    // eyes (outline)
+    ctx.beginPath();
+    ctx.ellipse(px(0.38), py(0.42), 16, 8, 0, 0, Math.PI*2);
+    ctx.ellipse(px(0.62), py(0.42), 16, 8, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // nose
+    ctx.beginPath();
+    ctx.moveTo(px(0.5), py(0.44));
+    ctx.lineTo(px(0.47), py(0.55));
+    ctx.lineTo(px(0.53), py(0.55));
+    ctx.stroke();
+    // mouth
+    ctx.beginPath();
+    ctx.moveTo(px(0.40), py(0.72));
+    ctx.quadraticCurveTo(px(0.5), py(0.76), px(0.60), py(0.72));
+    ctx.stroke();
+    // jaw hint
+    ctx.beginPath();
+    ctx.moveTo(px(0.30), py(0.80));
+    ctx.quadraticCurveTo(px(0.5), py(0.95), px(0.70), py(0.80));
+    ctx.stroke();
+  }
+
+  // ---- statistics (batch, precomputed on slider change) ----
+  const CATS = ['eyes','core_other','contour','periphery'];
+  const CAT_LABEL = {eyes:'ojos', core_other:'nariz / boca', contour:'contorno', periphery:'periferia'};
+  const barsEl = document.getElementById('bars');
+
+  function computeStats(gazeAxis, localAxis, n=60){
+    const totals = {eyes:0, core_other:0, contour:0, periphery:0};
+    for(let i=0;i<n;i++){
+      const rng = mulberry32(Date.now()%100000 + i*7919);
+      const seq = runScanpath(gazeAxis, localAxis, rng);
+      const f = dwellFractions(seq);
+      for(const k of CATS) totals[k]+=f[k];
+    }
+    const out={};
+    for(const k of CATS) out[k]=totals[k]/n;
+    return out;
+  }
+
+  function renderBars(stats){
+    barsEl.innerHTML = '';
+    for(const k of CATS){
+      const pct = (stats[k]*100).toFixed(1);
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-label"><span>${CAT_LABEL[k]}</span><span>${pct}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${CAT_COLOR[k]}"></div></div>
+      `;
+      barsEl.appendChild(row);
+    }
+  }
+
+  // ---- live animated visitors ----
+  const N_VISITORS = 6;
+  let visitors = [];
+
+  function newVisitor(gazeAxis, localAxis){
+    const rng = mulberry32((Date.now()*Math.random()*100000)|0);
+    const seq = runScanpath(gazeAxis, localAxis, rng);
+    return { seq, idx:0, elapsed:0, trail:[] };
+  }
+
+  function resetVisitors(){
+    const g = document.getElementById('gazeAxis').value/100;
+    const l = document.getElementById('localAxis').value/100;
+    visitors = [];
+    for(let i=0;i<N_VISITORS;i++) visitors.push(newVisitor(g,l));
+  }
+
+  let lastT = null;
+  const SPEED = 0.55; // playback speed multiplier (lower = longer visible dwell per fixation)
+
+  function animate(t){
+    if(lastT===null) lastT = t;
+    const dt = (t-lastT)*SPEED;
+    lastT = t;
+
+    drawFace();
+
+    const g = document.getElementById('gazeAxis').value/100;
+    const l = document.getElementById('localAxis').value/100;
+
+    for(const v of visitors){
+      v.elapsed += dt;
+      const cur = v.seq[v.idx];
+      if(v.elapsed > cur.dur){
+        v.trail.push(cur);
+        if(v.trail.length>5) v.trail.shift();
+        v.elapsed = 0;
+        v.idx++;
+        if(v.idx >= v.seq.length){
+          v.seq = runScanpath(g, l, mulberry32((Date.now()*Math.random()*100000)|0));
+          v.idx = 0;
+          v.trail = [];
+        }
+      }
+      // draw trail (saccade lines, fading)
+      ctx.lineWidth = 1;
+      for(let i=0;i<v.trail.length-1;i++){
+        const a = v.trail[i], b = v.trail[i+1];
+        ctx.strokeStyle = `rgba(233,236,241,${0.06 + 0.05*i})`;
+        ctx.beginPath();
+        ctx.moveTo(px(a.x), py(a.y));
+        ctx.lineTo(px(b.x), py(b.y));
+        ctx.stroke();
+      }
+      if(v.trail.length){
+        const last = v.trail[v.trail.length-1];
+        ctx.strokeStyle = 'rgba(233,236,241,0.25)';
+        ctx.beginPath();
+        ctx.moveTo(px(last.x), py(last.y));
+        ctx.lineTo(px(v.seq[v.idx].x), py(v.seq[v.idx].y));
+        ctx.stroke();
+      }
+      // draw current fixation, radius grows with dwell progress
+      const fx = v.seq[v.idx];
+      const prog = Math.min(1, v.elapsed / fx.dur);
+      const r = 4 + 6*prog;
+      ctx.fillStyle = CAT_COLOR[fx.cat] + 'cc';
+      ctx.beginPath();
+      ctx.arc(px(fx.x), py(fx.y), r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  function onSlidersChanged(){
+    const g = document.getElementById('gazeAxis').value/100;
+    const l = document.getElementById('localAxis').value/100;
+    renderBars(computeStats(g,l));
+  }
+
+  document.getElementById('gazeAxis').addEventListener('input', onSlidersChanged);
+  document.getElementById('localAxis').addEventListener('input', onSlidersChanged);
+  document.getElementById('regen').addEventListener('click', ()=>{
+    resetVisitors();
+    onSlidersChanged();
+  });
+
+  resetVisitors();
+  onSlidersChanged();
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
