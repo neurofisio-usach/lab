@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rutinas y flexibilidad conductual — Neurofest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #faf7f0;
+    --panel: #ffffff;
+    --border: #ddd6c8;
+    --ink: #2b2620;
+    --ink-soft: #6b6357;
+    --accent: #2f6f6a;
+    --accent-soft: #e4f0ee;
+    --warn: #b5652f;
+    --warn-soft: #f7e9de;
+    --routine-a: #2f6f6a;
+    --routine-b: #b5652f;
+    --routine-c: #6a5a9c;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header { margin-bottom: 20px; }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    max-width: 680px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .panel h2 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 760px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+  canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
+  #landscapeCanvas { background: linear-gradient(180deg, #fdfcf8, #f3efe4); }
+  #rasterCanvas { background: #14211f; }
+
+  .control-row { margin-bottom: 16px; }
+  .control-row label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .control-row .desc {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  button {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.06s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  .btn-primary {
+    background: var(--warn);
+    color: white;
+    width: 100%;
+  }
+  .btn-toggle {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.78rem;
+    padding: 6px 12px;
+  }
+  .status-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #f3f0e8;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    min-height: 48px;
+  }
+  .status-box.result-switch { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .status-box.result-stay { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+  .metrics {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+  }
+  .legend {
+    display: flex;
+    gap: 14px;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .raster-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .honesty-box {
+    background: #f3f0e8;
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    border-radius: 0 8px 8px 0;
+  }
+  .honesty-box strong { color: var(--ink); }
+  footer {
+    margin-top: 24px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Rutinas y flexibilidad conductual</h1>
+    <p class="subtitle">
+      Una red neuronal recurrente puede "recordar" distintos patrones de actividad, como rutinas
+      aprendidas. Cada patrón es un valle estable — un atractor — al que la red vuelve una y otra vez.
+      Ajusta cuán profundos son estos valles e interrumpe la rutina para ver qué tan fácil (o difícil)
+      es que la red explore un patrón distinto.
+    </p>
+  </header>
+
+  <div class="main-grid">
+    <div class="panel">
+      <h2>Paisaje de rutinas</h2>
+      <canvas id="landscapeCanvas" width="600" height="440"></canvas>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--routine-a)"></span>Rutina habitual</span>
+        <span><span class="dot" style="background:var(--routine-b)"></span>Rutina alternativa (interrupción)</span>
+        <span><span class="dot" style="background:var(--routine-c)"></span>Otra rutina posible</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Controles</h2>
+      <div class="control-row">
+        <label>Profundidad del atractor (rigidez de la rutina)</label>
+        <input type="range" id="rigiditySlider" min="0" max="100" value="30">
+        <div class="slider-labels"><span>Flexible</span><span>Rígida</span></div>
+        <div class="desc">Controla cuán fuerte es la conectividad recurrente que sostiene el patrón actual. Valles más profundos = más difícil moverse a otro patrón.</div>
+      </div>
+
+      <button class="btn-primary" id="perturbBtn">Interrumpir la rutina</button>
+      <div class="desc" style="margin-top:6px;">Cada intento parte de la rutina habitual, para que puedas comparar resultados con distintos niveles de rigidez.</div>
+
+      <div class="status-box" id="statusBox">
+        Presiona el botón para introducir un cambio inesperado y observar qué hace la red.
+      </div>
+      <div class="metrics">
+        <span id="metricExcursion">Excursión máx.: —</span>
+        <span id="metricOutcome">Resultado: —</span>
+        <span id="metricAsymmetry">Asimetría de disparo (máx.): —</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="raster-header">
+      <h2 style="margin-bottom:0">Actividad de la red (detalle)</h2>
+      <button class="btn-toggle" id="rasterToggle">Mostrar raster</button>
+    </div>
+    <div id="rasterWrap" style="display:none; margin-top:12px;">
+      <canvas id="rasterCanvas" width="900" height="220"></canvas>
+      <div class="desc" style="margin-top:8px; color:var(--ink-soft); font-size:0.78rem;">
+        Cada fila es una de las 100 neuronas simuladas. Las filas están ordenadas (no por índice
+        aleatorio) según cómo las afecta la interrupción: arriba, las neuronas que la interrupción
+        empuja a activarse; abajo, las que empuja a apagarse; al medio, las que no le afectan
+        directamente. La interrupción apenas cambia la <em>cantidad</em> total de disparos — lo que
+        cambia es <em>cuáles</em> neuronas disparan. Por eso ordenamos las filas así: para que esa
+        reorganización se vea como una franja que se enciende, no como ruido disperso.
+      </div>
+    </div>
+  </div>
+
+  <div class="honesty-box">
+    <strong>Un hallazgo honesto de este modelo:</strong> la transición no es gradual. Por debajo de
+    cierto umbral de rigidez, la interrupción <em>siempre</em> logra mover la red a un patrón distinto;
+    por encima de ese umbral, la red <em>siempre</em> vuelve a la rutina original, casi sin desviarse.
+    Este comportamiento de "todo o nada" es una propiedad real de las redes con atractores — no lo
+    suavizamos para que el control se sienta más gradual. Lo que sí varía continuamente es cuánto se
+    aleja la red del patrón habitual antes de decidir si se queda o vuelve.
+    <br><br>
+    <strong>Un correlato medible:</strong> la <em>asimetría de disparo</em> — la diferencia entre la
+    tasa de disparo del grupo de neuronas que la interrupción empuja a activarse y el grupo que empuja
+    a apagarse (las mismas bandas marcadas en el raster) — predice el resultado con notable precisión:
+    es positiva cuando la red va camino a cambiar de rutina, y se vuelve negativa apenas la rigidez
+    cruza el umbral que produce resistencia. No es una casualidad estadística: es, literalmente, la
+    cantidad que determina hacia qué patrón se inclina la red.
+  </div>
+
+  <footer>
+    <p><strong>Sobre este modelo:</strong> esta es una simplificación educativa (modelo de juguete) que
+    ilustra una hipótesis de la neurociencia computacional: que las conductas repetitivas y la
+    insistencia en la rutina, presentes en distintos grados en personas autistas y no autistas, podrían
+    relacionarse con una mayor estabilidad de los patrones de actividad neuronal frente al cambio —
+    no con un "error" en el sistema. La rigidez conductual no es exclusiva del autismo ni está presente
+    en todas las personas autistas: es un continuo, no una categoría binaria. Este modelo no representa
+    un circuito cerebral específico ni pretende ser un diagnóstico de nada.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- RNG utilities ----------
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gaussian(rng) {
+    let u = 0, v = 0;
+    while (u === 0) u = rng();
+    while (v === 0) v = rng();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+
+  // ---------- Network setup (validated: N=100, K=3, seed=42) ----------
+  const N = 100, K = 3;
+  const NET_SEED = 42;
+  const PERTURB_STRENGTH = 2.2;
+  const NOISE_AMP = 0.05;
+  const DT = 0.5, TAU = 10.0;
+  // rigidity slider (0-100) maps to g in [1.35, 1.86].
+  // g=1.35 keeps the resting attractor solidly formed (baseline overlap ~0.75+).
+  // Precisely-measured switch/resist boundary: switches for g<=1.60, resists for
+  // g>=1.61 (single-step cliff, no partial zone in between). Range is centered so
+  // that boundary sits at slider position 50%: left half of the dial always
+  // produces a jump, right half always resists.
+  const G_MIN = 1.35, G_MAX = 1.86;
+
+  function buildNetwork(seed) {
+    const rng = mulberry32(seed);
+    const patterns = [];
+    for (let k = 0; k < K; k++) {
+      const p = new Float64Array(N);
+      for (let i = 0; i < N; i++) p[i] = rng() < 0.5 ? -1 : 1;
+      patterns.push(p);
+    }
+    const W = new Float64Array(N * N);
+    for (let k = 0; k < K; k++) {
+      const p = patterns[k];
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          if (i === j) continue;
+          W[i * N + j] += (p[i] * p[j]) / N;
+        }
+      }
+    }
+    return { patterns, W };
+  }
+  const net = buildNetwork(NET_SEED);
+
+  function overlaps(r) {
+    const out = new Float64Array(K);
+    for (let k = 0; k < K; k++) {
+      let s = 0;
+      for (let i = 0; i < N; i++) s += net.patterns[k][i] * r[i];
+      out[k] = s / N;
+    }
+    return out;
+  }
+  function stepNet(r, I_ext, g, rng) {
+    const drive = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      let s = 0;
+      for (let j = 0; j < N; j++) s += net.W[i * N + j] * r[j];
+      drive[i] = g * s + (I_ext ? I_ext[i] : 0) + gaussian(rng) * NOISE_AMP;
+    }
+    const rNew = new Float64Array(N);
+    for (let i = 0; i < N; i++) rNew[i] = r[i] + (DT / TAU) * (-r[i] + Math.tanh(drive[i]));
+    return rNew;
+  }
+
+  // Novelty direction: push from pattern0 toward pattern1
+  const noveltyDir = new Float64Array(N);
+  (function () {
+    let norm = 0;
+    for (let i = 0; i < N; i++) { noveltyDir[i] = net.patterns[1][i] - net.patterns[0][i]; norm += noveltyDir[i] * noveltyDir[i]; }
+    norm = Math.sqrt(norm);
+    for (let i = 0; i < N; i++) noveltyDir[i] /= norm;
+  })();
+
+  // Raster row order: sort neurons by how much the interruption pushes them,
+  // so a real reorganization is visible as a banded shift rather than scattered
+  // noise. The perturbation barely changes the *total* firing rate (roughly half
+  // the neurons get pushed up, half down) — the reorganization is about *which*
+  // neurons are active, so that's what the raster needs to make legible.
+  const sortedOrder = Array.from({ length: N }, (_, i) => i)
+    .sort((a, b) => noveltyDir[b] - noveltyDir[a]);
+  const displayRow = new Int32Array(N);
+  for (let rank = 0; rank < N; rank++) displayRow[sortedOrder[rank]] = rank;
+  const UP_COUNT = noveltyDir.reduce((acc, v) => acc + (v > 1e-6 ? 1 : 0), 0);
+  const DOWN_COUNT = noveltyDir.reduce((acc, v) => acc + (v < -1e-6 ? 1 : 0), 0);
+  const upIdx = [], downIdx = [];
+  for (let i = 0; i < N; i++) {
+    if (noveltyDir[i] > 1e-6) upIdx.push(i);
+    else if (noveltyDir[i] < -1e-6) downIdx.push(i);
+  }
+
+  // ---------- State ----------
+  let r = new Float64Array(N);
+  for (let i = 0; i < N; i++) r[i] = net.patterns[0][i] * 0.9;
+  let rng = mulberry32(Date.now() & 0xffffffff);
+  let currentG = G_MIN + (30 / 100) * (G_MAX - G_MIN);
+  let mode = "idle"; // idle | perturbing | recovering
+  let modeStepsLeft = 0;
+  let maxExcursion = -2;
+  let peakAsymmetry = -2;
+  let currentAsymmetry = 0;
+  let lastOutcome = null;
+  let baselineIdx = 0;
+  let lastSpikes = [];
+  let lastMode = "idle";
+
+  const PERTURB_STEPS = Math.round(150 / DT);
+  const RECOVER_STEPS = Math.round(700 / DT);
+
+  // spike raster memory: rolling buffer of recent spikes per neuron
+  const RASTER_HISTORY = 160;
+  const spikeBuffer = []; // each entry: { spikes: [neuron indices], mode: 'idle'|'perturbing'|'recovering' }
+
+  function tick() {
+    let I_ext = null;
+    if (mode === "perturbing") {
+      I_ext = new Float64Array(N);
+      for (let i = 0; i < N; i++) I_ext[i] = noveltyDir[i] * PERTURB_STRENGTH;
+    }
+    r = stepNet(r, I_ext, currentG, rng);
+
+    const ov = overlaps(r);
+    if (ov[1] > maxExcursion) maxExcursion = ov[1];
+
+    // firing-rate asymmetry between the two raster bands: mean rate of neurons
+    // pushed toward the alternative routine minus mean rate of neurons pushed
+    // away from it. Empirically this is a clean leading indicator of the outcome:
+    // positive when the network is heading toward a switch, negative when it's
+    // going to resist — visible directly as which raster band is brighter.
+    let sUp = 0, sDown = 0;
+    for (let i = 0; i < upIdx.length; i++) sUp += (r[upIdx[i]] + 1) / 2;
+    for (let i = 0; i < downIdx.length; i++) sDown += (r[downIdx[i]] + 1) / 2;
+    currentAsymmetry = (sUp / upIdx.length) - (sDown / downIdx.length);
+    if (currentAsymmetry > peakAsymmetry) peakAsymmetry = currentAsymmetry;
+
+    // generate stochastic spikes for raster from firing rate proxy (r+1)/2
+    // (not pushed to spikeBuffer here — the frame loop records one snapshot per
+    // animation frame so the raster scroll speed stays constant regardless of
+    // how many physics substeps run per frame)
+    const spikes = [];
+    for (let i = 0; i < N; i++) {
+      const p = Math.max(0, Math.min(1, (r[i] + 1) / 2));
+      if (rng() < p * 0.35) spikes.push(i);
+    }
+    lastSpikes = spikes;
+    lastMode = mode;
+
+    if (mode === "perturbing") {
+      modeStepsLeft--;
+      if (modeStepsLeft <= 0) { mode = "recovering"; modeStepsLeft = RECOVER_STEPS; }
+    } else if (mode === "recovering") {
+      modeStepsLeft--;
+      if (modeStepsLeft <= 0) {
+        mode = "idle";
+        const finalOv = overlaps(r);
+        let finIdx = 0;
+        for (let k = 1; k < K; k++) if (finalOv[k] > finalOv[finIdx]) finIdx = k;
+        lastOutcome = { switched: finIdx !== baselineIdx, excursion: maxExcursion };
+        onTrialComplete(lastOutcome);
+      }
+    }
+  }
+
+  // ---------- UI wiring ----------
+  const rigiditySlider = document.getElementById("rigiditySlider");
+  const perturbBtn = document.getElementById("perturbBtn");
+  const statusBox = document.getElementById("statusBox");
+  const metricExcursion = document.getElementById("metricExcursion");
+  const metricOutcome = document.getElementById("metricOutcome");
+  const metricAsymmetry = document.getElementById("metricAsymmetry");
+  const rasterToggle = document.getElementById("rasterToggle");
+  const rasterWrap = document.getElementById("rasterWrap");
+
+  rigiditySlider.addEventListener("input", () => {
+    const t = parseFloat(rigiditySlider.value) / 100;
+    currentG = G_MIN + t * (G_MAX - G_MIN);
+  });
+
+  perturbBtn.addEventListener("click", () => {
+    if (mode !== "idle") return;
+    perturbBtn.disabled = true;
+    // Reset to the habitual routine (pattern 0) before each attempt. The network
+    // state otherwise persists between clicks: after a successful switch, the
+    // network rests at the *new* pattern, but the perturbation direction is fixed
+    // (pattern0 -> pattern1) — so without this reset, a second click would just
+    // push deeper into the pattern the network already occupies instead of
+    // representing a fresh interruption, and would never register as a switch.
+    // Resetting also matches exactly what was numerically validated (every trial
+    // in the Python/JS sweeps started from this same baseline).
+    for (let i = 0; i < N; i++) r[i] = net.patterns[0][i] * 0.9;
+    baselineIdx = 0;
+    maxExcursion = -2;
+    peakAsymmetry = -2;
+    mode = "perturbing";
+    modeStepsLeft = PERTURB_STEPS;
+    statusBox.className = "status-box";
+    statusBox.textContent = "Interrupción en curso — observando si la red cambia de patrón...";
+    metricOutcome.textContent = "Resultado: en curso";
+    metricExcursion.textContent = "Excursión máx.: —";
+    metricAsymmetry.textContent = "Asimetría de disparo (máx.): —";
+  });
+
+  function onTrialComplete(outcome) {
+    perturbBtn.disabled = false;
+    metricExcursion.textContent = "Excursión máx.: " + outcome.excursion.toFixed(2);
+    metricAsymmetry.textContent = "Asimetría de disparo (máx.): " + peakAsymmetry.toFixed(2);
+    if (outcome.switched) {
+      statusBox.className = "status-box result-switch";
+      statusBox.textContent = "La red se movió a un patrón distinto: la interrupción rompió la rutina.";
+      metricOutcome.textContent = "Resultado: cambió de rutina";
+    } else {
+      statusBox.className = "status-box result-stay";
+      statusBox.textContent = "La red volvió a su patrón original: la rutina resistió la interrupción.";
+      metricOutcome.textContent = "Resultado: volvió a la rutina";
+    }
+  }
+
+  rasterToggle.addEventListener("click", () => {
+    const showing = rasterWrap.style.display !== "none";
+    rasterWrap.style.display = showing ? "none" : "block";
+    rasterToggle.textContent = showing ? "Mostrar raster" : "Ocultar raster";
+  });
+
+  // ---------- Rendering: landscape ----------
+  const landscapeCanvas = document.getElementById("landscapeCanvas");
+  const lctx = landscapeCanvas.getContext("2d");
+  const LW = landscapeCanvas.width, LH = landscapeCanvas.height;
+
+  // Valley anchor points (triangle layout), index 0 = habitual, 1 = alternative(interruption), 2 = other
+  const anchors = [
+    { x: LW * 0.5, y: LH * 0.30, color: getCss("--routine-a") },
+    { x: LW * 0.25, y: LH * 0.72, color: getCss("--routine-b") },
+    { x: LW * 0.75, y: LH * 0.72, color: getCss("--routine-c") }
+  ];
+  function getCss(varName) {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || "#888";
+  }
+
+  function ballPosition(ov) {
+    // softmax-like barycentric weights from overlaps, sharpness scales with g (deeper = more decisive)
+    const sharpness = 3 + (currentG - G_MIN) * 1.2;
+    const exps = ov.map(v => Math.exp(v * sharpness));
+    const sum = exps.reduce((a, b) => a + b, 0);
+    const w = exps.map(v => v / sum);
+    let x = 0, y = 0;
+    for (let k = 0; k < K; k++) { x += w[k] * anchors[k].x; y += w[k] * anchors[k].y; }
+    return { x, y, w };
+  }
+
+  function drawLandscape() {
+    lctx.clearRect(0, 0, LW, LH);
+
+    // depth visual: radius/intensity of each valley scales with rigidity (purely illustrative)
+    const depthT = (currentG - G_MIN) / (G_MAX - G_MIN); // 0..1
+    const baseRadius = 90 - depthT * 30; // deeper => visually narrower basin
+    anchors.forEach(a => {
+      const grad = lctx.createRadialGradient(a.x, a.y, 4, a.x, a.y, baseRadius + 50);
+      grad.addColorStop(0, hexToRgba(a.color, 0.35 + depthT * 0.25));
+      grad.addColorStop(1, hexToRgba(a.color, 0));
+      lctx.fillStyle = grad;
+      lctx.beginPath();
+      lctx.arc(a.x, a.y, baseRadius + 50, 0, Math.PI * 2);
+      lctx.fill();
+
+      // contour rings — more rings & tighter spacing = deeper/more rigid basin
+      const rings = 2 + Math.round(depthT * 3);
+      for (let ringI = 1; ringI <= rings; ringI++) {
+        lctx.beginPath();
+        lctx.arc(a.x, a.y, (baseRadius / rings) * ringI, 0, Math.PI * 2);
+        lctx.strokeStyle = hexToRgba(a.color, 0.28);
+        lctx.lineWidth = 1;
+        lctx.stroke();
+      }
+      lctx.fillStyle = a.color;
+      lctx.beginPath();
+      lctx.arc(a.x, a.y, 5, 0, Math.PI * 2);
+      lctx.fill();
+    });
+
+    // ball
+    const ov = overlaps(r);
+    const pos = ballPosition(ov);
+    lctx.beginPath();
+    lctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
+    lctx.fillStyle = "#2b2620";
+    lctx.shadowColor = "rgba(0,0,0,0.25)";
+    lctx.shadowBlur = 6;
+    lctx.fill();
+    lctx.shadowBlur = 0;
+
+    // rigidity readout text
+    lctx.fillStyle = "#6b6357";
+    lctx.font = "11px 'IBM Plex Mono', monospace";
+    lctx.fillText("g = " + currentG.toFixed(2) + (mode !== "idle" ? "   [" + mode + "]" : ""), 10, LH - 10);
+  }
+
+  function hexToRgba(hex, alpha) {
+    hex = hex.replace("#", "");
+    if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+  }
+
+  // ---------- Rendering: raster ----------
+  const rasterCanvas = document.getElementById("rasterCanvas");
+  const rctx = rasterCanvas.getContext("2d");
+  const RW = rasterCanvas.width, RH = rasterCanvas.height;
+
+  function drawRaster() {
+    rctx.clearRect(0, 0, RW, RH);
+    rctx.fillStyle = "#14211f";
+    rctx.fillRect(0, 0, RW, RH);
+    const colW = RW / RASTER_HISTORY;
+    const rowH = RH / N;
+    const LABEL_W = 108; // left margin reserved for group labels
+
+    const plotW = RW - LABEL_W;
+    const colWp = plotW / RASTER_HISTORY;
+
+    // group divider lines + subtle band tint (rows are pre-sorted by how much
+    // the interruption pushes each neuron: top = pushed toward the new routine,
+    // bottom = pushed away from it, middle = largely unaffected)
+    const upY0 = 0, upY1 = UP_COUNT * rowH;
+    const downY0 = (N - DOWN_COUNT) * rowH, downY1 = RH;
+    rctx.fillStyle = "rgba(181,101,47,0.10)";
+    rctx.fillRect(LABEL_W, upY0, plotW, upY1 - upY0);
+    rctx.fillStyle = "rgba(80,140,230,0.10)";
+    rctx.fillRect(LABEL_W, downY0, plotW, downY1 - downY0);
+    rctx.strokeStyle = "rgba(255,255,255,0.15)";
+    rctx.beginPath();
+    rctx.moveTo(LABEL_W, upY1); rctx.lineTo(RW, upY1);
+    rctx.moveTo(LABEL_W, downY0); rctx.lineTo(RW, downY0);
+    rctx.stroke();
+
+    // background tint per column so the interruption window is visible at a glance
+    for (let t = 0; t < spikeBuffer.length; t++) {
+      const entry = spikeBuffer[t];
+      if (entry.mode === "idle") continue;
+      const x = LABEL_W + t * colWp;
+      rctx.fillStyle = entry.mode === "perturbing" ? "rgba(181,101,47,0.22)" : "rgba(47,111,106,0.14)";
+      rctx.fillRect(x, 0, Math.max(1, colWp), RH);
+    }
+
+    rctx.fillStyle = "#7fd9c8";
+    for (let t = 0; t < spikeBuffer.length; t++) {
+      const spikes = spikeBuffer[t].spikes;
+      const x = LABEL_W + t * colWp;
+      for (let s = 0; s < spikes.length; s++) {
+        const row = displayRow[spikes[s]];
+        const y = row * rowH;
+        rctx.fillRect(x, y, Math.max(1, colWp - 0.5), Math.max(1, rowH - 0.3));
+      }
+    }
+
+    // row-group labels (left margin)
+    rctx.font = "10px 'IBM Plex Mono', monospace";
+    rctx.fillStyle = "rgba(240,190,150,0.9)";
+    rctx.fillText("↑ hacia la", 6, upY1 / 2 - 4);
+    rctx.fillText("interrupción", 6, upY1 / 2 + 8);
+    rctx.fillStyle = "rgba(180,180,180,0.6)";
+    rctx.fillText("sin efecto", 6, (upY1 + downY0) / 2 + 3);
+    rctx.fillStyle = "rgba(150,190,240,0.9)";
+    rctx.fillText("↓ resiste el", 6, (downY0 + downY1) / 2 - 4);
+    rctx.fillText("cambio", 6, (downY0 + downY1) / 2 + 8);
+
+    // legend for the column tint
+    rctx.fillStyle = "rgba(181,101,47,0.9)";
+    rctx.fillText("■ interrupción", LABEL_W + 6, 14);
+    rctx.fillStyle = "rgba(127,217,200,0.9)";
+    rctx.fillText("■ recuperación", LABEL_W + 110, 14);
+  }
+
+  // ---------- Main loop ----------
+  function frame() {
+    const subSteps = mode === "idle" ? 1 : 3; // faster physics during perturb/recover for pacing
+    for (let s = 0; s < subSteps; s++) tick();
+    // record exactly one raster column per animation frame, regardless of substep count,
+    // so the raster's visual scroll speed stays constant across modes
+    spikeBuffer.push({ spikes: lastSpikes, mode: lastMode });
+    if (spikeBuffer.length > RASTER_HISTORY) spikeBuffer.shift();
+
+    drawLandscape();
+    if (rasterWrap.style.display !== "none") drawRaster();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

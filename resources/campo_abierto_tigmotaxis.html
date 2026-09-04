@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campo abierto: tigmotaxis y ansiedad</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:#f6f3ec;
+    --panel:#ffffff;
+    --ink:#20211d;
+    --ink-soft:#5c5c54;
+    --line:#d9d4c6;
+    --wt:#2a6f8e;
+    --wt-soft:#e4eef2;
+    --asd:#c96a2e;
+    --asd-soft:#f6e7db;
+    --center-zone:#efe9d8;
+    --periphery-zone:#f8f6ef;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    line-height:1.5;
+  }
+
+  header{
+    max-width:900px;
+    margin:0 auto;
+    padding:32px 20px 12px;
+  }
+
+  h1{
+    font-size:1.5rem;
+    font-weight:700;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+
+  .subtitle{
+    color:var(--ink-soft);
+    font-size:0.95rem;
+    max-width:640px;
+  }
+
+  .dissociation-note{
+    margin-top:10px;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--wt);
+    padding:10px 14px;
+    max-width:640px;
+    border-radius:2px;
+  }
+
+  main{
+    max-width:900px;
+    margin:0 auto;
+    padding:8px 20px 32px;
+  }
+
+  .arenas-wrap{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-top:16px;
+  }
+
+  @media (max-width:640px){
+    .arenas-wrap{grid-template-columns:1fr;}
+  }
+
+  .arena-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:16px;
+  }
+
+  .arena-card h2{
+    font-size:1rem;
+    margin:0 0 2px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    display:inline-block;
+  }
+  .dot.wt{background:var(--wt);}
+  .dot.asd{background:var(--asd);}
+
+  .arena-caption{
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+
+  canvas{
+    width:100%;
+    height:auto;
+    aspect-ratio:1/1;
+    display:block;
+    border-radius:4px;
+    background:var(--periphery-zone);
+  }
+
+  .metrics{
+    margin-top:12px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px 14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+  }
+
+  .metric-label{
+    color:var(--ink-soft);
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+
+  .metric-value{
+    font-size:0.95rem;
+    font-weight:600;
+  }
+
+  .bar-track{
+    height:6px;
+    background:var(--line);
+    border-radius:3px;
+    overflow:hidden;
+    margin-top:4px;
+  }
+
+  .bar-fill{
+    height:100%;
+    width:0%;
+    border-radius:3px;
+    transition:width 0.15s linear;
+  }
+  .arena-card[data-condition="wt"] .bar-fill{background:var(--wt);}
+  .arena-card[data-condition="asd"] .bar-fill{background:var(--asd);}
+
+  .controls{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-top:20px;
+    flex-wrap:wrap;
+  }
+
+  .trial-progress{
+    flex:1;
+    min-width:200px;
+  }
+
+  .trial-progress-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+    display:flex;
+    justify-content:space-between;
+  }
+
+  .trial-track{
+    height:8px;
+    background:var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+
+  .trial-fill{
+    height:100%;
+    width:0%;
+    background:var(--ink);
+    opacity:0.5;
+  }
+
+  button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:0.85rem;
+    font-weight:600;
+    padding:10px 18px;
+    border-radius:5px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+  }
+  button:hover{opacity:0.85;}
+
+  .summary{
+    margin-top:18px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:14px 16px;
+    font-size:0.88rem;
+  }
+  .summary strong{font-family:'IBM Plex Mono', monospace;}
+
+  .legend{
+    margin-top:22px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+  }
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .legend-swatch{
+    width:14px;height:14px;border-radius:2px;flex-shrink:0;
+  }
+  .legend-swatch.center{background:var(--center-zone);border:1px dashed #b9ae87;}
+  .legend-swatch.periphery{background:var(--periphery-zone);border:1px solid var(--line);}
+
+  footer{
+    max-width:900px;
+    margin:0 auto;
+    padding:0 20px 40px;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Campo abierto: tigmotaxis y conducta tipo ansiosa</h1>
+  <p class="subtitle">
+    El test de campo abierto mide exploración y ansiedad observando cuánto tiempo un ratón pasa
+    cerca de las paredes (periferia) versus en el centro, expuesto y sin protección. Modelos animales
+    de TEA muestran con frecuencia mayor tigmotaxis: más tiempo y más "apego" a la periferia, y menos
+    entradas al centro.
+  </p>
+  <p class="dissociation-note">
+    <strong>Un detalle importante:</strong> en esta simulación ambos ratones tienen la misma actividad
+    locomotora promedio (misma velocidad, misma distancia recorrida esperada). La diferencia no es que
+    uno se mueva más o menos — es hacia dónde eligen ir. Esto separa la ansiedad tipo tigmotaxis de la
+    hiperactividad o hipoactividad general, dos fenómenos distintos que a veces se confunden.
+  </p>
+</header>
+
+<main>
+  <div class="arenas-wrap">
+
+    <section class="arena-card" data-condition="wt">
+      <h2><span class="dot wt"></span>Tipo silvestre (WT)</h2>
+      <p class="arena-caption">Exploración más uniforme; visita el centro con relativa frecuencia.</p>
+      <canvas id="canvas-wt" width="380" height="380"></canvas>
+      <div class="metrics">
+        <div>
+          <div class="metric-label">Tiempo en centro</div>
+          <div class="metric-value" id="wt-center-time">0.0 s</div>
+          <div class="bar-track"><div class="bar-fill" id="wt-center-bar"></div></div>
+        </div>
+        <div>
+          <div class="metric-label">Tiempo en periferia</div>
+          <div class="metric-value" id="wt-periphery-time">0.0 s</div>
+          <div class="bar-track"><div class="bar-fill" id="wt-periphery-bar"></div></div>
+        </div>
+        <div>
+          <div class="metric-label">Distancia recorrida</div>
+          <div class="metric-value" id="wt-distance">0 cm</div>
+        </div>
+        <div>
+          <div class="metric-label">Entradas al centro</div>
+          <div class="metric-value" id="wt-entries">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="arena-card" data-condition="asd">
+      <h2><span class="dot asd"></span>Modelo TEA</h2>
+      <p class="arena-caption">Tiende a recorrer el borde y a abandonar el centro rápidamente.</p>
+      <canvas id="canvas-asd" width="380" height="380"></canvas>
+      <div class="metrics">
+        <div>
+          <div class="metric-label">Tiempo en centro</div>
+          <div class="metric-value" id="asd-center-time">0.0 s</div>
+          <div class="bar-track"><div class="bar-fill" id="asd-center-bar"></div></div>
+        </div>
+        <div>
+          <div class="metric-label">Tiempo en periferia</div>
+          <div class="metric-value" id="asd-periphery-time">0.0 s</div>
+          <div class="bar-track"><div class="bar-fill" id="asd-periphery-bar"></div></div>
+        </div>
+        <div>
+          <div class="metric-label">Distancia recorrida</div>
+          <div class="metric-value" id="asd-distance">0 cm</div>
+        </div>
+        <div>
+          <div class="metric-label">Entradas al centro</div>
+          <div class="metric-value" id="asd-entries">0</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="controls">
+    <div class="trial-progress">
+      <div class="trial-progress-label">
+        <span>Tiempo de ensayo simulado</span>
+        <span id="trial-time-label">00:00 / 05:00</span>
+      </div>
+      <div class="trial-track"><div class="trial-fill" id="trial-fill"></div></div>
+    </div>
+    <button id="restart-btn">Reiniciar ensayo</button>
+  </div>
+
+  <div class="summary" id="summary" hidden></div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch center"></span>Zona central (definida como el 50% interior del lado de la caja)</div>
+    <div class="legend-item"><span class="legend-swatch periphery"></span>Periferia (junto a las paredes)</div>
+  </div>
+</main>
+
+<footer>
+  Simulación computacional simplificada con fines educativos. Los ratones se mueven según una caminata
+  aleatoria correlacionada con un sesgo hacia el borde ajustable por grupo; no representa trayectorias de
+  animales reales ni un set de datos experimental específico. El patrón cualitativo — mayor tigmotaxis y
+  menor tiempo/entradas al centro en modelos de TEA — está descrito en la literatura conductual, pero la
+  magnitud exacta varía según el modelo animal y el protocolo.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- utilities ----------
+  function gaussian(){
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random();
+    while(v === 0) v = Math.random();
+    return Math.sqrt(-2.0*Math.log(u)) * Math.cos(2.0*Math.PI*v);
+  }
+  function normalizeAngle(a){
+    while(a > Math.PI) a -= 2*Math.PI;
+    while(a < -Math.PI) a += 2*Math.PI;
+    return a;
+  }
+
+  // ---------- constants ----------
+  const ARENA_CM = 45;          // physical arena side, cm
+  const HALF = ARENA_CM/2;
+  const CENTER_FRACTION = 0.5;  // center zone side = 50% of arena side (25% of area)
+  const CANVAS_PX = 380;
+  const SCALE = CANVAS_PX/ARENA_CM;
+
+  const TRIAL_SIM_SECONDS = 300; // 5 simulated minutes
+  const TIME_SCALE = 6;          // simulated seconds per real second
+
+  // shared locomotor parameters (equal activity across groups)
+  const SPEED_MEAN = 9, SPEED_SIGMA = 3.2, SPEED_THETA = 1.4;
+  const SPEED_MIN = 1, SPEED_MAX = 17;
+  const TURN_SIGMA = 1.0; // baseline heading noise, rad/sqrt(s)
+
+  const GROUPS = {
+    wt:  { gainWall: 0.5, gainEscape: 0.35, color: '#2a6f8e' },
+    asd: { gainWall: 1.6, gainEscape: 1.8,  color: '#c96a2e' }
+  };
+
+  // ---------- Mouse agent ----------
+  function Mouse(group){
+    this.gainWall = GROUPS[group].gainWall;
+    this.gainEscape = GROUPS[group].gainEscape;
+    this.color = GROUPS[group].color;
+    this.reset();
+  }
+  Mouse.prototype.reset = function(){
+    this.x = 0; this.y = 0;
+    this.heading = Math.random()*2*Math.PI;
+    this.speed = SPEED_MEAN;
+    this.circulation = Math.random() < 0.5 ? 1 : -1;
+    this.wasInCenter = true;
+    this.centerTime = 0;
+    this.peripheryTime = 0;
+    this.distance = 0;
+    this.entries = 0;
+  };
+  Mouse.prototype.squareRadius = function(){
+    return Math.max(Math.abs(this.x), Math.abs(this.y)) / HALF;
+  };
+  Mouse.prototype.step = function(dt){
+    // speed: Ornstein-Uhlenbeck
+    this.speed += (SPEED_MEAN - this.speed)*SPEED_THETA*dt + SPEED_SIGMA*Math.sqrt(dt)*gaussian();
+    this.speed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, this.speed));
+
+    const r = this.squareRadius();
+    const radialAngle = Math.atan2(this.y, this.x);
+    let target, bias;
+
+    if (r < CENTER_FRACTION){
+      // in center zone: drift outward, toward nearest wall
+      target = radialAngle;
+      bias = this.gainEscape;
+    } else {
+      // in periphery: drift tangentially, wall-following
+      if (Math.random() < 0.05*dt) this.circulation *= -1; // occasional reversal
+      target = radialAngle + this.circulation*(Math.PI/2);
+      bias = this.gainWall;
+    }
+
+    const angDiff = normalizeAngle(target - this.heading);
+    this.heading += bias*angDiff*dt + TURN_SIGMA*Math.sqrt(dt)*gaussian();
+
+    const dx = this.speed*Math.cos(this.heading)*dt;
+    const dy = this.speed*Math.sin(this.heading)*dt;
+    this.x += dx; this.y += dy;
+    this.distance += Math.sqrt(dx*dx+dy*dy);
+
+    // wall reflection
+    if (this.x > HALF){ this.x = HALF; this.heading = Math.PI - this.heading; }
+    if (this.x < -HALF){ this.x = -HALF; this.heading = Math.PI - this.heading; }
+    if (this.y > HALF){ this.y = HALF; this.heading = -this.heading; }
+    if (this.y < -HALF){ this.y = -HALF; this.heading = -this.heading; }
+    this.heading = normalizeAngle(this.heading);
+
+    // zone bookkeeping
+    const inCenterNow = this.squareRadius() < CENTER_FRACTION;
+    if (inCenterNow) this.centerTime += dt; else this.peripheryTime += dt;
+    if (inCenterNow && !this.wasInCenter) this.entries += 1;
+    this.wasInCenter = inCenterNow;
+  };
+
+  // ---------- Arena rendering (per group) ----------
+  function Arena(group){
+    this.group = group;
+    this.mainCanvas = document.getElementById('canvas-'+group);
+    this.mainCtx = this.mainCanvas.getContext('2d');
+    this.trailCanvas = document.createElement('canvas');
+    this.trailCanvas.width = CANVAS_PX;
+    this.trailCanvas.height = CANVAS_PX;
+    this.trailCtx = this.trailCanvas.getContext('2d');
+    this.mouse = new Mouse(group);
+    this.prevPx = this.toPx(this.mouse.x, this.mouse.y);
+  }
+  Arena.prototype.toPx = function(x,y){
+    return { px: (x+HALF)*SCALE, py: (y+HALF)*SCALE };
+  };
+  Arena.prototype.resetVisual = function(){
+    this.trailCtx.clearRect(0,0,CANVAS_PX,CANVAS_PX);
+    this.mouse.reset();
+    this.prevPx = this.toPx(this.mouse.x, this.mouse.y);
+  };
+  Arena.prototype.stepAndDraw = function(dt){
+    this.mouse.step(dt);
+    const p = this.toPx(this.mouse.x, this.mouse.y);
+
+    // permanent trail (whole trajectory stays visible for the trial)
+    this.trailCtx.strokeStyle = this.mouse.color;
+    this.trailCtx.globalAlpha = 0.55;
+    this.trailCtx.lineWidth = 1.6;
+    this.trailCtx.lineCap = 'round';
+    this.trailCtx.beginPath();
+    this.trailCtx.moveTo(this.prevPx.px, this.prevPx.py);
+    this.trailCtx.lineTo(p.px, p.py);
+    this.trailCtx.stroke();
+    this.trailCtx.globalAlpha = 1;
+    this.prevPx = p;
+
+    // static zones
+    const ctx = this.mainCtx;
+    ctx.clearRect(0,0,CANVAS_PX,CANVAS_PX);
+    ctx.fillStyle = '#f8f6ef';
+    ctx.fillRect(0,0,CANVAS_PX,CANVAS_PX);
+    const centerPx = CANVAS_PX*CENTER_FRACTION;
+    const off = (CANVAS_PX-centerPx)/2;
+    ctx.fillStyle = '#efe9d8';
+    ctx.fillRect(off,off,centerPx,centerPx);
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle = '#b9ae87';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(off,off,centerPx,centerPx);
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#d9d4c6';
+    ctx.strokeRect(1,1,CANVAS_PX-2,CANVAS_PX-2);
+
+    // trail
+    ctx.drawImage(this.trailCanvas, 0, 0);
+
+    // mouse marker
+    ctx.fillStyle = this.mouse.color;
+    ctx.beginPath();
+    ctx.arc(p.px, p.py, 5, 0, 2*Math.PI);
+    ctx.fill();
+  };
+
+  // ---------- setup ----------
+  const arenas = { wt: new Arena('wt'), asd: new Arena('asd') };
+
+  const els = {
+    wt: {
+      centerTime: document.getElementById('wt-center-time'),
+      periphTime: document.getElementById('wt-periphery-time'),
+      centerBar: document.getElementById('wt-center-bar'),
+      periphBar: document.getElementById('wt-periphery-bar'),
+      distance: document.getElementById('wt-distance'),
+      entries: document.getElementById('wt-entries')
+    },
+    asd: {
+      centerTime: document.getElementById('asd-center-time'),
+      periphTime: document.getElementById('asd-periphery-time'),
+      centerBar: document.getElementById('asd-center-bar'),
+      periphBar: document.getElementById('asd-periphery-bar'),
+      distance: document.getElementById('asd-distance'),
+      entries: document.getElementById('asd-entries')
+    }
+  };
+
+  const trialFill = document.getElementById('trial-fill');
+  const trialLabel = document.getElementById('trial-time-label');
+  const summaryEl = document.getElementById('summary');
+  const restartBtn = document.getElementById('restart-btn');
+
+  function fmtTime(s){
+    const m = Math.floor(s/60);
+    const sec = Math.floor(s%60);
+    return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  }
+
+  function updateMetrics(){
+    ['wt','asd'].forEach(function(g){
+      const m = arenas[g].mouse;
+      const total = m.centerTime + m.peripheryTime;
+      const centerPct = total > 0 ? (m.centerTime/total*100) : 0;
+      const periphPct = total > 0 ? (m.peripheryTime/total*100) : 0;
+      els[g].centerTime.textContent = m.centerTime.toFixed(1)+' s ('+centerPct.toFixed(0)+'%)';
+      els[g].periphTime.textContent = m.peripheryTime.toFixed(1)+' s ('+periphPct.toFixed(0)+'%)';
+      els[g].centerBar.style.width = centerPct+'%';
+      els[g].periphBar.style.width = periphPct+'%';
+      els[g].distance.textContent = Math.round(m.distance)+' cm';
+      els[g].entries.textContent = m.entries;
+    });
+  }
+
+  let elapsedSim = 0;
+  let running = true;
+  let lastTs = null;
+  let restartTimeout = null;
+
+  function showSummary(){
+    const w = arenas.wt.mouse, a = arenas.asd.mouse;
+    const wTotal = w.centerTime + w.peripheryTime;
+    const aTotal = a.centerTime + a.peripheryTime;
+    const wPct = wTotal>0 ? (w.centerTime/wTotal*100) : 0;
+    const aPct = aTotal>0 ? (a.centerTime/aTotal*100) : 0;
+    summaryEl.innerHTML = 'Ensayo completo &mdash; tiempo en el centro: <strong>WT '+wPct.toFixed(0)+'%</strong> ('+w.entries+' entradas) vs. <strong>modelo TEA '+aPct.toFixed(0)+'%</strong> ('+a.entries+' entradas). Distancia recorrida: WT '+Math.round(w.distance)+' cm, TEA '+Math.round(a.distance)+' cm.';
+    summaryEl.hidden = false;
+  }
+
+  function resetTrial(){
+    if (restartTimeout) { clearTimeout(restartTimeout); restartTimeout = null; }
+    arenas.wt.resetVisual();
+    arenas.asd.resetVisual();
+    elapsedSim = 0;
+    lastTs = null;
+    running = true;
+    summaryEl.hidden = true;
+    updateMetrics();
+    trialFill.style.width = '0%';
+    trialLabel.textContent = '00:00 / '+fmtTime(TRIAL_SIM_SECONDS);
+  }
+
+  function frame(ts){
+    requestAnimationFrame(frame);
+    if (!running) return;
+    if (lastTs === null) lastTs = ts;
+    const realDt = Math.min((ts-lastTs)/1000, 0.1); // clamp to avoid big jumps on tab-switch
+    lastTs = ts;
+    const simDt = realDt*TIME_SCALE;
+
+    if (elapsedSim + simDt >= TRIAL_SIM_SECONDS){
+      const remaining = TRIAL_SIM_SECONDS - elapsedSim;
+      if (remaining > 0){
+        arenas.wt.stepAndDraw(remaining);
+        arenas.asd.stepAndDraw(remaining);
+      }
+      elapsedSim = TRIAL_SIM_SECONDS;
+      running = false;
+      updateMetrics();
+      trialFill.style.width = '100%';
+      trialLabel.textContent = fmtTime(TRIAL_SIM_SECONDS)+' / '+fmtTime(TRIAL_SIM_SECONDS);
+      showSummary();
+      restartTimeout = setTimeout(resetTrial, 4500);
+      return;
+    }
+
+    arenas.wt.stepAndDraw(simDt);
+    arenas.asd.stepAndDraw(simDt);
+    elapsedSim += simDt;
+
+    updateMetrics();
+    trialFill.style.width = (elapsedSim/TRIAL_SIM_SECONDS*100)+'%';
+    trialLabel.textContent = fmtTime(elapsedSim)+' / '+fmtTime(TRIAL_SIM_SECONDS);
+  }
+
+  restartBtn.addEventListener('click', resetTrial);
+
+  // initial static paint before animation starts
+  arenas.wt.stepAndDraw(0.001);
+  arenas.asd.stepAndDraw(0.001);
+  updateMetrics();
+
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

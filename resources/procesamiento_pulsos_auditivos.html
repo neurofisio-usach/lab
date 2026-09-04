@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procesamiento auditivo de pulsos consecutivos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0e11;
+    --panel:#12171c;
+    --panel-2:#171d24;
+    --border:#232b33;
+    --text:#e7ecf0;
+    --muted:#8b98a5;
+    --muted-2:#5e6b76;
+    --audio:#4dc9ff;
+    --nt:#7ce3b0;
+    --asd:#ff9f5b;
+    --fused:#6fe3a0;
+    --split:#ff6b6b;
+    --accent:#c792ea;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.5;
+    padding:18px 16px 40px;
+  }
+  .wrap{max-width:1220px;margin:0 auto;}
+  header{margin-bottom:18px;}
+  h1{
+    font-size:1.65rem;
+    font-weight:700;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--muted);
+    font-size:0.98rem;
+    max-width:70ch;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+    color:var(--muted-2);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:3px 10px;
+    margin-top:10px;
+  }
+  .badge::before{content:'●';color:var(--fused);font-size:0.6rem;}
+
+  section.panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px 20px 20px;
+    margin-bottom:0;
+  }
+  .stations-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    align-items:start;
+    gap:18px;
+    margin-bottom:20px;
+  }
+  @media (max-width:980px){
+    .stations-grid{grid-template-columns:1fr;}
+  }
+  .panel-title{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin:0 0 4px;
+  }
+  .panel-num{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--muted-2);
+    font-size:0.85rem;
+  }
+  .panel-title h2{
+    font-size:1.15rem;
+    margin:0;
+    font-weight:600;
+  }
+  .panel-desc{
+    color:var(--muted);
+    font-size:0.85rem;
+    margin:0 0 14px;
+    max-width:70ch;
+  }
+
+  /* ---- shared rate control + metronome ---- */
+  .rate-block{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:16px;
+  }
+  .rate-top{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:10px;
+  }
+  .metronome{
+    width:34px;height:34px;
+    border-radius:50%;
+    background:#152833;
+    border:2px solid #1f3d4d;
+    flex-shrink:0;
+    transition:background 40ms linear, box-shadow 40ms linear, border-color 40ms linear;
+  }
+  .metronome.on{
+    background:var(--audio);
+    border-color:var(--audio);
+    box-shadow:0 0 20px 5px #4dc9ff88;
+  }
+  .rate-readout{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.95rem;
+  }
+  .rate-readout b{color:var(--accent);font-size:1.15rem;}
+  .rate-sub{font-size:0.72rem;color:var(--muted-2);}
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    appearance:none;
+    height:5px;
+    border-radius:4px;
+    background:var(--border);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:17px;height:17px;
+    border-radius:50%;
+    background:var(--text);
+    border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--border);
+    cursor:pointer;
+    margin-top:-1px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--text);
+    border:3px solid var(--bg);
+    cursor:pointer;
+  }
+  .rate-presets{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+  button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:0.76rem;
+    font-weight:600;
+    padding:6px 12px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    cursor:pointer;
+    transition:background 120ms, border-color 120ms, transform 60ms;
+  }
+  button:hover{border-color:var(--muted-2);}
+  button:active{transform:scale(0.97);}
+
+  /* ---- dual raster rows ---- */
+  .brain-row{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px 10px;
+    margin-bottom:12px;
+  }
+  .brain-row.nt{border-left:3px solid var(--nt);}
+  .brain-row.asd{border-left:3px solid var(--asd);}
+  .brain-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:6px;
+  }
+  .brain-name{
+    font-size:0.86rem;
+    font-weight:600;
+  }
+  .brain-name.nt{color:var(--nt);}
+  .brain-name.asd{color:var(--asd);}
+  .brain-pct{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.82rem;
+    color:var(--muted);
+  }
+  .brain-pct b{color:var(--text);}
+  canvas.raster{width:100%;height:56px;display:block;}
+  .brain-caption{
+    font-size:0.7rem;
+    color:var(--muted-2);
+    margin-top:4px;
+  }
+
+  /* ---- comparison chart ---- */
+  #compareCanvas{width:100%;height:230px;display:block;}
+  .chart-caption{
+    font-size:0.75rem;
+    color:var(--muted-2);
+    margin-top:5px;
+  }
+  .legend{
+    display:flex;
+    gap:18px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.76rem;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+  }
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .legend-swatch{width:14px;height:3px;border-radius:2px;}
+
+  /* ---- threshold stat cards ---- */
+  .threshold-row{
+    display:flex;
+    gap:12px;
+    margin:14px 0 6px;
+    flex-wrap:wrap;
+  }
+  .threshold-card{
+    flex:1;
+    min-width:150px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .threshold-card.nt{border-top:3px solid var(--nt);}
+  .threshold-card.asd{border-top:3px solid var(--asd);}
+  .threshold-label{
+    font-size:0.7rem;
+    color:var(--muted-2);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    margin-bottom:4px;
+  }
+  .threshold-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:1.35rem;
+    font-weight:600;
+  }
+  .threshold-value.nt{color:var(--nt);}
+  .threshold-value.asd{color:var(--asd);}
+  .threshold-hz{font-size:0.78rem;color:var(--muted-2);font-weight:400;}
+
+  /* ---- honesty / footer ---- */
+  .note-box{
+    background:#171423;
+    border:1px solid #2e2447;
+    border-left:3px solid var(--accent);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:0.78rem;
+    line-height:1.5;
+    color:#cfc6e6;
+    margin-top:10px;
+  }
+  .note-box b{color:#e4ddf5;}
+
+  footer{
+    margin-top:20px;
+    padding-top:18px;
+    border-top:1px solid var(--border);
+    font-size:0.76rem;
+    color:var(--muted-2);
+    line-height:1.6;
+  }
+  footer p{margin:0 0 8px;}
+
+  @media (max-width:600px){
+    section.panel{padding:16px 14px 18px;}
+    .threshold-row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Procesamiento auditivo de pulsos consecutivos</h1>
+    <p class="subtitle">Cuando dos sonidos breves ocurren muy seguidos, ¿en qué momento el cerebro deja de oír "dos clics" y empieza a oír un solo sonido continuo? Esta es la base de las pruebas de "detección de brecha" (gap detection) — y uno de los hallazgos más replicados en autismo es que, dentro del dominio auditivo, se necesita una brecha más grande para distinguir los pulsos.</p>
+    <span class="badge">simulación educativa · modelo simplificado</span>
+  </header>
+
+  <div class="stations-grid">
+  <section class="panel">
+    <div class="panel-title">
+      <span class="panel-num">01</span>
+      <h2>Un mismo tren de pulsos, dos cerebros simulados</h2>
+    </div>
+    <p class="panel-desc">Ajusta la velocidad del tren de pulsos. Ambos cerebros simulados reciben exactamente el mismo tren, al mismo tiempo — compara cómo lo "escucha" cada uno.</p>
+
+    <div class="rate-block">
+      <div class="rate-top">
+        <div class="metronome" id="metronome"></div>
+        <div class="rate-readout">
+          <b id="rateValue">24</b> pulsos/seg
+          <div class="rate-sub">brecha física entre pulsos: <span id="iciValue">41.7</span> ms</div>
+        </div>
+      </div>
+      <input type="range" id="rateSlider" min="2" max="100" step="1" value="24">
+      <div class="rate-presets">
+        <button id="presetSlow">Lento (8/seg)</button>
+        <button id="presetMid">Medio (24/seg)</button>
+        <button id="presetFast">Rápido (60/seg)</button>
+      </div>
+    </div>
+
+    <div class="brain-row nt">
+      <div class="brain-header">
+        <span class="brain-name nt">Cerebro típico (NT)</span>
+        <span class="brain-pct">pulsos distinguidos: <b id="ntPct">—</b></span>
+      </div>
+      <canvas id="ntCanvas" class="raster" width="600" height="56"></canvas>
+      <p class="brain-caption">Círculos separados = pulsos percibidos como distintos. Una barra sólida = se perciben fundidos en un solo sonido.</p>
+    </div>
+
+    <div class="brain-row asd">
+      <div class="brain-header">
+        <span class="brain-name asd">Procesamiento auditivo alterado (compatible con TEA)</span>
+        <span class="brain-pct">pulsos distinguidos: <b id="asdPct">—</b></span>
+      </div>
+      <canvas id="asdCanvas" class="raster" width="600" height="56"></canvas>
+      <p class="brain-caption">Con recuperación neuronal más lenta entre pulsos, el mismo tren se percibe más fundido a la misma velocidad.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">
+      <span class="panel-num">02</span>
+      <h2>Curvas de resolución comparadas</h2>
+    </div>
+    <p class="panel-desc">Cada curva muestra, para cada velocidad de pulsos, qué tan seguido ese cerebro simulado logra percibir dos pulsos consecutivos como distintos en vez de fundidos.</p>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--nt)"></span> Típico (NT)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--asd)"></span> Compatible con TEA</div>
+    </div>
+
+    <canvas id="compareCanvas" width="600" height="230"></canvas>
+    <p class="chart-caption">Eje horizontal: velocidad del tren (pulsos por segundo). Eje vertical: probabilidad de percibir dos pulsos consecutivos como distintos. La línea vertical punteada marca la velocidad actual del control de la izquierda.</p>
+
+    <div class="threshold-row">
+      <div class="threshold-card nt">
+        <div class="threshold-label">Umbral de resolución — NT</div>
+        <div class="threshold-value nt" id="thresholdNT">— <span class="threshold-hz">ms</span></div>
+      </div>
+      <div class="threshold-card asd">
+        <div class="threshold-label">Umbral de resolución — TEA</div>
+        <div class="threshold-value asd" id="thresholdASD">— <span class="threshold-hz">ms</span></div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <b>Nota sobre el mecanismo:</b> este modelo ilustra una brecha mínima de recuperación neuronal entre pulsos — a diferencia de la simulación de la ventana de integración audiovisual (que ilustra la hipótesis del "ruido temporal"), aquí se ilustra la hipótesis complementaria: una ventana de discriminación intrínsecamente más amplia, posiblemente relacionada con una recuperación más lenta de la inhibición mediada por interneuronas rápidas (compatible con hipótesis de desbalance E/I en autismo). Es un mecanismo candidato, no un hallazgo celular establecido en humanos. Los <b>valores numéricos de los umbrales son ilustrativos</b>, no las cifras exactas de ningún estudio — lo respaldado por la literatura es la dirección del efecto: umbrales de detección de brecha auditiva significativamente más altos en TEA que en desarrollo típico (Foss-Feig et al., 2017, <i>Autism Research</i>), específico del dominio auditivo (no visual en ese mismo estudio), y replicado en trabajos previos (Bhatara et al., 2013; Oram Cardy et al., 2005). El hallazgo se correlaciona además con medidas de lenguaje y procesamiento fonológico.
+    </div>
+  </section>
+  </div>
+
+  <footer>
+    <p><b>Modelo simplificado con fines educativos.</b> No representa un registro neuronal real ni un diagnóstico. Implementa un modelo de recuperación tras cada pulso más ruido temporal ajustable; dos pulsos se perciben como distintos si la diferencia estimada de sus tiempos de llegada supera la ventana de recuperación.</p>
+    <p>Referencia: Foss-Feig, J.H., Schauder, K.B., Key, A.P., Wallace, M.T., Stone, W.L. (2017). Audition-specific temporal processing deficits associated with language function in children with autism spectrum disorder. <i>Autism Research</i>, 10(11), 1845–1856.</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------- shared analytic model ----------
+  function erf(x){
+    const sign = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+    const t = 1/(1+p*x);
+    const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+    return sign*y;
+  }
+  function normCdf(z){ return 0.5*(1+erf(z/Math.SQRT2)); }
+
+  function pFused(ICI, sigma, tauGap){
+    const sdDiff = Math.SQRT2*sigma;
+    const z1 = (tauGap-ICI)/sdDiff;
+    const z2 = (-tauGap-ICI)/sdDiff;
+    return normCdf(z1) - normCdf(z2);
+  }
+  function pResolved(ICI, sigma, tauGap){ return 1 - pFused(ICI, sigma, tauGap); }
+
+  const NT = {sigma:3.0, tauGap:8.0, color:'#7ce3b0'};
+  const ASD = {sigma:8.0, tauGap:25.0, color:'#ff9f5b'};
+
+  function findThreshold(sigma, tauGap){
+    // numeric bisection for P(resolved)=0.5
+    let lo=0.01, hi=500;
+    for(let i=0;i<60;i++){
+      const mid=(lo+hi)/2;
+      const p = pResolved(mid, sigma, tauGap);
+      if(p>0.5) hi=mid; else lo=mid;
+    }
+    return (lo+hi)/2;
+  }
+
+  // ---------- DOM refs ----------
+  const rateSlider = document.getElementById('rateSlider');
+  const rateValue = document.getElementById('rateValue');
+  const iciValue = document.getElementById('iciValue');
+  const metronome = document.getElementById('metronome');
+  const ntCanvas = document.getElementById('ntCanvas');
+  const asdCanvas = document.getElementById('asdCanvas');
+  const ntPct = document.getElementById('ntPct');
+  const asdPct = document.getElementById('asdPct');
+  const compareCanvas = document.getElementById('compareCanvas');
+  const thresholdNT = document.getElementById('thresholdNT');
+  const thresholdASD = document.getElementById('thresholdASD');
+  const presetSlow = document.getElementById('presetSlow');
+  const presetMid = document.getElementById('presetMid');
+  const presetFast = document.getElementById('presetFast');
+
+  let metronomeTimer = null;
+
+  // ---------- raster rendering ----------
+  function drawRaster(canvas, params, ici){
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const windowMs = 1000; // show ~1 second of the train
+    const nPulses = Math.max(2, Math.min(60, Math.floor(windowMs/ici)+1));
+    const marginX = 20;
+    const usableW = W - marginX*2;
+    const xOf = i => marginX + (i/(nPulses-1<1?1:nPulses-1)) * Math.min(usableW, (nPulses-1)*Math.max(8, usableW/Math.max(1,nPulses-1)));
+    // simpler: evenly space pulses across available width, capped so spacing isn't absurd
+    const spacing = usableW / Math.max(1,(nPulses-1));
+    const y = H*0.55;
+
+    const p = pResolved(ici, params.sigma, params.tauGap);
+    const fusedOpacity = 1 - p; // how "merged" consecutive pulses look
+
+    // connecting bar between consecutive pulses (drawn first, underneath)
+    ctx.strokeStyle = params.color;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = Math.max(0.06, fusedOpacity*0.85);
+    ctx.beginPath();
+    for(let i=0;i<nPulses-1;i++){
+      const x1 = marginX + i*spacing, x2 = marginX + (i+1)*spacing;
+      ctx.moveTo(x1,y); ctx.lineTo(x2,y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // discrete pulse markers
+    for(let i=0;i<nPulses;i++){
+      const x = marginX + i*spacing;
+      ctx.fillStyle = params.color;
+      ctx.beginPath();
+      ctx.arc(x,y,5,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    return p;
+  }
+
+  function updateRasters(){
+    const rate = parseInt(rateSlider.value,10);
+    const ici = 1000/rate;
+    rateValue.textContent = rate;
+    iciValue.textContent = ici.toFixed(1);
+
+    const pNT = drawRaster(ntCanvas, NT, ici);
+    const pASD = drawRaster(asdCanvas, ASD, ici);
+    ntPct.textContent = Math.round(pNT*100) + '%';
+    asdPct.textContent = Math.round(pASD*100) + '%';
+
+    restartMetronome(rate);
+    drawCompareChart(rate);
+  }
+
+  // ---------- metronome animation ----------
+  function restartMetronome(rate){
+    if(metronomeTimer) clearInterval(metronomeTimer);
+    const intervalMs = Math.max(20, 1000/rate);
+    metronomeTimer = setInterval(()=>{
+      metronome.classList.add('on');
+      setTimeout(()=>metronome.classList.remove('on'), Math.min(90, intervalMs*0.4));
+    }, intervalMs);
+  }
+
+  // ---------- comparison chart ----------
+  function drawCompareChart(currentRate){
+    const ctx = compareCanvas.getContext('2d');
+    const W = compareCanvas.width, H = compareCanvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    const rateMin=2, rateMax=100;
+    const padL=38, padR=14, padT=12, padB=28;
+    const plotW = W-padL-padR, plotH = H-padT-padB;
+    const xOf = r => padL + (r-rateMin)/(rateMax-rateMin)*plotW;
+    const yOf = p => padT + (1-p)*plotH;
+
+    // grid
+    ctx.strokeStyle = '#1c232b';
+    ctx.lineWidth = 1;
+    ctx.font = '9px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5e6b76';
+    for(let r=0; r<=rateMax; r+=20){
+      if(r<rateMin) continue;
+      const x = xOf(r);
+      ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,H-padB); ctx.stroke();
+      ctx.textAlign='center';
+      ctx.fillText(r, x, H-padB+14);
+    }
+    for(let p=0; p<=1.001; p+=0.25){
+      const y = yOf(p);
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
+      ctx.textAlign='right';
+      ctx.fillText(p.toFixed(2), padL-6, y+3);
+    }
+
+    // curves
+    function drawCurve(params){
+      ctx.strokeStyle = params.color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for(let r=rateMin; r<=rateMax; r+=1){
+        const ici = 1000/r;
+        const p = pResolved(ici, params.sigma, params.tauGap);
+        const x=xOf(r), y=yOf(p);
+        if(r===rateMin) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    drawCurve(NT);
+    drawCurve(ASD);
+
+    // current-rate marker
+    const xc = xOf(Math.max(rateMin,Math.min(rateMax,currentRate)));
+    ctx.strokeStyle = '#e7ecf0aa';
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.moveTo(xc,padT); ctx.lineTo(xc,H-padB);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ---------- wiring ----------
+  rateSlider.addEventListener('input', updateRasters);
+  presetSlow.addEventListener('click', ()=>{ rateSlider.value=8; updateRasters(); });
+  presetMid.addEventListener('click', ()=>{ rateSlider.value=24; updateRasters(); });
+  presetFast.addEventListener('click', ()=>{ rateSlider.value=60; updateRasters(); });
+
+  // static threshold readouts (fixed per network, independent of slider)
+  const tNT = findThreshold(NT.sigma, NT.tauGap);
+  const tASD = findThreshold(ASD.sigma, ASD.tauGap);
+  thresholdNT.innerHTML = tNT.toFixed(1) + ' <span class="threshold-hz">ms (~' + (1000/tNT).toFixed(0) + ' Hz)</span>';
+  thresholdASD.innerHTML = tASD.toFixed(1) + ' <span class="threshold-hz">ms (~' + (1000/tASD).toFixed(0) + ' Hz)</span>';
+
+  updateRasters();
+})();
+</script>
+</body>
+</html>
