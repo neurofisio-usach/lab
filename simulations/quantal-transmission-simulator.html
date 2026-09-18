@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantal Synaptic Transmission — Evoked EPP Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --scope-grid: #0f3a22;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --ink: #2a2318;
+    --danger: #d9694f;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1180px; }
+
+  header{ margin-bottom: 22px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.9rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p{
+    max-width: 720px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+  header a{ color: var(--phosphor); text-decoration: none; border-bottom:1px solid rgba(77,255,160,0.35); }
+  header a:hover{ border-bottom-color: var(--phosphor); }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; }
+  #scopeCanvas{ background: var(--scope-bg); }
+  #histCanvas{ background: var(--scope-bg); }
+
+  .controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin-top: 14px;
+  }
+  button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  button:hover{ border-color: var(--amber-dim); color: var(--amber); }
+  button.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+  }
+  button.primary:hover{ background:#f0b455; color:#1c1408; }
+  button.primary.running{ background: var(--danger); border-color: var(--danger); color:#2a0d06; }
+  button.primary.running:hover{ background:#e57b60; }
+
+  .cond-group{ display:flex; gap:0; border:1px solid var(--panel-edge); border-radius:6px; overflow:hidden; }
+  .cond-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: none;
+    padding: 8px 13px;
+    cursor:pointer;
+  }
+  .cond-btn + .cond-btn{ border-left: 1px solid var(--panel-edge); }
+  .cond-btn.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  .cond-btn:hover{ color: var(--amber); }
+
+  .toggle{
+    display:flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle input{ accent-color: var(--amber); width:14px; height:14px; }
+
+  .readout{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--phosphor);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+  .stats .row{
+    display:flex; justify-content:space-between;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); }
+  .stats .row .v.amber{ color: var(--amber); }
+  .stats .section-label{
+    grid-column: 1 / -1;
+    color: var(--paper-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    border-top: 1px solid var(--panel-edge);
+    padding-top: 8px;
+  }
+  .stats .section-label:first-child{ border-top:none; margin-top:0; padding-top:0; }
+  .quantal-section{ display:contents; }
+  .quantal-section.hidden-section{ display:none; }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+    margin: 10px 0 0;
+  }
+  details p code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · SYNAPTIC PHYSIOLOGY</p>
+    <h1>Quantal Transmission at the Neuromuscular Junction</h1>
+    <p>
+      Low-calcium evoked end-plate potentials, after the classic experiments of Katz &amp; Miledi and
+      del Castillo &amp; Katz. Each nerve stimulus releases a small, random number of transmitter quanta
+      — including outright failures — and the amplitude of every resulting EPP is measured. Run enough
+      trials and the histogram resolves into peaks spaced one quantum apart, revealing that release itself
+      is a discrete, quantized process. Background: <a href="https://www.ncbi.nlm.nih.gov/books/NBK11028/" target="_blank" rel="noopener">NCBI Bookshelf, NBK11028</a>.
+    </p>
+  </header>
+
+  <div class="grid">
+
+    <!-- SCOPE PANEL -->
+    <div class="panel">
+      <div class="panel-title">
+        <h2>OSCILLOSCOPE — END-PLATE RECORDING</h2>
+        <span>2 sweeps / s</span>
+      </div>
+      <canvas id="scopeCanvas" width="640" height="330"></canvas>
+      <div class="controls">
+        <button id="runBtn" class="primary">Start recording</button>
+        <button id="resetBtn">Reset</button>
+        <div class="cond-group">
+          <button class="cond-btn active" id="condLow">Low [Ca²⁺]</button>
+          <button class="cond-btn" id="condZero">≈0 [Ca²⁺]</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="revealToggle"> reveal quantal content (n) per sweep</label>
+        <span class="readout" id="sweepReadout">sweep 0</span>
+      </div>
+    </div>
+
+    <!-- HISTOGRAM PANEL -->
+    <div class="panel">
+      <div class="panel-title">
+        <h2>AMPLITUDE HISTOGRAM</h2>
+        <span>refreshes every 5 sweeps</span>
+      </div>
+      <canvas id="histCanvas" width="640" height="330"></canvas>
+      <div class="controls">
+        <label class="toggle"><input type="checkbox" id="theoryToggle"> show Poisson-predicted envelope</label>
+      </div>
+
+      <div class="stats">
+        <div class="section-label">RECORDING</div>
+        <div class="row"><span class="k">trials (N)</span><span class="v" id="statN">0</span></div>
+        <div class="row"><span class="k">failures (N0, silent trials)</span><span class="v" id="statN0">0</span></div>
+        <div class="row"><span class="k">mean amplitude</span><span class="v" id="statMean">— mV</span></div>
+        <div class="row"><span class="k">variance</span><span class="v" id="statVar">—</span></div>
+
+        <div id="quantalSection" class="quantal-section hidden-section">
+          <div class="section-label">QUANTAL CONTENT, ESTIMATED FROM DATA</div>
+          <div class="row"><span class="k">m, failure method (ln N/N0)</span><span class="v" id="statMFail">—</span></div>
+          <div class="row"><span class="k">m, variance method (mean²/var)</span><span class="v" id="statMVar">—</span></div>
+          <div class="row"><span class="k">quantal size q, variance method (var/mean)</span><span class="v" id="statQVar">— mV</span></div>
+          <div class="row"><span class="k">true q / m (this simulation)</span><span class="v amber" id="statTrue">hidden</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      Each sweep represents one nerve stimulus delivered in a low-extracellular-calcium bath, which keeps the
+      average number of vesicles released per stimulus low enough that release failures are common — exactly the
+      condition Katz's group exploited. The number of quanta released on a given trial, <code>n</code>, is drawn
+      from a Poisson distribution with a fixed mean (the simulation holds [Ca²⁺] constant rather than making it
+      adjustable). The resulting EPP amplitude is <code>n·q</code> plus a small amount of trial-to-trial noise
+      (baseline recording noise, plus a little extra variability per quantum released), so each underlying peak
+      in the histogram has some width rather than being a perfect spike — as in the real recordings.
+    </p>
+    <p>
+      Because you can't read <code>n</code> directly off a single sweep (that's the whole problem the original
+      experimenters faced), the panel instead reports the same two classical estimators Katz's group used to
+      infer quantal content from purely macroscopic measurements: the <b>failure method</b>
+      (<code>m = ln(N/N₀)</code>, from the fraction of silent trials) and the <b>variance method</b>
+      (<code>m = mean²/variance</code>, which also yields an independent estimate of the quantal size itself,
+      <code>q = variance/mean</code>, with no need to already know it). Toggle "reveal quantal content" to check
+      the true <code>n</code> against your read of the trace, and watch the two estimators converge on the true
+      values as more sweeps accumulate.
+    </p>
+    <p>
+      The quantal size itself is re-randomized every time the page loads (a tight range around the
+      ~0.4 mV Boyd &amp; Martin reported), so each student is measuring their own true value rather than
+      already knowing the answer — reload the page for a fresh one. The "reveal" toggles show it as a
+      check once you've made your own estimate, not before.
+    </p>
+    <p>
+      The <b>≈0 [Ca²⁺]</b> button lowers mean quantal content to a small fraction of a quantum per stimulus, as in
+      the original zero-calcium experiments: almost every sweep is a failure, and the rare successes are almost
+      always exactly one quantum — this is what directly reveals the unitary EPP amplitude, since there's essentially
+      no chance of two vesicles releasing on the same trial to confuse the reading. Note that the variance method for
+      estimating m becomes unreliable in this regime (recording noise dominates the tiny signal variance); the
+      failure method stays robust and is what the original experiments actually relied on here.
+    </p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  // ---------- model parameters ----------
+  // Quantal size is randomized once per page load (per "student"/session), so each
+  // person has to determine their own value from the data rather than being told it —
+  // but kept in a realistic, tight range so every session lands close to the
+  // ~0.4 mV reported by Boyd & Martin (1956) for the frog neuromuscular junction.
+  const Q = +(0.34 + Math.random()*0.12).toFixed(3); // mV, single-quantum amplitude, 0.34-0.46 mV
+  const M_LOW = 2.2;           // mean quanta/stimulus, "low calcium" condition
+  const M_ZERO = 0.12;         // mean quanta/stimulus, "near-zero calcium" condition
+  let M_TRUE = M_LOW;          // current condition (switchable)
+  const SIGMA0 = 0.08;         // mV, baseline recording noise (width of the failure peak)
+  const SIGMA_Q = 0.22*Q;      // mV, extra variability contributed per quantum released
+                                // (models trial-to-trial variation in quantal size itself,
+                                //  ~22% CV, which is why real histograms never fully
+                                //  return to zero between adjacent peaks)
+  const FAIL_THRESHOLD = Q/2;  // mV, standard convention: score as failure if amplitude < half a quantum
+
+  const T_MAX = 25;           // ms, sweep duration
+  const STIM_T = 3;           // ms, stimulus artifact time
+  const SYN_DELAY = 1;        // ms, synaptic delay
+  const ONSET = STIM_T + SYN_DELAY;
+  const TAU_R = 0.4, TAU_D = 7; // ms, EPP rise/decay time constants
+  const T_PEAK = (TAU_R*TAU_D/(TAU_D-TAU_R)) * Math.log(TAU_D/TAU_R);
+  const PEAK_NORM = Math.exp(-T_PEAK/TAU_D) - Math.exp(-T_PEAK/TAU_R);
+
+  // Axes are plain millivolts on regular round-number gridlines, deliberately NOT
+  // tied to the (hidden) quantal size Q — otherwise the gridline spacing itself
+  // would give away the answer the student is supposed to measure.
+  const Y_MIN = -0.15, Y_MAX = 4.0;  // mV, scope vertical range
+  const AXIS_STEP = 0.5;             // mV, spacing of the plain-mV gridlines/ticks
+  const SCOPE_PAD_B = 28;            // px, bottom margin reserved for time-axis labels
+  const HIST_MIN = 0, HIST_MAX = 3.6; // mV, histogram x-range (EPSPs can't be negative)
+  const BIN_W = Q/8;
+  const N_BINS = Math.round((HIST_MAX-HIST_MIN)/BIN_W);
+  const PERSIST = 12; // number of past sweeps kept faintly visible
+
+  // ---------- RNG helpers ----------
+  function gaussian(mean, sd){
+    let u=0,v=0;
+    while(u===0) u=Math.random();
+    while(v===0) v=Math.random();
+    return mean + sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+  function poisson(mean){
+    const L = Math.exp(-mean);
+    let k=0, p=1;
+    do{ k++; p*=Math.random(); } while(p>L);
+    return k-1;
+  }
+  function poissonPMF(k, mean){
+    let logp = -mean + k*Math.log(mean);
+    for(let i=2;i<=k;i++) logp -= Math.log(i);
+    return Math.exp(logp);
+  }
+
+  function eppShape(t){
+    if(t < ONSET) return 0;
+    const dt = t - ONSET;
+    return (Math.exp(-dt/TAU_D) - Math.exp(-dt/TAU_R)) / PEAK_NORM;
+  }
+  function stimArtifact(t){
+    const d = t - STIM_T;
+    if(d < -0.15 || d > 0.35) return 0;
+    if(d < 0) return 0.22*(1 + d/0.15);
+    return 0.22*Math.max(0, 1 - d/0.35);
+  }
+
+  function makeSweep(){
+    const n = poisson(M_TRUE);
+    const sigma = Math.sqrt(SIGMA0*SIGMA0 + n*SIGMA_Q*SIGMA_Q);
+    // EPSPs can't be hyperpolarizing (the reversal potential is near 0 relative to
+    // baseline), so noise can't push a real recorded amplitude below zero — fold
+    // any negative draw back onto the positive side rather than discarding it.
+    const amp = Math.abs(n*Q + gaussian(0, sigma));
+    return {n, amp};
+  }
+
+  // ---------- state ----------
+  let running = false, timer = null;
+  let sweepCount = 0;
+  let history = [];      // last PERSIST sweeps, for scope persistence
+  let ampData = [];      // all amplitudes since reset
+  let reveal = false, showTheory = false;
+
+  // ---------- DOM ----------
+  const scopeC = document.getElementById('scopeCanvas');
+  const histC  = document.getElementById('histCanvas');
+  const sctx = scopeC.getContext('2d');
+  const hctx = histC.getContext('2d');
+  const runBtn = document.getElementById('runBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const revealToggle = document.getElementById('revealToggle');
+  const theoryToggle = document.getElementById('theoryToggle');
+  const sweepReadout = document.getElementById('sweepReadout');
+  const condLow = document.getElementById('condLow');
+  const condZero = document.getElementById('condZero');
+
+  const statN = document.getElementById('statN');
+  const statN0 = document.getElementById('statN0');
+  const statMean = document.getElementById('statMean');
+  const statVar = document.getElementById('statVar');
+  const statMFail = document.getElementById('statMFail');
+  const statMVar = document.getElementById('statMVar');
+  const statQVar = document.getElementById('statQVar');
+  const statTrue = document.getElementById('statTrue');
+
+  // ---------- scope drawing ----------
+  function xPix(t, w){ return (t/T_MAX)*w; }
+  function yPix(v, h){ const ph = h - SCOPE_PAD_B; return ph - ((v - Y_MIN)/(Y_MAX - Y_MIN))*ph; }
+
+  function drawScopeGrid(w,h){
+    // vertical (time) lines every 5 ms
+    sctx.strokeStyle = 'rgba(15,58,34,0.9)';
+    sctx.lineWidth = 1;
+    for(let t=0;t<=T_MAX;t+=5){
+      const x = xPix(t,w);
+      sctx.beginPath(); sctx.moveTo(x,0); sctx.lineTo(x,h-SCOPE_PAD_B); sctx.stroke();
+    }
+    // plain mV gridlines, regular round-number spacing (not tied to the hidden Q)
+    sctx.font = '10px JetBrains Mono, monospace';
+    for(let v=0; v<=Y_MAX+0.001; v+=AXIS_STEP){
+      const y = yPix(v,h);
+      sctx.strokeStyle = v===0 ? 'rgba(232,165,61,0.4)' : 'rgba(77,255,160,0.16)';
+      sctx.setLineDash(v===0?[]:[3,4]);
+      sctx.beginPath(); sctx.moveTo(0,y); sctx.lineTo(w,y); sctx.stroke();
+      sctx.setLineDash([]);
+      sctx.fillStyle = 'rgba(184,174,149,0.55)';
+      sctx.fillText(v>=Y_MAX-0.001 ? v.toFixed(1)+' mV' : v.toFixed(1), 4, y-3);
+    }
+    // reveal-only: true quantal step lines, so a student can check their own estimate
+    if(reveal){
+      sctx.strokeStyle = 'rgba(232,165,61,0.55)';
+      sctx.setLineDash([2,3]);
+      for(let k=1;k*Q<=Y_MAX;k++){
+        const y = yPix(k*Q,h);
+        sctx.beginPath(); sctx.moveTo(0,y); sctx.lineTo(w,y); sctx.stroke();
+      }
+      sctx.setLineDash([]);
+    }
+  }
+
+  function drawTrace(sweep, alpha, lw, color){
+    const w = scopeC.width, h = scopeC.height;
+    sctx.beginPath();
+    sctx.lineWidth = lw;
+    sctx.strokeStyle = color.replace('ALPHA', alpha.toFixed(3));
+    let first = true;
+    for(let px=0; px<=w; px++){
+      const t = (px/w)*T_MAX;
+      const v = stimArtifact(t) + sweep.amp*eppShape(t);
+      const x = px, y = yPix(v,h);
+      if(first){ sctx.moveTo(x,y); first=false; } else sctx.lineTo(x,y);
+    }
+    sctx.stroke();
+  }
+
+  function redrawScope(){
+    const w = scopeC.width, h = scopeC.height;
+    sctx.clearRect(0,0,w,h);
+    drawScopeGrid(w,h);
+    const n = history.length;
+    history.forEach((sw, i)=>{
+      const isLast = i === n-1;
+      const alpha = isLast ? 1 : 0.08 + 0.32*(i/(n-1||1));
+      const lw = isLast ? 2 : 1;
+      drawTrace(sw, alpha, lw, `rgba(77,255,160,ALPHA)`);
+      if(isLast && reveal){
+        sctx.fillStyle = '#e8a53d';
+        sctx.font = '600 13px JetBrains Mono, monospace';
+        sctx.fillText('n = '+sw.n, w-70, 18);
+      }
+    });
+    // axis labels
+    sctx.fillStyle = 'rgba(184,174,149,0.55)';
+    sctx.font = '10px JetBrains Mono, monospace';
+    sctx.fillText('stim', xPix(STIM_T,w)-10, h-10);
+    sctx.fillText('0 ms', 2, h-10);
+    sctx.fillText(T_MAX+' ms', w-40, h-10);
+  }
+
+  // ---------- histogram drawing ----------
+  function computeBins(){
+    const bins = new Array(N_BINS).fill(0);
+    ampData.forEach(a=>{
+      let idx = Math.floor((a-HIST_MIN)/BIN_W);
+      if(idx<0) idx=0;
+      if(idx>=N_BINS) idx=N_BINS-1;
+      bins[idx]++;
+    });
+    return bins;
+  }
+
+  function redrawHist(){
+    const w = histC.width, h = histC.height;
+    hctx.clearRect(0,0,w,h);
+    const bins = computeBins();
+    const maxCount = Math.max(4, ...bins);
+    const padBottom = 42, padTop = 22, padLeft = 36;
+    const plotW = w - padLeft;
+    const plotH = h - padBottom - padTop;
+    const hx = v => padLeft + (v/HIST_MAX)*plotW;
+
+    // plain mV gridlines/ticks, regular round-number spacing (not tied to the hidden Q)
+    hctx.font = '10px JetBrains Mono, monospace';
+    for(let v=0; v<=HIST_MAX+0.001; v+=AXIS_STEP){
+      const x = hx(v);
+      hctx.strokeStyle = v===0 ? 'rgba(232,165,61,0.4)' : 'rgba(77,255,160,0.16)';
+      hctx.setLineDash(v===0?[]:[3,4]);
+      hctx.beginPath(); hctx.moveTo(x,padTop); hctx.lineTo(x,h-padBottom); hctx.stroke();
+      hctx.setLineDash([]);
+      hctx.fillStyle = 'rgba(184,174,149,0.6)';
+      hctx.fillText(v.toFixed(1), x-8, h-padBottom+16);
+    }
+    // reveal-only: true quantal step lines, so a student can check their own estimate
+    if(showTheory){
+      hctx.strokeStyle = 'rgba(232,165,61,0.5)';
+      hctx.setLineDash([2,3]);
+      for(let k=1;k*Q<=HIST_MAX;k++){
+        const x = hx(k*Q);
+        hctx.beginPath(); hctx.moveTo(x,padTop); hctx.lineTo(x,h-padBottom); hctx.stroke();
+      }
+      hctx.setLineDash([]);
+    }
+
+    // bars
+    const barW = plotW/N_BINS;
+    hctx.fillStyle = 'rgba(77,255,160,0.75)';
+    bins.forEach((c,i)=>{
+      const bh = (c/maxCount)*plotH;
+      hctx.fillRect(padLeft+i*barW+0.5, h-padBottom-bh, Math.max(1,barW-1), bh);
+    });
+
+    // theoretical envelope
+    if(showTheory && ampData.length>0){
+      hctx.beginPath();
+      hctx.strokeStyle = '#e8a53d';
+      hctx.lineWidth = 1.6;
+      let first = true;
+      const N = ampData.length;
+      const NMAX = 9;
+      for(let px=padLeft; px<=w; px++){
+        const x = ((px-padLeft)/plotW)*HIST_MAX;
+        let density = 0;
+        for(let k=0;k<=NMAX;k++){
+          const pk = poissonPMF(k, M_TRUE);
+          const sigma = Math.sqrt(SIGMA0*SIGMA0 + k*SIGMA_Q*SIGMA_Q);
+          const mu = k*Q;
+          density += pk * Math.exp(-((x-mu)**2)/(2*sigma*sigma)) / (sigma*Math.sqrt(2*Math.PI));
+        }
+        const expectedCount = density * BIN_W * N;
+        const y = h - padBottom - (expectedCount/maxCount)*plotH;
+        const yc = Math.max(padTop, Math.min(h-padBottom, y));
+        if(first){ hctx.moveTo(px,yc); first=false; } else hctx.lineTo(px,yc);
+      }
+      hctx.stroke();
+    }
+
+    hctx.fillStyle = 'rgba(184,174,149,0.6)';
+    hctx.font = '10px JetBrains Mono, monospace';
+    hctx.fillText('EPP amplitude (mV)', padLeft + plotW/2 - 45, h-6);
+
+    // y-axis label (rotated)
+    hctx.save();
+    hctx.translate(12, padTop + plotH/2 + 45);
+    hctx.rotate(-Math.PI/2);
+    hctx.fillStyle = 'rgba(184,174,149,0.6)';
+    hctx.font = '10px JetBrains Mono, monospace';
+    hctx.fillText('number of observations', 0, 0);
+    hctx.restore();
+  }
+
+  // ---------- stats ----------
+  function updateStats(){
+    const N = ampData.length;
+    statN.textContent = N;
+    if(N===0){
+      statN0.textContent='0'; statMean.textContent='— mV'; statVar.textContent='—';
+      statMFail.textContent='—'; statMVar.textContent='—'; statQVar.textContent='— mV';
+      return;
+    }
+    const N0 = ampData.filter(a=>a<FAIL_THRESHOLD).length;
+    const mean = ampData.reduce((s,a)=>s+a,0)/N;
+    const variance = ampData.reduce((s,a)=>s+(a-mean)**2,0)/N;
+    statN0.textContent = N0;
+    statMean.textContent = mean.toFixed(3)+' mV';
+    statVar.textContent = variance.toFixed(4);
+
+    statMFail.textContent = (N0>0) ? Math.log(N/N0).toFixed(2) : '≥ '+Math.log(N/0.5).toFixed(2)+' (no failures yet)';
+    statMVar.textContent = (variance>0) ? (mean*mean/variance).toFixed(2) : '—';
+    statQVar.textContent = (mean>0) ? (variance/mean).toFixed(3)+' mV' : '— mV';
+  }
+
+  // ---------- main loop ----------
+  function tick(){
+    const sw = makeSweep();
+    sweepCount++;
+    history.push(sw);
+    if(history.length>PERSIST) history.shift();
+    ampData.push(sw.amp);
+
+    sweepReadout.textContent = 'sweep '+sweepCount;
+    redrawScope();
+    if(sweepCount % 5 === 0 || ampData.length<=5){
+      redrawHist();
+      updateStats();
+    }
+  }
+
+  function setRunning(r){
+    running = r;
+    if(running){
+      runBtn.textContent = 'Pause';
+      runBtn.classList.add('running');
+      timer = setInterval(tick, 500); // 2 sweeps / second
+    } else {
+      runBtn.textContent = 'Resume recording';
+      runBtn.classList.remove('running');
+      clearInterval(timer);
+    }
+  }
+
+  function reset(){
+    setRunning(false);
+    runBtn.textContent = 'Start recording';
+    sweepCount = 0; history = []; ampData = [];
+    sweepReadout.textContent = 'sweep 0';
+    redrawScope(); redrawHist(); updateStats();
+  }
+
+  function setCondition(mode){
+    if(mode==='zero'){
+      M_TRUE = M_ZERO;
+      condZero.classList.add('active'); condLow.classList.remove('active');
+    } else {
+      M_TRUE = M_LOW;
+      condLow.classList.add('active'); condZero.classList.remove('active');
+    }
+    statTrue.textContent = showTheory ? ('q = '+Q+' mV, m = '+M_TRUE.toFixed(2)) : 'hidden';
+    reset(); // the two conditions are not statistically comparable, so switching starts a fresh recording
+  }
+
+  function updateQuantalVisibility(){
+    const show = reveal || showTheory;
+    document.getElementById('quantalSection').classList.toggle('hidden-section', !show);
+  }
+
+  runBtn.addEventListener('click', ()=> setRunning(!running));
+  resetBtn.addEventListener('click', reset);
+  condLow.addEventListener('click', ()=> setCondition('low'));
+  condZero.addEventListener('click', ()=> setCondition('zero'));
+  revealToggle.addEventListener('change', e=>{
+    reveal = e.target.checked;
+    updateQuantalVisibility();
+    redrawScope();
+  });
+  theoryToggle.addEventListener('change', e=>{
+    showTheory = e.target.checked;
+    statTrue.textContent = showTheory ? ('q = '+Q+' mV, m = '+M_TRUE) : 'hidden';
+    updateQuantalVisibility();
+    redrawHist();
+  });
+
+  // initial paint
+  redrawScope();
+  redrawHist();
+  updateStats();
+})();
+</script>
+</body>
+</html>

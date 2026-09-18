@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central Synapse — Voltage-Clamp EPSC Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --scope-grid: #0f3a22;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --nmda: #6fb8ff;
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --ink: #2a2318;
+    --danger: #d9694f;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1220px; }
+
+  header{ margin-bottom: 20px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.85rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p{
+    max-width: 760px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+  header sup{ font-size: 0.7em; }
+
+  nav.tabs{
+    display:flex; gap:0;
+    border: 1px solid var(--panel-edge);
+    border-radius: 8px;
+    overflow:hidden;
+    width: fit-content;
+    margin: 18px 0 18px;
+  }
+  nav.tabs button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    letter-spacing: 0.02em;
+    background: var(--panel);
+    color: var(--paper-dim);
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  nav.tabs button + button{ border-left: 1px solid var(--panel-edge); }
+  nav.tabs button.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  nav.tabs button:hover:not(.active){ color: var(--paper); }
+
+  .deck{
+    display:grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px){
+    .deck{ grid-template-columns: 1fr; }
+  }
+  .deck.hist-layout{
+    grid-template-columns: 1fr;
+  }
+  .deck.hist-layout .rail{ order: 2; }
+  .deck.hist-layout #stageArea{ order: 1; }
+
+  /* horizontal control layout, used on the Quantal Histogram tab so the
+     scope/histogram windows above can take the full page width */
+  .rail.horizontal{
+    display:flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px 26px;
+  }
+  .rail.horizontal h2.sec{ flex-basis: 100%; margin-bottom: 2px; }
+  .rail.horizontal .ctrl{ flex: 1 1 170px; min-width: 150px; margin-bottom: 0; }
+  .rail.horizontal .divider{ flex-basis: 100%; margin: 2px 0; border-top: 1px solid var(--panel-edge); }
+  .rail.horizontal button.primary,
+  .rail.horizontal button.secondary{ flex: 0 0 170px; margin-top: 0; align-self: flex-end; }
+  .rail.horizontal .cond-group{ min-width: 140px; }
+
+  .stageArea{ display:grid; grid-template-columns: 1fr; gap: 18px; }
+  .stageArea.dual{ grid-template-columns: 1.35fr 1fr; align-items: start; }
+  @media (max-width: 900px){
+    .stageArea.dual{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--paper-dim);
+    white-space: nowrap;
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; background: var(--scope-bg); }
+
+  /* ---- rail / controls panel ---- */
+  .rail h2.sec{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    color: var(--paper-dim);
+    margin: 0 0 12px;
+    text-transform: uppercase;
+  }
+  .ctrl{ margin-bottom: 15px; }
+  .ctrl:last-child{ margin-bottom:0; }
+  .ctrl label{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    margin-bottom: 6px;
+  }
+  .ctrl label .val{ color: var(--phosphor); font-weight:500; }
+  input[type="range"]{ width:100%; accent-color: var(--amber); }
+
+  .cond-group{ display:flex; border:1px solid var(--panel-edge); border-radius:6px; overflow:hidden; }
+  .cond-btn{
+    flex:1;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: none;
+    padding: 7px 0;
+    cursor:pointer;
+  }
+  .cond-btn + .cond-btn{ border-left: 1px solid var(--panel-edge); }
+  .cond-btn.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  .cond-btn:hover{ color: var(--amber); }
+
+  .toggle{
+    display:flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle input{ accent-color: var(--amber); width:14px; height:14px; }
+
+  .divider{ border-top: 1px solid var(--panel-edge); margin: 14px 0; }
+
+  button.primary{
+    width:100%;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--amber);
+    border: 1px solid var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+    padding: 10px 0;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: background .15s ease;
+  }
+  button.primary:hover{ background:#f0b455; }
+  button.primary.running{ background: var(--danger); border-color: var(--danger); color:#2a0d06; }
+  button.primary.running:hover{ background:#e57b60; }
+  button.secondary{
+    width:100%;
+    margin-top: 8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 0;
+    border-radius: 6px;
+    cursor:pointer;
+  }
+  button.secondary:hover{ border-color: var(--amber-dim); color: var(--amber); }
+
+  /* ---- stage controls row (inside scope panel) ---- */
+  .controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin-top: 12px;
+  }
+  .readout-inline{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    color: var(--phosphor);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .readouts{
+    display:flex; flex-wrap:wrap; gap: 14px 22px;
+    margin-top: 12px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+  }
+  .readouts .r{ color: var(--paper-dim); }
+  .readouts .r b{ color: var(--phosphor); font-weight:600; }
+
+  .legend-row{ display:flex; gap:16px; margin-top:10px; font-size:0.72rem; color:var(--paper-dim); flex-wrap:wrap; }
+  .legend-row span{ display:inline-flex; align-items:center; gap:5px; }
+  .swatch{ width:10px; height:3px; border-radius:1px; display:inline-block; }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+  }
+  .stats .row{
+    display:flex; justify-content:space-between;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+    margin: 10px 0 0;
+  }
+  details p code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  footer{ margin-top: 20px; font-size: 0.72rem; color: var(--paper-dim); text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · SYNAPTIC PHYSIOLOGY</p>
+    <h1>Central Synapse — Voltage-Clamp EPSC Simulator</h1>
+    <p>
+      A small population of release sites (2–4), AMPA and NMDA receptor currents, and Mg<sup>2+</sup> block
+      that lifts as the cell is depolarized. Recorded as a whole-cell voltage-clamp current, the way it would
+      look on a real amplifier — contrast with the many-release-site, high-P<sub>r</sub> regime at the
+      neuromuscular junction.
+    </p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="single">Single EPSC</button>
+    <button class="tab-btn" data-tab="train">Paired-Pulse / Train</button>
+    <button class="tab-btn" data-tab="hist">Quantal Histogram</button>
+  </nav>
+
+  <div class="deck" id="deck">
+    <div class="panel rail" id="rail"></div>
+    <div class="stageArea" id="stageArea"></div>
+  </div>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      Each stimulus is delivered to <code id="dN">3</code> independent release sites, each releasing one vesicle
+      with probability P<sub>r</sub> after a ~1 ms synaptic delay (presynaptic Ca<sup>2+</sup> channel opening,
+      vesicle fusion, diffusion across the cleft, and receptor binding — Sabatini &amp; Regehr, 1996). Released
+      glutamate activates both AMPA and NMDA receptors on the same
+      postsynaptic density: the AMPA current is fast (rise ~0.3 ms, decay ~3 ms) and the NMDA current is slow
+      (rise ~5 ms, decay ~80 ms) and voltage-dependent, since extracellular Mg<sup>2+</sup> blocks the NMDA
+      channel pore at hyperpolarized potentials and unblocks as the membrane depolarizes (Jahr &amp; Stevens
+      relation). The recorded current is <code>I(t) = g(t) · (V<sub>hold</sub> − 0 mV)</code>, so at very
+      negative holding potentials the trace deflects sharply downward (inward current), and near 0 mV the
+      driving force — and the current — shrinks toward zero even though channels are open.
+    </p>
+    <p>
+      Unlike the neuromuscular junction's single terminal with hundreds of release sites, a central synaptic
+      connection typically involves only a handful of contacts, so <b>failures</b> (0 quanta released) are
+      common even without lowering calcium — this is the everyday operating regime of a cortical or
+      hippocampal synapse, not a special experimental condition.
+    </p>
+    <p>
+      In the <b>Paired-Pulse / Train</b> tab, each release site depletes after releasing and recovers over
+      hundreds of milliseconds, while each release event also transiently raises release probability at the
+      remaining sites (facilitation). At low P<sub>r</sub>, facilitation dominates the paired-pulse ratio;
+      at higher P<sub>r</sub>, depletion-driven depression takes over — the same rule of thumb described by
+      Dobrunz &amp; Stevens (1997).
+    </p>
+    <p>
+      Because a connection only has 2–4 release sites, the paired-pulse ratio itself is a noisy statistic:
+      with so few sites, whether a given site happens to still be available for pulse 2 is close to a coin
+      flip, and averaging a modest number of trials doesn't fully wash that out — a fresh "average" run can
+      genuinely land on facilitation one time and depression the next, purely from sampling variability, even
+      with every slider held fixed. This is a real feature of small-N synapses (and part of why single-connection
+      experiments need many repeats), not a simulator error. Averaging more trials narrows the spread but only
+      slowly, since it shrinks with the square root of trial count.
+    </p>
+  </details>
+
+  <footer>Teaching simulation — parameters are illustrative of central excitatory synapses (e.g. hippocampal CA3–CA1), not measurements from a specific preparation.</footer>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ================= Biophysics =================
+  const E_REV = 0;
+  const TAU_RISE_A = 0.3, TAU_DECAY_A = 3.0;
+  const TAU_RISE_N = 5.0,  TAU_DECAY_N = 80.0;
+  const Q_AMPA = 0.15;
+  // synaptic delay: time from stimulus to the start of the postsynaptic current, reflecting
+  // presynaptic Ca2+ channel opening, vesicle fusion, transmitter diffusion, and receptor binding.
+  // ~1 ms is a representative central-synapse value at near-physiological recording temperature
+  // (Sabatini & Regehr, 1996, Nature — synaptic delay at central synapses).
+  const SYN_DELAY_MEAN = 1.0, SYN_DELAY_SD = 0.15, SYN_DELAY_MIN = 0.5;
+
+  function biexpNorm(t, tauRise, tauDecay) {
+    if (t <= 0) return 0;
+    const tPeak = (tauRise * tauDecay / (tauDecay - tauRise)) * Math.log(tauDecay / tauRise);
+    const norm = Math.exp(-tPeak / tauDecay) - Math.exp(-tPeak / tauRise);
+    return (Math.exp(-t / tauDecay) - Math.exp(-t / tauRise)) / norm;
+  }
+  function mgBlockFactor(V, mgConc) {
+    return 1 / (1 + (mgConc / 3.57) * Math.exp(-V / 16.13));
+  }
+  function gauss(mean, sd) {
+    let u = 1 - Math.random(), v = Math.random();
+    return mean + sd * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  function synapticDelay() {
+    return Math.max(SYN_DELAY_MIN, gauss(SYN_DELAY_MEAN, SYN_DELAY_SD));
+  }
+  function drawBinomialK(N, Pr) {
+    let k = 0;
+    for (let i = 0; i < N; i++) if (Math.random() < Pr) k++;
+    return k;
+  }
+  function makeEvents(k) {
+    const events = [];
+    for (let i = 0; i < k; i++) {
+      events.push({ delay: synapticDelay(), scale: Math.max(0.3, gauss(1, 0.15)) });
+    }
+    return events;
+  }
+  function buildSweep(events, tStart, tEnd, dt, vhold, nmdaRatio, mgOn, noiseSD) {
+    const n = Math.round((tEnd - tStart) / dt) + 1;
+    const t = new Float64Array(n);
+    const I = new Float64Array(n);
+    const mg = mgOn ? mgBlockFactor(vhold, 1.0) : mgBlockFactor(vhold, 0.0);
+    for (let i = 0; i < n; i++) {
+      const tt = tStart + i * dt;
+      t[i] = tt;
+      let gA = 0, gN = 0;
+      for (const ev of events) {
+        const rt = tt - ev.delay;
+        gA += ev.scale * biexpNorm(rt, TAU_RISE_A, TAU_DECAY_A);
+        gN += ev.scale * biexpNorm(rt, TAU_RISE_N, TAU_DECAY_N);
+      }
+      gA *= Q_AMPA;
+      gN *= Q_AMPA * nmdaRatio * mg;
+      I[i] = (gA + gN) * (vhold - E_REV) + gauss(0, noiseSD);
+    }
+    return { t, I };
+  }
+  function sweepPeak(t, I, vhold, tMinSearch) {
+    tMinSearch = tMinSearch === undefined ? 0 : tMinSearch;
+    let idx = -1;
+    if (vhold <= 0) {
+      let m = Infinity;
+      for (let i = 0; i < I.length; i++) if (t[i] >= tMinSearch && I[i] < m) { m = I[i]; idx = i; }
+    } else {
+      let m = -Infinity;
+      for (let i = 0; i < I.length; i++) if (t[i] >= tMinSearch && I[i] > m) { m = I[i]; idx = i; }
+    }
+    return idx === -1 ? 0 : I[idx];
+  }
+
+  // single-vesicle peak current (no noise), used as the quantal step for the binomial fit overlay
+  function singleQuantumPeak(vhold, nmdaRatio, mgOn) {
+    const { t, I } = buildSweep([{ delay: SYN_DELAY_MEAN, scale: 1 }], -5, 45, 0.5, vhold, nmdaRatio, mgOn, 0);
+    return sweepPeak(t, I, vhold, 0);
+  }
+  function binomCoeff(N, k) {
+    let c = 1;
+    for (let i = 0; i < k; i++) c = c * (N - i) / (i + 1);
+    return c;
+  }
+  function binomPMF(k, N, Pr) {
+    return binomCoeff(N, k) * Math.pow(Pr, k) * Math.pow(1 - Pr, N - k);
+  }
+
+  // ================= State =================
+  const state = {
+    tab: "single",
+    vhold: -70, N: 3, Pr: 0.3, nmdaRatio: 0.5, mgOn: true, noiseSD: 1.5,
+    revealK: false,
+    isi: 50, nPulses: 2, facilStrength: 0.55, tauFacil: 120, tauRec: 600,
+    histAmps: [], histRunning: false, histTimer: null, showFit: false,
+    lastK: null, lastPeak: null, lastKs: null, lastPeaks: null
+  };
+
+  const rail = document.getElementById("rail");
+  const stageArea = document.getElementById("stageArea");
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  // ================= Rail (shared controls) =================
+  function sharedControlsHTML() {
+    return `
+      <h2 class="sec">Recording conditions</h2>
+      <div class="ctrl">
+        <label>Holding potential <span class="val" id="vholdVal">${state.vhold} mV</span></label>
+        <input type="range" id="vhold" min="-80" max="40" step="5" value="${state.vhold}">
+      </div>
+      <div class="ctrl">
+        <label>Release sites (N)</label>
+        <div class="cond-group" id="nSeg">
+          ${[2,3,4,6].map(n => `<button class="cond-btn${n===state.N?" active":""}" data-n="${n}">${n}</button>`).join("")}
+        </div>
+      </div>
+      <div class="ctrl">
+        <label>Release probability P<sub>r</sub> <span class="val" id="prVal">${state.Pr.toFixed(2)}</span></label>
+        <input type="range" id="pr" min="0.1" max="0.9" step="0.05" value="${state.Pr}">
+      </div>
+      <div class="ctrl">
+        <label>NMDA : AMPA ratio <span class="val" id="ratioVal">${state.nmdaRatio.toFixed(2)}</span></label>
+        <input type="range" id="ratio" min="0" max="1.2" step="0.05" value="${state.nmdaRatio}">
+      </div>
+      <div class="ctrl">
+        <label class="toggle"><input type="checkbox" id="mgToggle" ${state.mgOn ? "checked" : ""}> Mg<sup>2+</sup> block (1 mM)</label>
+      </div>
+      <div class="ctrl">
+        <label>Recording noise (SD) <span class="val" id="noiseVal">${state.noiseSD} pA</span></label>
+        <input type="range" id="noise" min="0" max="10" step="0.5" value="${state.noiseSD}">
+      </div>
+    `;
+  }
+  function bindShared() {
+    document.getElementById("vhold").addEventListener("input", e => {
+      state.vhold = parseFloat(e.target.value);
+      document.getElementById("vholdVal").textContent = state.vhold + " mV";
+      renderStage();
+    });
+    document.querySelectorAll("#nSeg button").forEach(b => {
+      b.addEventListener("click", () => {
+        state.N = parseInt(b.dataset.n, 10);
+        document.querySelectorAll("#nSeg button").forEach(x => x.classList.toggle("active", x === b));
+        document.getElementById("dN").textContent = state.N;
+        renderStage();
+      });
+    });
+    document.getElementById("pr").addEventListener("input", e => {
+      state.Pr = parseFloat(e.target.value);
+      document.getElementById("prVal").textContent = state.Pr.toFixed(2);
+    });
+    document.getElementById("ratio").addEventListener("input", e => {
+      state.nmdaRatio = parseFloat(e.target.value);
+      document.getElementById("ratioVal").textContent = state.nmdaRatio.toFixed(2);
+    });
+    document.getElementById("mgToggle").addEventListener("change", e => { state.mgOn = e.target.checked; renderStage(); });
+    document.getElementById("noise").addEventListener("input", e => {
+      state.noiseSD = parseFloat(e.target.value);
+      document.getElementById("noiseVal").textContent = state.noiseSD + " pA";
+    });
+    document.getElementById("dN").textContent = state.N;
+  }
+
+  function renderRailSingle() {
+    rail.className = "panel rail";
+    rail.innerHTML = sharedControlsHTML() + `
+      <div class="divider"></div>
+      <div class="ctrl">
+        <label class="toggle"><input type="checkbox" id="revealToggle" ${state.revealK ? "checked" : ""}> reveal vesicles released</label>
+      </div>
+      <button class="primary" id="fireBtn">Stimulate</button>
+    `;
+    bindShared();
+    document.getElementById("revealToggle").addEventListener("change", e => { state.revealK = e.target.checked; updateSingleReadouts(); });
+    document.getElementById("fireBtn").addEventListener("click", fireSingle);
+  }
+  function renderRailTrain() {
+    rail.className = "panel rail";
+    rail.innerHTML = sharedControlsHTML() + `
+      <div class="divider"></div>
+      <h2 class="sec">Train protocol</h2>
+      <div class="ctrl">
+        <label>Pulses</label>
+        <div class="cond-group" id="nPulseSeg">
+          ${[2,3,4,5].map(n => `<button class="cond-btn${n===state.nPulses?" active":""}" data-np="${n}">${n}</button>`).join("")}
+        </div>
+      </div>
+      <div class="ctrl">
+        <label>Inter-stimulus interval <span class="val" id="isiVal">${state.isi} ms</span></label>
+        <input type="range" id="isi" min="20" max="500" step="10" value="${state.isi}">
+      </div>
+      <button class="primary" id="trainBtn">Run train</button>
+      <button class="secondary" id="avgBtn">Average 60 trials</button>
+    `;
+    bindShared();
+    document.querySelectorAll("#nPulseSeg button").forEach(b => {
+      b.addEventListener("click", () => {
+        state.nPulses = parseInt(b.dataset.np, 10);
+        document.querySelectorAll("#nPulseSeg button").forEach(x => x.classList.toggle("active", x === b));
+      });
+    });
+    document.getElementById("isi").addEventListener("input", e => {
+      state.isi = parseFloat(e.target.value);
+      document.getElementById("isiVal").textContent = state.isi + " ms";
+    });
+    document.getElementById("trainBtn").addEventListener("click", () => fireTrain(1));
+    document.getElementById("avgBtn").addEventListener("click", () => fireTrain(60));
+  }
+  function renderRailHist() {
+    rail.className = "panel rail horizontal";
+    rail.innerHTML = sharedControlsHTML() + `
+      <div class="divider"></div>
+      <h2 class="sec">Repeated trials</h2>
+      <div class="ctrl readout-inline" style="margin-left:0;color:var(--paper-dim);">
+        trials: <span id="histCount" style="color:var(--phosphor)">${state.histAmps.length}</span>
+      </div>
+      <div class="ctrl">
+        <label class="toggle"><input type="checkbox" id="fitToggle" ${state.showFit ? "checked" : ""}> show binomial fit</label>
+      </div>
+      <button class="primary ${state.histRunning ? "running" : ""}" id="histRunBtn">${state.histRunning ? "Pause" : "Start recording"}</button>
+      <button class="secondary" id="histResetBtn">Reset</button>
+    `;
+    bindShared();
+    document.getElementById("histRunBtn").addEventListener("click", toggleHistRun);
+    document.getElementById("histResetBtn").addEventListener("click", resetHist);
+    document.getElementById("fitToggle").addEventListener("change", e => {
+      state.showFit = e.target.checked;
+      drawHistogram();
+    });
+  }
+
+  // ================= Stage scaffolding =================
+  function scopePanelHTML(id, titleText, rightText, w, h) {
+    return `
+      <div class="panel">
+        <div class="panel-title"><h2>${titleText}</h2><span>${rightText}</span></div>
+        <canvas id="${id}" width="${w}" height="${h}"></canvas>
+        <div class="readouts" id="${id}Readouts"></div>
+        <div class="legend-row" id="${id}Legend"></div>
+      </div>
+    `;
+  }
+  function histPanelHTML(w, h) {
+    return `
+      <div class="panel">
+        <div class="panel-title"><h2>AMPLITUDE HISTOGRAM</h2><span>refreshes every 5 trials</span></div>
+        <canvas id="histCanvas" width="${w}" height="${h}"></canvas>
+        <div class="legend-row" id="histLegend"></div>
+        <div class="stats" id="histStats"></div>
+      </div>
+    `;
+  }
+
+  function buildStage() {
+    if (state.tab === "hist") {
+      // full-width row (controls moved below), so both windows can be drawn larger
+      stageArea.className = "stageArea dual";
+      stageArea.innerHTML =
+        scopePanelHTML("scope", "OSCILLOSCOPE — LIVE SWEEP", "2 trials / s", 1500, 560) +
+        histPanelHTML(1050, 560);
+    } else {
+      stageArea.className = "stageArea";
+      const label = state.tab === "single" ? "OSCILLOSCOPE — WHOLE-CELL VOLTAGE CLAMP" : "OSCILLOSCOPE — PULSE TRAIN";
+      stageArea.innerHTML = scopePanelHTML("scope", label, "", 1100, 440);
+    }
+  }
+
+  // ================= Canvas drawing =================
+  function drawGrid(ctx, w, h) {
+    ctx.strokeStyle = css("--scope-grid");
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= w; x += w / 14) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y <= h; y += h / 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+  }
+
+  function scopeLegendHTML() {
+    return `
+      <span><span class="swatch" style="background:${css("--phosphor")}"></span>total current</span>
+      <span><span class="swatch" style="background:${css("--amber")}"></span>stimulus</span>
+    `;
+  }
+
+  function drawScopeStatic(t, I, stimTimes, upto) {
+    const canvas = document.getElementById("scope");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    upto = upto || t.length;
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = css("--scope-bg");
+    ctx.fillRect(0, 0, w, h);
+    drawGrid(ctx, w, h);
+
+    // padding and font sizes scale with the canvas's own resolution, since
+    // the same drawing code runs on differently-sized canvases per tab
+    const fontPx = Math.round(w * 0.02);
+    const padL = Math.round(w * 0.085), padR = Math.round(w * 0.025);
+    const padT = Math.round(h * 0.07), padB = Math.round(h * 0.13);
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const tMin = t[0], tMax = t[t.length - 1];
+    let maxAbs = 20;
+    for (let i = 0; i < I.length; i++) maxAbs = Math.max(maxAbs, Math.abs(I[i]));
+    maxAbs *= 1.25;
+
+    function xOf(tt) { return padL + ((tt - tMin) / (tMax - tMin)) * plotW; }
+    function yOf(ii) { const cy = padT + plotH / 2; return cy - (ii / maxAbs) * (plotH / 2); }
+
+    // zero current reference
+    ctx.strokeStyle = "rgba(232,165,61,0.35)";
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(padL, yOf(0)); ctx.lineTo(padL + plotW, yOf(0)); ctx.stroke();
+
+    // stimulus line(s) — full-height dashed amber line at each stimulus time
+    ctx.strokeStyle = css("--amber");
+    ctx.lineWidth = Math.max(1.4, w * 0.0013);
+    ctx.setLineDash([w*0.004, w*0.003]);
+    for (const st of stimTimes) {
+      const sx = xOf(st);
+      if (sx >= padL && sx <= padL + plotW) {
+        ctx.beginPath(); ctx.moveTo(sx, padT); ctx.lineTo(sx, padT + plotH); ctx.stroke();
+      }
+    }
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1;
+    ctx.fillStyle = css("--amber");
+    ctx.font = fontPx + "px 'JetBrains Mono', monospace";
+    ctx.textAlign = "center";
+    for (const st of stimTimes) {
+      const sx = xOf(st);
+      if (sx >= padL && sx <= padL + plotW) ctx.fillText("stim", sx, padT + plotH + fontPx + 6);
+    }
+
+    // trace
+    ctx.strokeStyle = css("--phosphor");
+    ctx.lineWidth = Math.max(1.8, w * 0.0016);
+    ctx.beginPath();
+    for (let i = 0; i < upto; i++) {
+      const x = xOf(t[i]), y = yOf(I[i]);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // axis labels
+    ctx.fillStyle = "rgba(184,174,149,0.8)";
+    ctx.font = fontPx + "px 'JetBrains Mono', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(maxAbs.toFixed(0) + " pA", 6, padT + fontPx);
+    ctx.fillText((-maxAbs).toFixed(0) + " pA", 6, padT + plotH);
+    ctx.textAlign = "center";
+    ctx.fillText("time (ms)", padL + plotW / 2, h - padB * 0.2);
+    ctx.textAlign = "right";
+    ctx.fillText(tMax.toFixed(0) + " ms", padL + plotW, padT + plotH + fontPx + 10);
+  }
+
+  let animReq = null;
+  function animateTrace(t, I, stimTimes) {
+    if (animReq) cancelAnimationFrame(animReq);
+    const startTime = performance.now();
+    const duration = 450;
+    function frame(now) {
+      const frac = Math.min(1, (now - startTime) / duration);
+      const upto = Math.max(2, Math.floor(frac * t.length));
+      drawScopeStatic(t, I, stimTimes, upto);
+      if (frac < 1) animReq = requestAnimationFrame(frame);
+    }
+    animReq = requestAnimationFrame(frame);
+  }
+
+  // ================= Single EPSC =================
+  function fireSingle() {
+    const k = drawBinomialK(state.N, state.Pr);
+    const events = makeEvents(k);
+    const sweepEnd = state.mgOn ? 45 : 95; // 50 ms with Mg2+ block on, 100 ms without
+    const { t, I } = buildSweep(events, -5, sweepEnd, 0.25, state.vhold, state.nmdaRatio, state.mgOn, state.noiseSD);
+    const peak = sweepPeak(t, I, state.vhold, 0);
+    state.lastK = k; state.lastPeak = peak;
+    animateTrace(t, I, [0]);
+    updateSingleReadouts();
+  }
+  function updateSingleReadouts() {
+    const ro = document.getElementById("scopeReadouts");
+    const lg = document.getElementById("scopeLegend");
+    if (!ro) return;
+    const kTxt = state.revealK && state.lastK !== null ? `${state.lastK} / ${state.N}` : "hidden";
+    ro.innerHTML = `
+      <span class="r">V<sub>hold</sub> <b>${state.vhold} mV</b></span>
+      <span class="r">peak I <b>${state.lastPeak !== null ? state.lastPeak.toFixed(1) : "—"} pA</b></span>
+      <span class="r">vesicles released <b>${kTxt}</b></span>
+    `;
+    if (lg) lg.innerHTML = scopeLegendHTML();
+  }
+
+  // ================= Paired-pulse / Train =================
+  function fireTrain(nTrials) {
+    const pulseTimes = [];
+    for (let p = 0; p < state.nPulses; p++) pulseTimes.push(p * state.isi);
+    const tStart = -5, tEnd = state.mgOn ? 245 : 345; // 250 ms with Mg2+ block on, 350 ms without
+    const dt = 0.5;
+    const n = Math.round((tEnd - tStart) / dt) + 1;
+    const tAll = new Float64Array(n);
+    for (let i = 0; i < n; i++) tAll[i] = tStart + i * dt;
+    const sumI = new Float64Array(n);
+    const ksAccum = new Array(state.nPulses).fill(0);
+    const peaksAccum = new Array(state.nPulses).fill(0);
+
+    for (let trial = 0; trial < nTrials; trial++) {
+      const sites = [];
+      for (let i = 0; i < state.N; i++) sites.push({ available: true, releasedAt: -1e9 });
+      let facilLevel = 0;
+      const trialI = new Float64Array(n).fill(0);
+      const ks = [], peaks = [];
+
+      for (let p = 0; p < state.nPulses; p++) {
+        const tp = pulseTimes[p];
+        if (p > 0) facilLevel *= Math.exp(-(pulseTimes[p] - pulseTimes[p - 1]) / state.tauFacil);
+        const effPr = Math.min(1, state.Pr * (1 + facilLevel));
+        let k = 0;
+        const events = [];
+        for (const site of sites) {
+          if (!site.available) {
+            const dtSince = tp - site.releasedAt;
+            const pRecover = 1 - Math.exp(-dtSince / state.tauRec);
+            if (Math.random() < pRecover) site.available = true;
+          }
+          if (site.available && Math.random() < effPr) {
+            k++; site.available = false; site.releasedAt = tp; facilLevel += state.facilStrength;
+            events.push({ delay: tp + synapticDelay(), scale: Math.max(0.3, gauss(1, 0.15)) });
+          }
+        }
+        ks.push(k);
+        const mg = state.mgOn ? mgBlockFactor(state.vhold, 1.0) : mgBlockFactor(state.vhold, 0.0);
+        for (let i = 0; i < n; i++) {
+          const tt = tAll[i];
+          let gA = 0, gN = 0;
+          for (const ev of events) {
+            const rt = tt - ev.delay;
+            gA += ev.scale * biexpNorm(rt, TAU_RISE_A, TAU_DECAY_A);
+            gN += ev.scale * biexpNorm(rt, TAU_RISE_N, TAU_DECAY_N);
+          }
+          gA *= Q_AMPA; gN *= Q_AMPA * state.nmdaRatio * mg;
+          trialI[i] += (gA + gN) * (state.vhold - E_REV);
+        }
+        let lo = Math.min(Math.round((tp - tStart) / dt), n - 1);
+        let hi = Math.min(Math.round((tp + 60 - tStart) / dt), n - 1);
+        let pk = 0;
+        if (lo <= hi) {
+          if (state.vhold <= 0) { let m = Infinity; for (let i = lo; i <= hi; i++) if (trialI[i] < m) m = trialI[i]; pk = m; }
+          else { let m = -Infinity; for (let i = lo; i <= hi; i++) if (trialI[i] > m) m = trialI[i]; pk = m; }
+        }
+        peaks.push(pk);
+      }
+      for (let i = 0; i < n; i++) sumI[i] += trialI[i] + (nTrials === 1 ? gauss(0, state.noiseSD) : 0);
+      for (let p = 0; p < state.nPulses; p++) { ksAccum[p] += ks[p]; peaksAccum[p] += peaks[p]; }
+    }
+    const avgI = new Float64Array(n);
+    for (let i = 0; i < n; i++) avgI[i] = sumI[i] / nTrials;
+    state.lastKs = ksAccum.map(x => x / nTrials);
+    state.lastPeaks = peaksAccum.map(x => x / nTrials);
+    animateTrace(tAll, avgI, pulseTimes);
+    updateTrainReadouts(nTrials);
+  }
+  function updateTrainReadouts(nTrials) {
+    const ro = document.getElementById("scopeReadouts");
+    const lg = document.getElementById("scopeLegend");
+    if (!ro) return;
+    const ppr = state.lastPeaks && state.lastPeaks.length > 1 && state.lastPeaks[0] !== 0
+      ? (state.lastPeaks[1] / state.lastPeaks[0]).toFixed(2) : "—";
+    const peakList = state.lastPeaks ? state.lastPeaks.map((p, i) => `P${i+1} ${p.toFixed(1)}pA`).join("&nbsp;&nbsp;") : "—";
+    ro.innerHTML = `
+      <span class="r">V<sub>hold</sub> <b>${state.vhold} mV</b></span>
+      <span class="r">${nTrials > 1 ? `avg of <b>${nTrials}</b> trials` : "single trial"}</span>
+      <span class="r">PPR (P2/P1) <b>${ppr}</b></span>
+      <span class="r">${peakList}</span>
+    `;
+    if (lg) lg.innerHTML = scopeLegendHTML();
+  }
+
+  // ================= Histogram =================
+  function toggleHistRun() {
+    state.histRunning = !state.histRunning;
+    renderRailHist();
+    if (state.histRunning) {
+      state.histTimer = setInterval(() => {
+        const k = drawBinomialK(state.N, state.Pr);
+        const events = makeEvents(k);
+        const sweepEnd = state.mgOn ? 45 : 95; // 50 ms with Mg2+ block on, 100 ms without
+        const { t, I } = buildSweep(events, -5, sweepEnd, 0.25, state.vhold, state.nmdaRatio, state.mgOn, state.noiseSD);
+        const peak = sweepPeak(t, I, state.vhold, 0);
+        state.histAmps.push(peak);
+        drawScopeStatic(t, I, [0]);
+        updateHistScopeReadout();
+        if (state.histAmps.length % 5 === 0 || state.histAmps.length < 5) drawHistogram();
+        const countEl = document.getElementById("histCount");
+        if (countEl) countEl.textContent = state.histAmps.length;
+      }, 500);
+    } else {
+      clearInterval(state.histTimer);
+    }
+  }
+  function resetHist() {
+    state.histAmps = [];
+    clearInterval(state.histTimer);
+    state.histRunning = false;
+    renderRailHist();
+    drawHistogram();
+    updateHistScopeReadout();
+  }
+  function updateHistScopeReadout() {
+    const ro = document.getElementById("scopeReadouts");
+    const lg = document.getElementById("scopeLegend");
+    if (!ro) return;
+    const last = state.histAmps.length ? state.histAmps[state.histAmps.length - 1] : null;
+    ro.innerHTML = `
+      <span class="r">V<sub>hold</sub> <b>${state.vhold} mV</b></span>
+      <span class="r">last peak <b>${last !== null ? last.toFixed(1) : "—"} pA</b></span>
+      <span class="r">trial <b>${state.histAmps.length}</b></span>
+    `;
+    if (lg) lg.innerHTML = scopeLegendHTML();
+  }
+
+  function drawHistogram() {
+    const canvas = document.getElementById("histCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = css("--scope-bg");
+    ctx.fillRect(0, 0, w, h);
+    drawGrid(ctx, w, h);
+
+    const statsEl = document.getElementById("histStats");
+    const amps = state.histAmps;
+    if (amps.length === 0) {
+      if (statsEl) statsEl.innerHTML = `<div class="row"><span class="k">trials</span><span class="v">0</span></div>`;
+      return;
+    }
+    const absMax = Math.max(20, ...amps.map(a => Math.abs(a))) * 1.15;
+    const nbins = 36;
+    const binW = (2 * absMax) / nbins;
+    const bins = new Array(nbins).fill(0);
+    for (const a of amps) {
+      let idx = Math.floor((a + absMax) / binW);
+      idx = Math.max(0, Math.min(nbins - 1, idx));
+      bins[idx]++;
+    }
+    const maxCount = Math.max(...bins);
+    const fontPx = Math.round(w * 0.02);
+    const padL = Math.round(w * 0.075), padR = Math.round(w * 0.025);
+    const padT = Math.round(h * 0.06), padB = Math.round(h * 0.13);
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+
+    ctx.strokeStyle = "rgba(232,165,61,0.4)";
+    ctx.beginPath();
+    ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH);
+    ctx.stroke();
+
+    ctx.fillStyle = css("--phosphor");
+    for (let i = 0; i < nbins; i++) {
+      const bh = (bins[i] / maxCount) * plotH;
+      const bx = padL + (i / nbins) * plotW;
+      const bw = plotW / nbins - 1;
+      ctx.fillRect(bx, padT + plotH - bh, Math.max(1, bw), bh);
+    }
+    const zeroX = padL + (absMax / (2 * absMax)) * plotW;
+    ctx.strokeStyle = css("--amber");
+    ctx.setLineDash([w*0.003, w*0.0025]);
+    ctx.beginPath(); ctx.moveTo(zeroX, padT); ctx.lineTo(zeroX, padT + plotH); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // binomial-predicted envelope, overlaid when the "show binomial fit" toggle is on
+    let trueQ = null;
+    if (state.showFit) {
+      trueQ = singleQuantumPeak(state.vhold, state.nmdaRatio, state.mgOn);
+      const sigma0 = Math.max(1.5, state.noiseSD * 2);
+      const sigmaQ = Math.abs(trueQ) * 0.18;
+      ctx.beginPath();
+      ctx.strokeStyle = css("--nmda");
+      ctx.lineWidth = Math.max(1.6, w * 0.0014);
+      let first = true;
+      for (let px = padL; px <= padL + plotW; px++) {
+        const x = -absMax + ((px - padL) / plotW) * (2 * absMax);
+        let density = 0;
+        for (let k = 0; k <= state.N; k++) {
+          const pk = binomPMF(k, state.N, state.Pr);
+          const sigma = Math.sqrt(sigma0 * sigma0 + k * sigmaQ * sigmaQ);
+          const mu = k * trueQ;
+          density += pk * Math.exp(-((x - mu) ** 2) / (2 * sigma * sigma)) / (sigma * Math.sqrt(2 * Math.PI));
+        }
+        const expectedCount = density * binW * amps.length;
+        const y = padT + plotH - (expectedCount / maxCount) * plotH;
+        const yc = Math.max(padT, Math.min(padT + plotH, y));
+        if (first) { ctx.moveTo(px, yc); first = false; } else ctx.lineTo(px, yc);
+      }
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    ctx.fillStyle = "rgba(184,174,149,0.8)";
+    ctx.font = fontPx + "px 'JetBrains Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("peak current (pA)", padL + plotW / 2, h - padB * 0.2);
+    ctx.save();
+    ctx.translate(fontPx + 4, padT + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("trial count", 0, 0);
+    ctx.restore();
+    ctx.textAlign = "left";
+    ctx.fillText((-absMax).toFixed(0), padL - fontPx*0.5, padT + plotH + fontPx + 6);
+    ctx.textAlign = "right";
+    ctx.fillText(absMax.toFixed(0), padL + plotW, padT + plotH + fontPx + 6);
+    ctx.textAlign = "center";
+    ctx.fillStyle = css("--amber");
+    ctx.fillText("0", zeroX, padT + plotH + fontPx + 6);
+
+    if (statsEl) {
+      const mean = amps.reduce((a,b)=>a+b,0)/amps.length;
+      const failThresh = state.vhold <= 0 ? -6 : 6;
+      const nFail = state.vhold <= 0 ? amps.filter(a=>a>failThresh).length : amps.filter(a=>a<failThresh).length;
+      let fitRows = "";
+      if (state.showFit && trueQ !== null) {
+        const predictedMean = state.N * state.Pr * trueQ;
+        fitRows = `
+          <div class="row"><span class="k">binomial fit — single q peak</span><span class="v" style="color:${css('--nmda')}">${trueQ.toFixed(1)} pA</span></div>
+          <div class="row"><span class="k">predicted mean (N·P<sub>r</sub>·q)</span><span class="v" style="color:${css('--nmda')}">${predictedMean.toFixed(1)} pA</span></div>
+        `;
+      }
+      statsEl.innerHTML = `
+        <div class="row"><span class="k">trials (N)</span><span class="v">${amps.length}</span></div>
+        <div class="row"><span class="k">apparent failures</span><span class="v">${nFail}</span></div>
+        <div class="row"><span class="k">mean peak</span><span class="v">${mean.toFixed(1)} pA</span></div>
+        <div class="row"><span class="k">release sites (N)</span><span class="v">${state.N}</span></div>
+        <div class="row"><span class="k">P<sub>r</sub> (set)</span><span class="v">${state.Pr.toFixed(2)}</span></div>
+        <div class="row"><span class="k">V<sub>hold</sub></span><span class="v">${state.vhold} mV</span></div>
+        ${fitRows}
+      `;
+    }
+    const histLegendEl = document.getElementById("histLegend");
+    if (histLegendEl) {
+      histLegendEl.innerHTML = `
+        <span><span class="swatch" style="background:${css("--phosphor")}"></span>observed trials</span>
+        <span><span class="swatch" style="background:${css("--amber")}"></span>zero current</span>
+        ${state.showFit ? `<span><span class="swatch" style="background:${css("--nmda")}"></span>binomial fit</span>` : ""}
+      `;
+    }
+  }
+
+  // ================= Tab orchestration =================
+  function stopHistIfRunning() {
+    if (state.histRunning) { state.histRunning = false; clearInterval(state.histTimer); }
+  }
+  function renderStage() {
+    buildStage();
+    if (state.tab === "single") {
+      if (state.lastPeak === null) drawScopeStatic(new Float64Array([-5, state.mgOn ? 45 : 95]), new Float64Array([0,0]), [0]);
+      else fireSingle();
+      updateSingleReadouts();
+    } else if (state.tab === "train") {
+      if (!state.lastPeaks) {
+        drawScopeStatic(new Float64Array([-5, state.mgOn ? 245 : 345]), new Float64Array([0,0]), [0]);
+        const ro = document.getElementById("scopeReadouts");
+        if (ro) ro.innerHTML = `<span class="r">set inter-stimulus interval and pulse count, then run the train</span>`;
+      } else updateTrainReadouts(1);
+    } else if (state.tab === "hist") {
+      drawScopeStatic(new Float64Array([-5, state.mgOn ? 45 : 95]), new Float64Array([0,0]), [0]);
+      updateHistScopeReadout();
+      drawHistogram();
+    }
+  }
+  function switchTab(tab) {
+    if (tab !== "hist") stopHistIfRunning();
+    state.tab = tab;
+    document.getElementById("deck").classList.toggle("hist-layout", tab === "hist");
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    if (tab === "single") renderRailSingle();
+    else if (tab === "train") renderRailTrain();
+    else renderRailHist();
+    renderStage();
+  }
+  document.querySelectorAll(".tab-btn").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+  switchTab("single");
+})();
+</script>
+</body>
+</html>

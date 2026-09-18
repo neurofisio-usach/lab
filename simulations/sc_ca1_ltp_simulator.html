@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schaffer Collateral → CA1 LTP Simulator</title>
+<style>
+  :root{
+    --bg: #14171a;
+    --panel: #1c2024;
+    --panel-border: #2a2f34;
+    --scope-bg: #0a0e0c;
+    --scope-grid: #1d2b22;
+    --text: #e8e6e1;
+    --text-dim: #9aa0a6;
+    --amber: #f0a860;
+    --amber-dim: #7a5a37;
+    --green: #52e07a;
+    --green-dim: #2f6b45;
+    --gray-trace: #6b7078;
+    --red: #e0605a;
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  .rig{
+    max-width:1280px; margin:0 auto; padding:20px 20px 40px;
+  }
+  header{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:1px solid var(--panel-border); padding-bottom:14px; margin-bottom:18px;
+    flex-wrap:wrap; gap:8px;
+  }
+  header h1{
+    font-size:1.15rem; font-weight:600; letter-spacing:.2px; margin:0; color:var(--text);
+  }
+  header h1 span{ color:var(--amber); }
+  header .sub{
+    font-family:var(--mono); font-size:.72rem; color:var(--text-dim);
+  }
+  .layout{
+    display:grid; grid-template-columns:300px 1fr; gap:18px;
+  }
+  @media (max-width:880px){
+    .layout{ grid-template-columns:1fr; }
+  }
+  .panel{
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:6px;
+    padding:16px;
+  }
+  .panel + .panel{ margin-top:18px; }
+  .panel h2{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:1.2px; font-weight:600;
+    color:var(--text-dim); margin:0 0 12px; font-family:var(--mono);
+  }
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:.78rem; color:var(--text); margin-bottom:6px; font-weight:500;
+  }
+  .field .help{
+    font-size:.7rem; color:var(--text-dim); margin-top:5px; line-height:1.4;
+  }
+  select, .btn{
+    width:100%; padding:9px 10px; border-radius:4px; border:1px solid var(--panel-border);
+    background:#121517; color:var(--text); font-family:var(--sans); font-size:.82rem;
+    cursor:pointer;
+  }
+  select:focus, .btn:focus{ outline:2px solid var(--amber); outline-offset:1px; }
+  .btn{
+    background:#23282c; border:1px solid #333a40; font-weight:600; margin-top:8px;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .btn:hover:not(:disabled){ background:#2b3136; border-color:var(--amber-dim); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.primary{ background:var(--amber-dim); border-color:var(--amber); color:#1a140c; }
+  .btn.primary:hover:not(:disabled){ background:var(--amber); }
+  .checkrow{
+    display:flex; align-items:center; gap:9px; padding:9px 10px; background:#121517;
+    border:1px solid var(--panel-border); border-radius:4px; cursor:pointer;
+  }
+  .checkrow input{ width:16px; height:16px; accent-color:var(--red); cursor:pointer; }
+  .checkrow.active{ border-color:var(--red); background:#2a1717; }
+  .checkrow span{ font-size:.78rem; }
+  .slider-row{
+    display:flex; align-items:center; gap:10px;
+  }
+  input[type=range]{
+    flex:1; -webkit-appearance:none; height:4px; background:#333a40; border-radius:2px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--amber); border:2px solid #1a140c; cursor:pointer; margin-top:-1px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%; background:var(--amber); border:2px solid #1a140c; cursor:pointer;
+  }
+  .slider-val{
+    font-family:var(--mono); font-size:.82rem; color:var(--amber); min-width:56px; text-align:right;
+  }
+  .slider-scale{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.62rem;
+    color:var(--text-dim); margin-top:4px;
+  }
+  .readout-toggle{
+    display:flex; border:1px solid var(--panel-border); border-radius:4px; overflow:hidden;
+  }
+  .readout-toggle button{
+    flex:1; padding:8px 6px; background:#121517; color:var(--text-dim); border:none;
+    font-family:var(--sans); font-size:.76rem; font-weight:600; cursor:pointer;
+  }
+  .readout-toggle button.sel{ background:var(--green-dim); color:#eafff0; }
+
+  /* mechanism gauges */
+  .gauges{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .gauge-label{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.68rem;
+    color:var(--text-dim); margin-bottom:5px;
+  }
+  .gauge-label b{ color:var(--text); font-weight:600; }
+  .gauge-track{
+    height:10px; background:var(--scope-bg); border:1px solid var(--panel-border); border-radius:5px;
+    overflow:hidden;
+  }
+  .gauge-fill{
+    height:100%; width:0%; transition:width .25s ease;
+  }
+  .gauge-fill.mg{ background:linear-gradient(90deg, #2f6b45, var(--green)); }
+  .gauge-fill.ca{ background:linear-gradient(90deg, #7a5a37, var(--amber)); }
+
+  /* scope canvases */
+  .scope-wrap{ position:relative; }
+  canvas{ display:block; width:100%; background:var(--scope-bg); border-radius:4px; }
+  .scope-caption{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.66rem;
+    color:var(--text-dim); margin-top:8px;
+  }
+  .trace-legend{ display:flex; gap:16px; align-items:center; }
+  .trace-legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+
+  .status-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-top:14px;
+  }
+  .stat{
+    background:var(--scope-bg); border:1px solid var(--panel-border); border-radius:4px; padding:10px 12px;
+  }
+  .stat .k{ font-size:.64rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.6px; font-family:var(--mono); }
+  .stat .v{ font-family:var(--mono); font-size:1.05rem; color:var(--text); margin-top:3px; }
+  .stat .v.good{ color:var(--green); }
+  .stat .v.bad{ color:var(--red); }
+  .msg{
+    font-size:.78rem; line-height:1.5; color:var(--text-dim); margin-top:12px; padding-top:12px;
+    border-top:1px dashed var(--panel-border);
+  }
+  .msg b{ color:var(--text); }
+  footer{
+    margin-top:22px; font-size:.68rem; color:var(--text-dim); line-height:1.6; font-family:var(--sans);
+  }
+</style>
+</head>
+<body>
+<div class="rig">
+  <header>
+    <h1>Schaffer collateral → CA1 <span>LTP simulator</span></h1>
+    <div class="sub">stratum radiatum · extracellular / voltage-clamp teaching model</div>
+  </header>
+
+  <div class="layout">
+    <!-- CONTROLS -->
+    <div>
+      <div class="panel">
+        <h2>Readout</h2>
+        <div class="readout-toggle">
+          <button id="btnReadoutFEPSP" class="sel">fEPSP slope</button>
+          <button id="btnReadoutEPSC">EPSC amplitude</button>
+        </div>
+        <div class="field" style="margin-top:14px; margin-bottom:0;">
+          <div class="help">Both windows track the same underlying change in synaptic strength; this switches units and the sample trace shape only.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Induction protocol</h2>
+        <div class="field" style="margin-bottom:10px;">
+          <select id="protocolSelect">
+            <option value="tetanus100">100 Hz tetanus (1 s)</option>
+            <option value="tbs">Theta-burst stimulation (TBS)</option>
+            <option value="weak">Weak tetanus (short train)</option>
+            <option value="strong">Strong tetanus (4×, spaced)</option>
+            <option value="pairing">Low-frequency pairing (1 Hz)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="depolSlider">Postsynaptic holding potential during induction</label>
+          <div class="slider-row">
+            <input type="range" id="depolSlider" min="-70" max="0" value="-20" step="1">
+            <span class="slider-val" id="depolVal">−20 mV</span>
+          </div>
+          <div class="slider-scale"><span>−70 mV (rest)</span><span>0 mV</span></div>
+          <div class="help">Normally EPSP summation depolarizes CA1 pyramidal cells during a tetanus. Here you set it directly, decoupled from the presynaptic pattern above, so you can probe NMDAR coincidence detection on its own.</div>
+        </div>
+
+        <label class="checkrow" id="apvRow">
+          <input type="checkbox" id="apvToggle">
+          <span>Block NMDARs (D-APV)</span>
+        </label>
+
+        <label class="checkrow" id="cnqxRow" style="margin-top:8px;">
+          <input type="checkbox" id="cnqxToggle">
+          <span>Block AMPA/kainate receptors (CNQX)</span>
+        </label>
+        <div class="help" style="margin-top:6px;">CNQX removes the fast AMPAR current that both readouts normally depend on. For EPSC, what's left is the NMDAR-mediated current — try dragging the holding-potential slider with CNQX on to see it grow as Mg²⁺ block relieves, and disappear again if you also add APV. For fEPSP it stays negligible either way, since field recordings rarely resolve an NMDA component.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Run</h2>
+        <button class="btn primary" id="btnBaseline">Run baseline</button>
+        <button class="btn" id="btnInduce" disabled>Induce LTP</button>
+        <button class="btn" id="btnReset">Reset experiment</button>
+      </div>
+    </div>
+
+    <!-- MAIN DISPLAY -->
+    <div>
+      <div class="panel">
+        <h2>NMDAR coincidence detection</h2>
+        <div class="gauges">
+          <div>
+            <div class="gauge-label"><span>Mg²⁺ block relieved</span><b id="mgVal">—</b></div>
+            <div class="gauge-track"><div class="gauge-fill mg" id="mgFill"></div></div>
+          </div>
+          <div>
+            <div class="gauge-label"><span>NMDAR Ca²⁺ influx (last induction)</span><b id="caVal">—</b></div>
+            <div class="gauge-track"><div class="gauge-fill ca" id="caFill"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Time course — % baseline response</h2>
+        <div class="scope-wrap">
+          <canvas id="stripChart" height="260"></canvas>
+        </div>
+        <div class="scope-caption">
+          <span>t = simulated recording time (min)</span>
+          <span id="stripReadoutLabel">fEPSP slope, mV/ms</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Sample trace</h2>
+        <div class="scope-wrap">
+          <canvas id="traceScope" height="170"></canvas>
+        </div>
+        <div class="scope-caption">
+          <div class="trace-legend">
+            <span><i class="dot" style="background:var(--gray-trace)"></i>baseline</span>
+            <span><i class="dot" style="background:var(--green)"></i>current</span>
+            <span><i class="dot" style="background:var(--amber)"></i>stimulus</span>
+          </div>
+          <span id="traceUnitLabel">inward current</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Session status</h2>
+        <div class="status-grid">
+          <div class="stat"><div class="k">Protocol run</div><div class="v" id="statProtocol">none yet</div></div>
+          <div class="stat"><div class="k">APV present</div><div class="v" id="statAPV">no</div></div>
+          <div class="stat"><div class="k">Holding potential</div><div class="v" id="statVm">−20 mV</div></div>
+          <div class="stat"><div class="k">Current response</div><div class="v" id="statPct">100 %</div></div>
+        </div>
+        <div class="msg" id="statusMsg">Run a baseline, choose a protocol, then induce LTP.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Teaching model, not a quantitative fit to published data. Mg²⁺-block relief follows the Jahr &amp; Stevens (1990) voltage dependence; LTP magnitude and persistence are simplified functions of an accumulated NMDAR Ca²⁺ signal, gated by presynaptic drive, postsynaptic depolarization, and NMDAR availability (APV).
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  const state = {
+    readout: 'fepsp',           // 'fepsp' | 'epsc'
+    protocol: 'tetanus100',
+    apv: false,
+    cnqx: false,
+    vm: -20,                    // mV, postsynaptic holding potential during induction
+    phase: 'idle',              // idle | baseline | ready | inducing(stimulating) | monitoring | done
+    points: [],                 // {t, pct}  -- pct is the true biological value; CNQX scaling is applied only at display time
+    lastMgUnblock: null,
+    lastCaSignal: null,
+    plateauPct: 100,
+    peakPct: 100,
+    decayTau: 6,                // min
+    inductionT: null,
+    animTimer: null,
+    noiseSeed: Math.random(),
+    // raw stimulus-trace animation
+    stimPlan: null,
+    stimTrainIdx: 0,
+    stimLocalElapsed: 0,
+    stimRAF: null,
+    stimStartTs: null
+  };
+
+  const BASELINE_ABS = { fepsp: 0.32, epsc: 92 }; // mV/ms ; pA (magnitude)
+
+  // ---------- DOM ----------
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    btnFEPSP: $('btnReadoutFEPSP'), btnEPSC: $('btnReadoutEPSC'),
+    protocolSelect: $('protocolSelect'),
+    depolSlider: $('depolSlider'), depolVal: $('depolVal'),
+    apvToggle: $('apvToggle'), apvRow: $('apvRow'),
+    cnqxToggle: $('cnqxToggle'), cnqxRow: $('cnqxRow'),
+    btnBaseline: $('btnBaseline'), btnInduce: $('btnInduce'), btnReset: $('btnReset'),
+    mgVal: $('mgVal'), mgFill: $('mgFill'), caVal: $('caVal'), caFill: $('caFill'),
+    stripChart: $('stripChart'), stripReadoutLabel: $('stripReadoutLabel'),
+    traceScope: $('traceScope'), traceUnitLabel: $('traceUnitLabel'),
+    statProtocol: $('statProtocol'), statAPV: $('statAPV'), statVm: $('statVm'), statPct: $('statPct'),
+    statusMsg: $('statusMsg')
+  };
+
+  // ---------- helpers ----------
+  function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+  function rnd(seedShift){
+    // small deterministic-ish jitter, not cryptographic, just visual noise
+    return (Math.sin((state.points.length + seedShift + state.noiseSeed*1000) * 12.9898) * 43758.5453) % 1;
+  }
+  function noise(amp, shift){
+    const r = Math.abs(rnd(shift || 0));
+    return (r - 0.5) * 2 * amp;
+  }
+
+  // Jahr & Stevens (1990)-style Mg2+ block relief, [Mg2+]o = 1 mM assumed
+  function mgUnblockFraction(vmMv){
+    const mg = 1.0;
+    const denom = 1 + (mg/3.57) * Math.exp(-0.062 * vmMv);
+    return 1/denom; // 0..1, larger = more relief (more depolarized)
+  }
+
+  function presynapticDrive(protocol){
+    switch(protocol){
+      case 'tetanus100': return { drive:1.0, efficiency:1.0, persistence:'early' };
+      case 'tbs':         return { drive:0.85, efficiency:1.35, persistence:'late' };
+      case 'weak':         return { drive:0.35, efficiency:1.0, persistence:'early' };
+      case 'strong':        return { drive:1.0, efficiency:1.15, persistence:'late' };
+      case 'pairing':       return { drive:0.30, efficiency:1.0, persistence:'early' };
+      default: return { drive:1.0, efficiency:1.0, persistence:'early' };
+    }
+  }
+
+  // fEPSP slope / EPSC amplitude are themselves AMPAR-mediated fast currents,
+  // so CNQX collapses what's visible — except that in EPSC mode, blocking AMPA
+  // unmasks whatever NMDAR current is actually available at the moment: it
+  // must scale with the same Mg2+-unblock (holding potential) and APV state
+  // the coincidence-detection gauges already show, not sit at a fixed value.
+  function cnqxFactor(){
+    if(!state.cnqx) return 1;
+    if(state.readout === 'fepsp') return 0.04; // field recordings rarely resolve an NMDA component at all
+    const unblock = mgUnblockFraction(state.vm) * (state.apv ? 0.04 : 1);
+    return Math.max(0.02, 0.55 * unblock); // 0.55 ~ representative peak NMDA/AMPA baseline amplitude ratio
+  }
+  function displayPct(rawPct){
+    return rawPct * cnqxFactor();
+  }
+
+  function protocolLabel(p){
+    return {
+      tetanus100:'100 Hz tetanus (1 s)',
+      tbs:'Theta-burst stimulation',
+      weak:'Weak tetanus',
+      strong:'Strong tetanus (4×, spaced)',
+      pairing:'Low-frequency pairing (1 Hz)'
+    }[p];
+  }
+
+  // ---------- rendering: strip chart ----------
+  function drawGrid(ctx, w, h, rows, cols){
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--scope-grid');
+    ctx.lineWidth = 1;
+    for(let i=1;i<cols;i++){
+      const x = Math.round(i*w/cols)+0.5;
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+    }
+    for(let j=1;j<rows;j++){
+      const y = Math.round(j*h/rows)+0.5;
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+    }
+  }
+
+  // Pick a tick step so the axis gets roughly 5-7 gridlines regardless of span.
+  function niceStep(span){
+    const candidates = [5,10,20,25,50,100,200,250,500];
+    for(const c of candidates){ if(span/c <= 7) return c; }
+    return 500;
+  }
+
+  // Auto-fit the Y range to whatever is actually plotted (always including the
+  // 100% reference) so peaks are never clipped, however large LTP gets.
+  function computeYRange(){
+    let minV = 100, maxV = 100;
+    state.points.forEach(p=>{
+      const d = displayPct(p.pct);
+      minV = Math.min(minV, d);
+      maxV = Math.max(maxV, d);
+    });
+    const span0 = Math.max(maxV - minV, 20);
+    const step = niceStep(span0 * 1.25);
+    let yMin = Math.floor((minV - span0*0.15) / step) * step;
+    let yMax = Math.ceil((maxV + span0*0.15) / step) * step;
+    yMin = Math.max(yMin, 0);
+    if(yMax - yMin < step*3) yMax = yMin + step*3;
+    return { yMin, yMax, step };
+  }
+
+  function drawStripChart(){
+    const canvas = el.stripChart;
+    const w = canvas.clientWidth || 600;
+    const h = canvas.height;
+    canvas.width = w * (window.devicePixelRatio||1);
+    canvas.style.height = h+'px';
+    const dpr = window.devicePixelRatio||1;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+
+    drawGrid(ctx, w, h, 6, 10);
+
+    const padL = 46, padR = 14, padT = 14, padB = 22;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+
+    const { yMin, yMax, step } = computeYRange();
+    const tMin = -12, tMax = 62; // min
+
+    function xOf(t){ return padL + ( (t - tMin) / (tMax - tMin) ) * plotW; }
+    function yOf(pct){ return padT + (1 - (pct - yMin)/(yMax - yMin)) * plotH; }
+
+    // axis labels
+    ctx.fillStyle = '#9aa0a6';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for(let v=yMin; v<=yMax+0.001; v+=step){
+      const y = yOf(v);
+      ctx.fillText(Math.round(v)+'%', padL-6, y+3);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+    }
+    ctx.textAlign = 'center';
+    [-10,0,10,20,30,40,50,60].forEach(v=>{
+      ctx.fillText(String(v), xOf(v), h-6);
+    });
+
+    // baseline reference line at 100%
+    if(yOf(100) >= padT && yOf(100) <= h-padB){
+      ctx.strokeStyle = '#3a4148';
+      ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(padL, yOf(100)); ctx.lineTo(w-padR, yOf(100)); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // induction marker
+    if(state.inductionT !== null){
+      const ix = xOf(state.inductionT);
+      ctx.strokeStyle = '#e0605a';
+      ctx.beginPath(); ctx.moveTo(ix, padT); ctx.lineTo(ix, h-padB); ctx.stroke();
+      ctx.fillStyle = '#e0605a';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('induction', ix+4, padT+10);
+    }
+
+    // data points + line
+    if(state.points.length){
+      ctx.strokeStyle = '#52e07a';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      state.points.forEach((p,i)=>{
+        const x = xOf(p.t), y = yOf(clamp(displayPct(p.pct),yMin,yMax));
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+
+      state.points.forEach(p=>{
+        const x = xOf(p.t), y = yOf(clamp(displayPct(p.pct),yMin,yMax));
+        ctx.fillStyle = p.t < (state.inductionT===null?9999:state.inductionT) ? '#6b7078' : '#52e07a';
+        ctx.beginPath(); ctx.arc(x,y,2.4,0,Math.PI*2); ctx.fill();
+      });
+    }
+  }
+
+  // ---------- rendering: sample trace ----------
+  // Shared dense sampling for both trace types so fEPSP and EPSC carry the
+  // same point density and the same per-sample recording noise treatment.
+  const TRACE_N = 180; // sample points per sweep
+  let traceDrawCount = 0; // advances each render so repeated sweeps look independent, like real repeated recordings
+
+  function tracePRNG(seed){
+    const x = Math.sin(seed*12.9898 + 78.233 + traceDrawCount*37.719 + state.noiseSeed*911) * 43758.5453;
+    return x - Math.floor(x); // 0..1
+  }
+  function traceNoise(seed, amp){
+    return (tracePRNG(seed) - 0.5) * 2 * amp;
+  }
+  function gaussianBump(u, mu, sigma){
+    return Math.exp(-((u-mu)*(u-mu)) / (2*sigma*sigma));
+  }
+  // Normalized alpha-function rise/decay, peak = 1
+  function alphaShape(t, tauRise, tauDecay){
+    if(t <= 0) return 0;
+    const raw = Math.exp(-t/tauDecay) - Math.exp(-t/tauRise);
+    const tPeak = (tauRise*tauDecay/(tauDecay-tauRise)) * Math.log(tauDecay/tauRise);
+    const peakVal = Math.exp(-tPeak/tauDecay) - Math.exp(-tPeak/tauRise);
+    return raw / peakVal;
+  }
+
+  // fEPSP: small fast fiber volley + slower descending-slope deflection.
+  // Tightened decay so it visibly returns to a flat baseline well before the
+  // sweep ends (24 ms window) — a real fEPSP doesn't keep sloping for the
+  // whole trace.
+  function fepspShape(u){
+    const fv = gaussianBump(u, 0.30, 0.010) * 0.16;
+    const riseStart = 0.335;
+    const main = u > riseStart ? alphaShape(u - riseStart, 0.030, 0.11) : 0;
+    return fv + main;
+  }
+  // AMPAR-mediated EPSC: fast rise, fast decay (60 ms window) — recovers to
+  // baseline by roughly a third of the way through the sweep, as a real fast
+  // synaptic current does.
+  function epscShape(u){
+    const riseStart = 0.28;
+    return u > riseStart ? alphaShape(u - riseStart, 0.012, 0.085) : 0;
+  }
+  // Isolated NMDAR-mediated current (only used once CNQX removes the AMPA
+  // component): similar onset, but far slower decay — physiologically, NMDA
+  // EPSCs decay over 100+ ms, so within our 60 ms window it should still be
+  // clearly elevated at the end rather than back at baseline. That slow,
+  // still-open shape is itself the visual signature of an NMDA current.
+  function nmdaShape(u){
+    const riseStart = 0.28;
+    return u > riseStart ? alphaShape(u - riseStart, 0.05, 0.85) : 0;
+  }
+  // Peak of each shape (numerically, since fv+main can exceed 1 slightly) —
+  // used to auto-range the display gain so peaks never run off the canvas.
+  const FEPSP_SHAPE_MAX = (()=>{ let m=0; for(let i=0;i<=400;i++) m=Math.max(m, fepspShape(i/400)); return m; })();
+  const EPSC_SHAPE_MAX  = (()=>{ let m=0; for(let i=0;i<=400;i++) m=Math.max(m, epscShape(i/400));  return m; })();
+  const NMDA_SHAPE_MAX  = (()=>{ let m=0; for(let i=0;i<=400;i++) m=Math.max(m, nmdaShape(i/400));  return m; })();
+
+  function drawSampledTrace(ctx, xToPx, w, h, baseY, scale, color, lw, shapeFn, ampFrac, noisePx, seedOffset, revealFrac){
+    const ampPx = h * ampFrac * scale;
+    const reveal = revealFrac===undefined ? 1 : revealFrac;
+    ctx.strokeStyle = color; ctx.lineWidth = lw;
+    ctx.beginPath();
+    const nMax = Math.max(2, Math.round(TRACE_N * reveal));
+    for(let i=0; i<=nMax; i++){
+      const u = i/TRACE_N;
+      const x = xToPx(u);
+      let y = baseY + shapeFn(u)*ampPx;
+      y += traceNoise(i+seedOffset, noisePx);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // Readout-specific sweep length (matches the grid: 12 columns)
+  function sweepMs(){ return state.readout === 'fepsp' ? 24 : 60; }
+  const STIM_U = 0.26; // fraction of the sweep where the stimulus artifact sits, just before the response onset
+
+  function drawTimeAxis(ctx, w, h, padL, padR, padB, totalMs, nLabels){
+    const plotW = w - padL - padR;
+    ctx.font = '9px monospace';
+    ctx.fillStyle = '#8a9096';
+    ctx.textAlign = 'center';
+    const n = nLabels || 6;
+    for(let i=0;i<=n;i++){
+      const frac = i/n;
+      const x = padL + frac*plotW;
+      const ms = frac*totalMs;
+      ctx.strokeStyle = '#3a4148';
+      ctx.beginPath(); ctx.moveTo(x, h-padB); ctx.lineTo(x, h-padB+4); ctx.stroke();
+      ctx.fillText(ms<10 ? ms.toFixed(1) : Math.round(ms), x, h-padB+14);
+    }
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#6b7078';
+    ctx.fillText('ms', w-padR-2, h-padB+14);
+  }
+
+  function drawStimMarker(ctx, x, padTop, plotBottom, label){
+    ctx.strokeStyle = '#f0a860';
+    ctx.setLineDash([2,2]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padTop); ctx.lineTo(x, plotBottom); ctx.stroke();
+    ctx.setLineDash([]);
+    if(label !== false){
+      ctx.fillStyle = '#f0a860';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('stim', x+3, padTop+9);
+    }
+  }
+
+  function drawTrace(){
+    const canvas = el.traceScope;
+    const w = canvas.clientWidth || 600;
+    const h = canvas.height;
+    canvas.width = w * (window.devicePixelRatio||1);
+    const dpr = window.devicePixelRatio||1;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    drawGrid(ctx, w, h, 4, 12);
+    traceDrawCount++;
+
+    const padL = 8, padR = 8, padB = 20, padTop = 8;
+    // Baseline sits near the top: every deflection we draw goes downward, so
+    // this leaves the room below it to grow into instead of centering it and
+    // wasting the unused top half.
+    const baseY = padTop + (h-padTop-padB)*0.18;
+
+    if(state.phase === 'stimulating' && state.stimPlan){
+      renderStimFrame(ctx, w, h, padL, padR, padB, padTop, baseY, state.stimPlan, state.stimTrainIdx, state.stimLocalElapsed);
+      return;
+    }
+
+    const xToPx = (u) => padL + u*(w-padL-padR);
+    const currentPct = state.points.length ? state.points[state.points.length-1].pct : 100;
+    const scale = displayPct(currentPct)/100;
+    const sms = sweepMs();
+
+    const baselineShapeFn = state.readout === 'fepsp' ? fepspShape : epscShape;
+    const baselineShapeMax = state.readout === 'fepsp' ? FEPSP_SHAPE_MAX : EPSC_SHAPE_MAX;
+    // Once CNQX isolates the NMDAR current (EPSC mode only), "current"
+    // switches to the slower NMDA kinetics.
+    const isolatingNmda = state.cnqx && state.readout === 'epsc';
+    const currentShapeFn = isolatingNmda ? nmdaShape : baselineShapeFn;
+    const currentShapeMax = isolatingNmda ? NMDA_SHAPE_MAX : baselineShapeMax;
+    const ampFrac = state.readout === 'fepsp' ? 0.34 : 0.36;
+    const noisePx = state.readout === 'fepsp' ? 2.2 : 2.4;
+
+    // With AMPARs blocked there's no meaningful "normal fast response" left
+    // to show for comparison — drawing it anyway just looks like a stray,
+    // unexplained trace sitting on top of the real (tiny/slow) signal. So we
+    // simply don't draw the gray reference while CNQX is active; only the
+    // live "current" trace is shown.
+    const showBaselineRef = !state.cnqx;
+
+    // Auto-range the vertical gain so whichever trace is larger always fits
+    // the canvas — like an oscilloscope's auto volts/div — rather than
+    // letting a big peak run off the bottom of the screen.
+    const availableDownPx = (h-padB) - baseY;
+    const neededPx = Math.max(
+      showBaselineRef ? baselineShapeMax * ampFrac * h * 1.0 : 0,
+      currentShapeMax * ampFrac * h * Math.max(scale, 0.001)
+    );
+    const gain = neededPx > availableDownPx*0.94 ? (availableDownPx*0.94)/neededPx : 1;
+
+    if(showBaselineRef){
+      drawSampledTrace(ctx, xToPx, w, h, baseY, 1.0*gain, '#6b7078', 1.1, baselineShapeFn, ampFrac, noisePx, 0);
+    }
+    drawSampledTrace(ctx, xToPx, w, h, baseY, scale*gain, '#52e07a', 1.7, currentShapeFn, ampFrac, noisePx, 500);
+
+    drawStimMarker(ctx, xToPx(STIM_U), padTop, h-padB);
+    drawTimeAxis(ctx, w, h, padL, padR, padB, sms, 6);
+
+    ctx.fillStyle = '#6b7078';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(gain < 0.98 ? 'gain ×'+gain.toFixed(2)+' (auto-ranged)' : '', w-8, padTop+9);
+
+    if(isolatingNmda){
+      el.traceUnitLabel.textContent = 'isolated slow NMDAR current';
+    } else if(state.cnqx){
+      el.traceUnitLabel.textContent = 'AMPA blocked — no resolvable fEPSP';
+    } else {
+      el.traceUnitLabel.textContent = state.readout === 'fepsp' ? 'descending slope shown' : 'inward current';
+    }
+  }
+
+  // ---------- raw stimulation-train rendering (during induction) ----------
+  const STIM_GAP_MS = 90; // visual pause between trains for multi-train protocols
+
+  function stimPlan(protocol){
+    switch(protocol){
+      case 'tetanus100': return { mode:'continuous', totalMs:1000, freqHz:100 };
+      case 'weak':        return { mode:'continuous', totalMs:500,  freqHz:50  };
+      case 'tbs':          return { mode:'multi', trainMs:500, nTrains:6, burstFreqHz:100, pulsesPerBurst:4, burstPeriodMs:200 };
+      case 'strong':        return { mode:'multi', trainMs:500, nTrains:4, freqHz:100 };
+      case 'pairing':        return { mode:'continuous', totalMs:1000, freqHz:1 };
+      default: return { mode:'continuous', totalMs:1000, freqHz:100 };
+    }
+  }
+
+  function getPulseTimes(plan){
+    const times = [];
+    if(plan.mode === 'continuous'){
+      const period = 1000/plan.freqHz;
+      for(let t=0; t<plan.totalMs; t+=period) times.push(t);
+    } else if(plan.burstPeriodMs){
+      for(let b=0; b*plan.burstPeriodMs < plan.trainMs; b++){
+        const burstStart = b*plan.burstPeriodMs;
+        for(let p=0;p<plan.pulsesPerBurst;p++){
+          const t = burstStart + p*(1000/plan.burstFreqHz);
+          if(t < plan.trainMs) times.push(t);
+        }
+      }
+    } else {
+      const period = 1000/(plan.freqHz||100);
+      for(let t=0; t<plan.trainMs; t+=period) times.push(t);
+    }
+    return times;
+  }
+
+  function renderStimFrame(ctx, w, h, padL, padR, padB, padTop, baseY, plan, trainIdx, localElapsed){
+    const windowMs = plan.mode === 'continuous' ? plan.totalMs : plan.trainMs;
+    const xToPx = (ms) => padL + (ms/windowMs)*(w-padL-padR);
+    const inGap = plan.mode !== 'continuous' && localElapsed > plan.trainMs;
+
+    drawTimeAxis(ctx, w, h, padL, padR, padB, windowMs, 5);
+
+    if(inGap){
+      ctx.fillStyle = '#9aa0a6';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('· · ·  inter-train interval  · · ·', w/2, baseY+4);
+    } else {
+      const pulses = getPulseTimes(plan);
+      const elapsed = Math.min(localElapsed, windowMs);
+
+      // Each pulse produces the SAME fEPSP/EPSC waveform as the normal single
+      // test-pulse trace (kernelMs wide). At high stimulus frequency the
+      // pulses land closer together than that waveform's own duration, so
+      // consecutive responses genuinely overlap and stack — this is what
+      // "summation" during a tetanus/TBS actually looks like, rather than a
+      // schematic envelope standing in for it.
+      const shapeFn = state.readout === 'fepsp' ? fepspShape : epscShape;
+      const shapeMax = state.readout === 'fepsp' ? FEPSP_SHAPE_MAX : EPSC_SHAPE_MAX;
+      const kernelMs = sweepMs();
+      const ampFrac = state.readout === 'fepsp' ? 0.34 : 0.36;
+      const ampaFactor = cnqxFactor();
+      const satMax = 2.4; // summation ceiling, in units of one isolated pulse's peak
+
+      const availableDownPx = (h-padB) - baseY;
+      const neededPx = shapeMax * ampFrac * h * satMax * ampaFactor;
+      const gain = neededPx > availableDownPx*0.94 ? (availableDownPx*0.94)/neededPx : 1;
+      const ampPx = h * ampFrac * ampaFactor * gain;
+
+      ctx.strokeStyle = '#52e07a';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      const steps = 240;
+      for(let i=0;i<=steps;i++){
+        const ms = (i/steps)*elapsed;
+        let rawSum = 0;
+        for(const pt of pulses){
+          if(pt > ms) break;
+          const u = (ms - pt) / kernelMs;
+          if(u <= 1) rawSum += shapeFn(u);
+        }
+        const y = baseY + ampPx*satMax*Math.tanh(rawSum/satMax) + traceNoise(i+trainIdx*1000, 1.6);
+        const x = xToPx(ms);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // stimulus tick marks at each pulse within the revealed window
+      ctx.strokeStyle = '#f0a860';
+      ctx.lineWidth = 1;
+      pulses.forEach(pt=>{
+        if(pt > elapsed) return;
+        const x = xToPx(pt);
+        ctx.beginPath(); ctx.moveTo(x, h-padB); ctx.lineTo(x, h-padB-6); ctx.stroke();
+      });
+
+      if(gain < 0.98){
+        ctx.fillStyle = '#6b7078';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('gain ×'+gain.toFixed(2)+' (auto-ranged)', w-8, padTop+9);
+      }
+    }
+
+    ctx.fillStyle = '#e8e6e1';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    const trainLabel = plan.mode==='continuous'
+      ? 'delivering stimulus — each deflection is one '+(state.readout==='fepsp'?'fEPSP':'EPSC')+', stacking as they summate'
+      : 'train '+(trainIdx+1)+' of '+plan.nTrains+' — summating '+(state.readout==='fepsp'?'fEPSPs':'EPSCs');
+    ctx.fillText(trainLabel, padL+2, padTop+10);
+    el.traceUnitLabel.textContent = 'raw stimulation trace';
+  }
+
+  // ---------- mechanism gauges ----------
+  function updateGauges(){
+    const unblock = mgUnblockFraction(state.vm) * (state.apv ? 0.04 : 1); // APV blocks receptor itself
+    el.mgFill.style.width = (unblock*100).toFixed(0)+'%';
+    el.mgVal.textContent = (unblock*100).toFixed(0)+'%' + (state.apv ? ' (APV present)' : '');
+    el.mgFill.style.opacity = state.apv ? 0.4 : 1;
+
+    const ca = state.lastCaSignal;
+    if(ca === null){
+      el.caFill.style.width = '0%';
+      el.caVal.textContent = '—';
+    } else {
+      el.caFill.style.width = clamp(ca*100,0,100).toFixed(0)+'%';
+      el.caVal.textContent = clamp(ca*100,0,100).toFixed(0)+'% of max';
+    }
+  }
+
+  // ---------- status readouts ----------
+  function updateStripLabel(){
+    el.stripReadoutLabel.textContent = state.readout === 'fepsp' ? 'fEPSP slope, mV/ms' : 'EPSC amplitude, pA';
+  }
+
+  function currentAbsValue(pct){
+    const base = BASELINE_ABS[state.readout];
+    const v = base * (pct/100);
+    return state.readout === 'fepsp' ? v.toFixed(2)+' mV/ms' : '−'+v.toFixed(0)+' pA';
+  }
+
+  function updateStatusPanel(){
+    el.statAPV.textContent = state.apv ? 'yes' : 'no';
+    el.statAPV.className = 'v' + (state.apv ? ' bad' : '');
+    el.statVm.textContent = state.vm + ' mV';
+    const rawPct = state.points.length ? state.points[state.points.length-1].pct : 100;
+    const shownPct = displayPct(rawPct);
+    el.statPct.textContent = shownPct.toFixed(0)+'% ('+currentAbsValue(shownPct)+')' + (state.cnqx ? ' — CNQX' : '');
+    el.statPct.className = 'v' + (!state.cnqx && shownPct > 115 ? ' good' : (state.cnqx || shownPct < 90 ? ' bad':''));
+  }
+
+  function setMsg(text){ el.statusMsg.innerHTML = text; }
+
+  // ---------- experiment flow ----------
+  function resetExperiment(){
+    if(state.animTimer){ clearInterval(state.animTimer); state.animTimer = null; }
+    if(state.stimRAF){ cancelAnimationFrame(state.stimRAF); state.stimRAF = null; }
+    state.phase = 'idle';
+    state.points = [];
+    state.inductionT = null;
+    state.lastCaSignal = null;
+    state.lastMgUnblock = null;
+    state.plateauPct = 100;
+    state.peakPct = 100;
+    state.stimPlan = null;
+    state.stimTrainIdx = 0;
+    state.stimLocalElapsed = 0;
+    state.noiseSeed = Math.random();
+    el.statProtocol.textContent = 'none yet';
+    el.btnInduce.disabled = true;
+    el.btnBaseline.disabled = false;
+    setMsg('Run a baseline, choose a protocol, then induce LTP.');
+    render();
+  }
+
+  function runBaseline(){
+    if(state.animTimer) clearInterval(state.animTimer);
+    state.phase = 'baseline';
+    state.points = [];
+    state.inductionT = null;
+    el.btnBaseline.disabled = true;
+    el.btnInduce.disabled = true;
+    setMsg('Collecting baseline test-pulse responses (0.05 Hz, stratum radiatum)…');
+
+    const baselineTimes = [-10,-8,-6,-4,-2,0];
+    let i = 0;
+    state.animTimer = setInterval(()=>{
+      if(i >= baselineTimes.length){
+        clearInterval(state.animTimer); state.animTimer = null;
+        state.phase = 'ready';
+        el.btnInduce.disabled = false;
+        setMsg('Baseline stable. Choose an induction protocol, set the holding potential, then click <b>Induce LTP</b>.');
+        render();
+        return;
+      }
+      const t = baselineTimes[i];
+      const pct = 100 + noise(4, i);
+      state.points.push({t, pct});
+      i++;
+      render();
+    }, 260);
+  }
+
+  function computeInduction(){
+    const { drive, efficiency, persistence } = presynapticDrive(state.protocol);
+    const unblock = mgUnblockFraction(state.vm) * (state.apv ? 0.04 : 1);
+    const ca = clamp(drive * unblock * efficiency, 0, 1.4);
+
+    state.lastCaSignal = clamp(ca, 0, 1);
+    state.lastMgUnblock = unblock;
+
+    const thresholdLo = 0.16;
+    let plateauGain, peakGain, decays;
+
+    if(ca < thresholdLo){
+      // no lasting LTP; at most a brief PTP-like blip that fully decays
+      plateauGain = 0;
+      peakGain = ca > thresholdLo*0.45 ? 0.35 : 0.08; // small transient if some Ca leaked through
+      decays = true;
+    } else {
+      const norm = (ca - thresholdLo) / (1 - thresholdLo);
+      const maxLTP = 1.3; // up to ~230% at saturation
+      const g = maxLTP * Math.tanh(2.4 * norm);
+      plateauGain = persistence === 'late' ? g : g * 0.55;   // early-phase decays back partway
+      peakGain = g * 1.25;                                    // PTP overshoot right after tetanus
+      decays = persistence !== 'late';
+    }
+
+    state.peakPct = 100 + peakGain*100;
+    state.plateauPct = 100 + plateauGain*100;
+    state.decayDown = decays;
+  }
+
+  function runInduction(){
+    if(state.phase !== 'ready') return;
+    if(state.animTimer) clearInterval(state.animTimer);
+    if(state.stimRAF) cancelAnimationFrame(state.stimRAF);
+
+    computeInduction();
+    state.inductionT = 0;
+    el.btnInduce.disabled = true;
+    el.btnBaseline.disabled = true;
+
+    el.statProtocol.textContent = protocolLabel(state.protocol);
+    updateGauges();
+
+    const label = protocolLabel(state.protocol);
+    const apvNote = state.apv ? ' NMDARs are blocked by APV, so no Ca²⁺ signal reaches threshold.' : '';
+    setMsg('Delivering <b>'+label+'</b> at V<sub>m</sub> = '+state.vm+' mV.'+apvNote);
+
+    runStimulusAnimation(startMonitoring);
+  }
+
+  function runStimulusAnimation(onDone){
+    state.phase = 'stimulating';
+    const plan = stimPlan(state.protocol);
+    state.stimPlan = plan;
+    state.stimStartTs = null;
+    state.stimTrainIdx = 0;
+    state.stimLocalElapsed = 0;
+
+    const cycle = plan.mode === 'multi' ? (plan.trainMs + STIM_GAP_MS) : plan.totalMs;
+
+    function step(ts){
+      if(state.stimStartTs === null) state.stimStartTs = ts;
+      const elapsed = ts - state.stimStartTs;
+
+      if(plan.mode === 'continuous'){
+        state.stimTrainIdx = 0;
+        state.stimLocalElapsed = Math.min(elapsed, plan.totalMs);
+        drawTrace();
+        if(elapsed >= plan.totalMs){
+          state.stimRAF = null;
+          onDone();
+          return;
+        }
+      } else {
+        const trainIdx = Math.floor(elapsed / cycle);
+        if(trainIdx >= plan.nTrains){
+          state.stimRAF = null;
+          onDone();
+          return;
+        }
+        state.stimTrainIdx = trainIdx;
+        state.stimLocalElapsed = elapsed - trainIdx*cycle;
+        drawTrace();
+      }
+      state.stimRAF = requestAnimationFrame(step);
+    }
+    state.stimRAF = requestAnimationFrame(step);
+  }
+
+  function startMonitoring(){
+    state.phase = 'monitoring';
+
+    // monitoring time points (minutes post-induction)
+    const postTimes = [1,2,3,5,7,10,15,20,25,30,40,50,60];
+    let i = 0;
+
+    state.animTimer = setInterval(()=>{
+      if(i >= postTimes.length){
+        clearInterval(state.animTimer); state.animTimer = null;
+        state.phase = 'done';
+        el.btnBaseline.disabled = false;
+        el.btnInduce.disabled = false;
+        const finalPct = state.points[state.points.length-1].pct;
+        if(finalPct > 130){
+          setMsg('LTP established: response stabilized at ~'+finalPct.toFixed(0)+'% of baseline. Try adding APV, or lowering the holding potential, to see induction fail.');
+        } else if(finalPct > 108){
+          setMsg('Modest, only partly persistent potentiation (~'+finalPct.toFixed(0)+'%) — consistent with a weaker induction signal. A stronger or spaced protocol should produce more stable LTP.');
+        } else {
+          setMsg('No lasting LTP (~'+finalPct.toFixed(0)+'% of baseline). NMDAR Ca²⁺ signal did not reach threshold — check APV and the holding potential.');
+        }
+        render();
+        return;
+      }
+      const t = postTimes[i];
+      let pct;
+      if(state.decayDown){
+        pct = state.plateauPct + (state.peakPct - state.plateauPct) * Math.exp(-t/state.decayTau);
+      } else {
+        const rise = 1 - Math.exp(-t/1.5);
+        const overshoot = (state.peakPct - state.plateauPct) * Math.exp(-t/state.decayTau);
+        pct = state.plateauPct*rise + 100*(1-rise) + overshoot;
+      }
+      pct += noise(3.5, i+100);
+      state.points.push({t, pct});
+      i++;
+      render();
+    }, 220);
+  }
+
+  // ---------- render ----------
+  function render(){
+    drawStripChart();
+    drawTrace();
+    updateGauges();
+    updateStatusPanel();
+  }
+
+  // ---------- events ----------
+  el.btnFEPSP.addEventListener('click', ()=>{
+    state.readout = 'fepsp';
+    el.btnFEPSP.classList.add('sel'); el.btnEPSC.classList.remove('sel');
+    updateStripLabel(); render();
+  });
+  el.btnEPSC.addEventListener('click', ()=>{
+    state.readout = 'epsc';
+    el.btnEPSC.classList.add('sel'); el.btnFEPSP.classList.remove('sel');
+    updateStripLabel(); render();
+  });
+
+  el.protocolSelect.addEventListener('change', (e)=>{
+    state.protocol = e.target.value;
+  });
+
+  el.depolSlider.addEventListener('input', (e)=>{
+    state.vm = parseInt(e.target.value,10);
+    el.depolVal.textContent = state.vm + ' mV';
+    render();
+  });
+
+  el.apvToggle.addEventListener('change', (e)=>{
+    state.apv = e.target.checked;
+    el.apvRow.classList.toggle('active', state.apv);
+    render();
+  });
+
+  el.cnqxToggle.addEventListener('change', (e)=>{
+    state.cnqx = e.target.checked;
+    el.cnqxRow.classList.toggle('active', state.cnqx);
+    render();
+  });
+
+  el.btnBaseline.addEventListener('click', runBaseline);
+  el.btnInduce.addEventListener('click', runInduction);
+  el.btnReset.addEventListener('click', resetExperiment);
+
+  window.addEventListener('resize', render);
+
+  // ---------- init ----------
+  updateStripLabel();
+  render();
+})();
+</script>
+</body>
+</html>
