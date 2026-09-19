@@ -213,7 +213,6 @@
           <input type="checkbox" id="cnqxToggle">
           <span>Block AMPA/kainate receptors (CNQX)</span>
         </label>
-        <div class="help" style="margin-top:6px;">CNQX removes the fast AMPAR current that both readouts normally depend on. For EPSC, what's left is the NMDAR-mediated current — try dragging the holding-potential slider with CNQX on to see it grow as Mg²⁺ block relieves, and disappear again if you also add APV. For fEPSP it stays negligible either way, since field recordings rarely resolve an NMDA component.</div>
       </div>
 
       <div class="panel">
@@ -264,6 +263,22 @@
           </div>
           <span id="traceUnitLabel">inward current</span>
         </div>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button class="btn" id="btnToggleTable" style="margin-top:0;">Show data table</button>
+          <button class="btn" id="btnCopyTable" style="margin-top:0;" disabled>Copy table</button>
+        </div>
+        <div id="dataTableWrap" style="display:none; margin-top:12px; max-height:280px; overflow:auto; border:1px solid var(--panel-border); border-radius:4px;">
+          <table id="dataTable" style="width:100%; border-collapse:collapse; font-family:var(--mono); font-size:.72rem;">
+            <thead>
+              <tr style="position:sticky; top:0; background:#121517;">
+                <th style="text-align:left; padding:6px 10px; border-bottom:1px solid var(--panel-border); color:var(--text-dim);">t (min)</th>
+                <th style="text-align:right; padding:6px 10px; border-bottom:1px solid var(--panel-border); color:var(--text-dim);">% baseline</th>
+                <th id="dataTableUnitHeader" style="text-align:right; padding:6px 10px; border-bottom:1px solid var(--panel-border); color:var(--text-dim);">fEPSP slope (mV/ms)</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="panel">
@@ -310,7 +325,8 @@
     stimTrainIdx: 0,
     stimLocalElapsed: 0,
     stimRAF: null,
-    stimStartTs: null
+    stimStartTs: null,
+    showTable: false
   };
 
   const BASELINE_ABS = { fepsp: 0.32, epsc: 92 }; // mV/ms ; pA (magnitude)
@@ -324,6 +340,9 @@
     apvToggle: $('apvToggle'), apvRow: $('apvRow'),
     cnqxToggle: $('cnqxToggle'), cnqxRow: $('cnqxRow'),
     btnBaseline: $('btnBaseline'), btnInduce: $('btnInduce'), btnReset: $('btnReset'),
+    btnToggleTable: $('btnToggleTable'), dataTableWrap: $('dataTableWrap'),
+    btnCopyTable: $('btnCopyTable'),
+    dataTableBody: $('dataTableBody'), dataTableUnitHeader: $('dataTableUnitHeader'),
     mgVal: $('mgVal'), mgFill: $('mgFill'), caVal: $('caVal'), caFill: $('caFill'),
     stripChart: $('stripChart'), stripReadoutLabel: $('stripReadoutLabel'),
     traceScope: $('traceScope'), traceUnitLabel: $('traceUnitLabel'),
@@ -827,6 +846,62 @@
     return state.readout === 'fepsp' ? v.toFixed(2)+' mV/ms' : '−'+v.toFixed(0)+' pA';
   }
 
+  function updateDataTable(){
+    el.dataTableUnitHeader.textContent = state.readout === 'fepsp' ? 'fEPSP slope (mV/ms)' : 'EPSC amplitude (pA)';
+    const rows = state.points.map(p=>{
+      const shown = displayPct(p.pct);
+      return '<tr>'
+        + '<td style="padding:4px 10px; border-bottom:1px solid var(--panel-border);">'+p.t+'</td>'
+        + '<td style="padding:4px 10px; text-align:right; border-bottom:1px solid var(--panel-border);">'+shown.toFixed(1)+'%</td>'
+        + '<td style="padding:4px 10px; text-align:right; border-bottom:1px solid var(--panel-border);">'+currentAbsValue(shown)+'</td>'
+        + '</tr>';
+    }).join('');
+    el.dataTableBody.innerHTML = rows || '<tr><td colspan="3" style="padding:8px 10px; color:var(--text-dim);">No data yet — run a baseline.</td></tr>';
+    el.btnCopyTable.disabled = state.points.length === 0;
+  }
+
+  // Numeric-only absolute value (no unit suffix), signed the way a real
+  // recording would be, for clean paste into a spreadsheet column.
+  function absNumeric(shownPct){
+    const base = BASELINE_ABS[state.readout];
+    const v = base * (shownPct/100);
+    return state.readout === 'fepsp' ? v.toFixed(3) : (-v).toFixed(1);
+  }
+
+  function buildTableTSV(){
+    const header = ['t (min)', '% baseline', el.dataTableUnitHeader.textContent].join('\t');
+    const rows = state.points.map(p=>{
+      const shown = displayPct(p.pct);
+      return [p.t, shown.toFixed(2), absNumeric(shown)].join('\t');
+    });
+    return [header].concat(rows).join('\n');
+  }
+
+  async function copyTableToClipboard(){
+    const tsv = buildTableTSV();
+    const restoreLabel = 'Copy table';
+    try{
+      await navigator.clipboard.writeText(tsv);
+      el.btnCopyTable.textContent = 'Copied!';
+    } catch(err){
+      // Clipboard API unavailable (older browser, non-secure context, etc.) — fall back to a hidden textarea + execCommand.
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = tsv;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        el.btnCopyTable.textContent = 'Copied!';
+      } catch(err2){
+        el.btnCopyTable.textContent = 'Copy failed';
+      }
+    }
+    setTimeout(()=>{ el.btnCopyTable.textContent = restoreLabel; }, 1500);
+  }
+
   function updateStatusPanel(){
     el.statAPV.textContent = state.apv ? 'yes' : 'no';
     el.statAPV.className = 'v' + (state.apv ? ' bad' : '');
@@ -982,7 +1057,10 @@
     state.phase = 'monitoring';
 
     // monitoring time points (minutes post-induction)
-    const postTimes = [1,2,3,5,7,10,15,20,25,30,40,50,60];
+    // Same sampling interval as the baseline phase (2 min), so the two halves
+    // of the recording read as one continuous, evenly-sampled experiment.
+    const postTimes = [];
+    for(let t=2; t<=60; t+=2) postTimes.push(t);
     let i = 0;
 
     state.animTimer = setInterval(()=>{
@@ -1015,7 +1093,7 @@
       state.points.push({t, pct});
       i++;
       render();
-    }, 220);
+    }, 160);
   }
 
   // ---------- render ----------
@@ -1024,6 +1102,8 @@
     drawTrace();
     updateGauges();
     updateStatusPanel();
+    el.btnCopyTable.disabled = state.points.length === 0;
+    if(state.showTable) updateDataTable();
   }
 
   // ---------- events ----------
@@ -1063,6 +1143,15 @@
   el.btnBaseline.addEventListener('click', runBaseline);
   el.btnInduce.addEventListener('click', runInduction);
   el.btnReset.addEventListener('click', resetExperiment);
+
+  el.btnToggleTable.addEventListener('click', ()=>{
+    state.showTable = !state.showTable;
+    el.dataTableWrap.style.display = state.showTable ? 'block' : 'none';
+    el.btnToggleTable.textContent = state.showTable ? 'Hide data table' : 'Show data table';
+    if(state.showTable) updateDataTable();
+  });
+
+  el.btnCopyTable.addEventListener('click', copyTableToClipboard);
 
   window.addEventListener('resize', render);
 
