@@ -6,7 +6,7 @@
 <title>Patch-Clamp Lab — Single Channel Recording</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 /*!
  * Chart.js v4.4.4
@@ -26,23 +26,23 @@
 </script>
 <style>
 :root{
-  --bg:#12181F;
-  --panel:#1B232D;
-  --panel-border:#2B3542;
-  --panel-text:#C9D0D8;
-  --panel-text-dim:#8893A0;
-  --scope-bg:#F7F6F1;
-  --ink:#1B232D;
-  --accent:#E4572E;
-  --accent-soft:rgba(228,87,46,0.16);
-  --open-col:#E4572E;
-  --closed-col:#4C5564;
-  --inact-col:#8A8F98;
-  --ensemble-col:#14213D;
-  --grid:#E1DED2;
-  --good:#2E8B57;
-  --font-ui:'IBM Plex Sans', -apple-system, sans-serif;
-  --font-mono:'IBM Plex Mono', 'SFMono-Regular', monospace;
+  --bg:#12100c;
+  --panel:#1c1914;
+  --panel-border:#2c2820;
+  --panel-text:#f4ecd8;
+  --panel-text-dim:#b8ae95;
+  --scope-bg:#05130a;
+  --ink:#b8ae95;
+  --accent:#e8a53d;
+  --accent-soft:rgba(232,165,61,0.16);
+  --open-col:#4dffa0;
+  --closed-col:#e8a53d;
+  --inact-col:#8a8272;
+  --ensemble-col:#e8a53d;
+  --grid:#0f3a22;
+  --good:#4dffa0;
+  --font-ui:'Inter', system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--panel-text);font-family:var(--font-ui);}
@@ -63,14 +63,14 @@ nav.tabs button{
   background:transparent; color:var(--panel-text-dim); cursor:pointer;
   transition:background .15s, color .15s;
 }
-nav.tabs button:hover{ background:#232D3A; color:var(--panel-text); }
-nav.tabs button.active{ background:var(--accent-soft); color:#F3A88F; border-color:rgba(228,87,46,0.35); }
+nav.tabs button:hover{ background:#241f18; color:var(--panel-text); }
+nav.tabs button.active{ background:var(--accent-soft); color:#e8a53d; border-color:rgba(232,165,61,0.35); }
 
 .layout{ display:grid; grid-template-columns:320px 1fr; min-height:calc(100vh - 57px); }
 aside.controls{ background:var(--panel); border-right:1px solid var(--panel-border); padding:16px; overflow-y:auto; max-height:calc(100vh - 57px);}
 main.stage{ padding:20px 24px; overflow-y:auto; max-height:calc(100vh - 57px);}
 
-details.panel{ border:1px solid var(--panel-border); border-radius:8px; margin-bottom:10px; background:#171F28; overflow:hidden;}
+details.panel{ border:1px solid var(--panel-border); border-radius:8px; margin-bottom:10px; background:#171310; overflow:hidden;}
 details.panel > summary{ list-style:none; cursor:pointer; padding:10px 12px; font-size:12.5px; font-weight:600; letter-spacing:.01em; color:var(--panel-text); display:flex; justify-content:space-between; align-items:center;}
 details.panel > summary::-webkit-details-marker{ display:none; }
 details.panel > summary::after{ content:'▾'; color:var(--panel-text-dim); font-size:10px; transition:transform .15s;}
@@ -81,7 +81,7 @@ details.panel[open] > summary::after{ transform:rotate(180deg); }
 .field-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .field label{ font-size:11.5px; color:var(--panel-text-dim); display:block; margin-bottom:4px;}
 .field input[type=number], .field input[type=text]{
-  width:100%; background:#0F151C; border:1px solid var(--panel-border); border-radius:6px;
+  width:100%; background:#100c08; border:1px solid var(--panel-border); border-radius:6px;
   color:var(--panel-text); font-family:var(--font-mono); font-size:12.5px; padding:6px 8px;
 }
 .field input[type=range]{ width:100%; accent-color:var(--accent); }
@@ -97,31 +97,31 @@ button.run-btn{
   background:var(--accent); color:#fff; font-family:var(--font-ui); font-weight:600;
   font-size:13px; cursor:pointer; letter-spacing:.01em;
 }
-button.run-btn:hover{ background:#D14A22; }
+button.run-btn:hover{ background:#f0b455; }
 button.ghost-btn{
   width:100%; margin-top:8px; padding:9px; border:1px solid var(--panel-border); border-radius:7px;
   background:transparent; color:var(--panel-text-dim); font-family:var(--font-ui); font-size:12px; cursor:pointer;
 }
 button.ghost-btn:hover{ color:var(--panel-text); border-color:var(--panel-text-dim); }
 button.channel-btn{ flex:1; }
-button.channel-btn.active{ background:var(--accent-soft); color:#F3A88F; border-color:rgba(228,87,46,0.35); }
+button.channel-btn.active{ background:var(--accent-soft); color:#e8a53d; border-color:rgba(232,165,61,0.35); }
 
 .stage-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:6px;}
-.stage-head h2{ font-size:18px; margin:0; color:#EDEFF2; font-weight:600; }
-.stage-head p{ margin:2px 0 0; font-size:12.5px; color:#8893A0; max-width:560px;}
+.stage-head h2{ font-size:18px; margin:0; color:#f4ecd8; font-weight:600; }
+.stage-head p{ margin:2px 0 0; font-size:12.5px; color:#b8ae95; max-width:560px;}
 
 .digital-readout{
   display:flex; gap:22px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--panel-border);
   border-radius:8px; padding:10px 16px; margin-bottom:14px; font-family:var(--font-mono); font-size:12.5px;
 }
 .digital-readout div span.k{ color:var(--panel-text-dim); margin-right:6px; }
-.digital-readout div span.v{ color:#F3EDE4; font-weight:600; }
+.digital-readout div span.v{ color:#4dffa0; font-weight:600; }
 .state-pill{ padding:2px 9px; border-radius:20px; font-weight:600; font-size:11.5px; }
-.state-C{ background:rgba(76,85,100,.35); color:#C9D0D8; }
-.state-O{ background:rgba(228,87,46,.28); color:#F3A88F; }
-.state-I{ background:rgba(138,143,152,.28); color:#B7BCC4; }
+.state-C{ background:rgba(138,130,114,.30); color:#f4ecd8; }
+.state-O{ background:rgba(77,255,160,.20); color:#4dffa0; }
+.state-I{ background:rgba(184,174,149,.20); color:#b8ae95; }
 
-.scope{ background:var(--scope-bg); border-radius:10px; padding:14px 18px 14px; border:1px solid #DAD6C8;}
+.scope{ background:var(--scope-bg); border-radius:10px; padding:14px 18px 14px; border:1px solid #2c2820;}
 .chart-box{ position:relative; height:420px; }
 .chart-box canvas{ width:100% !important; height:100% !important; }
 .two-col .chart-box{ height:360px; }
@@ -133,18 +133,18 @@ button.channel-btn.active{ background:var(--accent-soft); color:#F3A88F; border-
   padding:7px 12px; border-radius:6px; border:1px solid var(--panel-border); background:var(--panel);
   color:var(--panel-text); font-family:var(--font-ui); font-size:12px; cursor:pointer;
 }
-.table-controls button:hover{ border-color:var(--accent); color:#F3A88F; }
+.table-controls button:hover{ border-color:var(--accent); color:#e8a53d; }
 
 .table-wrap{ max-height:320px; overflow:auto; border:1px solid var(--panel-border); border-radius:8px;}
 table.data-table{ width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:11.5px;}
 table.data-table thead th{
-  position:sticky; top:0; background:#1F2933; color:var(--panel-text-dim); text-align:left;
+  position:sticky; top:0; background:#201c16; color:var(--panel-text-dim); text-align:left;
   padding:7px 10px; border-bottom:1px solid var(--panel-border); font-weight:600;
 }
-table.data-table tbody td{ padding:6px 10px; border-bottom:1px solid #202832; color:var(--panel-text);}
-table.data-table tbody tr:hover{ background:#1B232D; }
+table.data-table tbody td{ padding:6px 10px; border-bottom:1px solid #2c2820; color:var(--panel-text);}
+table.data-table tbody tr:hover{ background:#211c15; }
 
-.note{ font-size:11.5px; color:var(--panel-text-dim); line-height:1.5; margin-top:10px; padding:10px 12px; background:#171F28; border:1px solid var(--panel-border); border-radius:8px;}
+.note{ font-size:11.5px; color:var(--panel-text-dim); line-height:1.5; margin-top:10px; padding:10px 12px; background:#171310; border:1px solid var(--panel-border); border-radius:8px;}
 .note b{ color:var(--panel-text); }
 
 .tab-content{ display:none; }
@@ -286,12 +286,12 @@ table.data-table tbody tr:hover{ background:#1B232D; }
         <div><span class="k">Po (during pulse)</span><span class="v" id="s1-po">–</span></div>
         <div><span class="k">Closed cursor (I)</span><span class="v" id="s1-cursorClosed">–</span></div>
         <div><span class="k">Open cursor (I)</span><span class="v" id="s1-cursorOpen">–</span></div>
-        <div><span class="k">ΔI = I(open) − I(closed)</span><span class="v" id="s1-cursorDelta" style="color:#F3A88F;">–</span></div>
+        <div><span class="k">ΔI = I(open) − I(closed)</span><span class="v" id="s1-cursorDelta" style="color:#e8a53d;">–</span></div>
       </div>
       <div class="scope"><div class="chart-box"><canvas id="chartSingle"></canvas></div></div>
       <div class="note" style="margin-top:10px;">Drag the two dashed cursor lines onto the trace — <b>Closed</b> onto the baseline, <b>Open</b> onto an open level — then press <b>Record point</b> to log the test voltage and the measured current step (ΔI) below.</div>
       <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-        <button class="run-btn" id="recordPointBtn" style="max-width:220px; background:#2D7DD2;">Record point (V, ΔI)</button>
+        <button class="run-btn" id="recordPointBtn" style="max-width:220px; background:#6fb8ff; color:#0a0f08;">Record point (V, ΔI)</button>
         <button class="ghost-btn" id="resetCursorsBtn" style="max-width:160px;">Reset cursors</button>
         <button class="ghost-btn" id="clearPointsTab1Btn" style="max-width:160px;">Clear table</button>
       </div>
@@ -416,7 +416,7 @@ table.data-table tbody tr:hover{ background:#1B232D; }
           <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartClosedHist"></canvas></div></div>
           <div style="display:flex; gap:8px; align-items:center; margin:10px 0 0; flex-wrap:wrap;">
             <label for="fitClosedN" style="font-size:11.5px; color:var(--panel-text-dim);">Components:</label>
-            <select id="fitClosedN" style="background:#0F151C;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
+            <select id="fitClosedN" style="background:#100c08;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
               <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
             </select>
             <button class="ghost-btn" id="fitClosedBtn" style="max-width:110px;">Fit</button>
@@ -428,7 +428,7 @@ table.data-table tbody tr:hover{ background:#1B232D; }
           <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartOpenHist"></canvas></div></div>
           <div style="display:flex; gap:8px; align-items:center; margin:10px 0 0; flex-wrap:wrap;">
             <label for="fitOpenN" style="font-size:11.5px; color:var(--panel-text-dim);">Components:</label>
-            <select id="fitOpenN" style="background:#0F151C;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
+            <select id="fitOpenN" style="background:#100c08;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
               <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
             </select>
             <button class="ghost-btn" id="fitOpenBtn" style="max-width:110px;">Fit</button>
@@ -701,7 +701,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 /* ================= CHART SETUP ================= */
-Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
 let cursorClosedVal = 0, cursorOpenVal = -1;
 let draggingCursor = null; // 'closed' or 'open'
@@ -709,15 +709,15 @@ let draggingCursor = null; // 'closed' or 'open'
 const chartSingle = new Chart(document.getElementById('chartSingle'), {
   type:'line',
   data:{ datasets:[
-    { label:'Single channel I (pA)', data:[], borderColor:'#E4572E', backgroundColor:'transparent', borderWidth:1.3, pointRadius:0, stepped:false, order:2 },
-    { label:'Closed', data:[{x:0,y:cursorClosedVal},{x:1,y:cursorClosedVal}], borderColor:'#2D7DD2', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:1 },
-    { label:'Open', data:[{x:0,y:cursorOpenVal},{x:1,y:cursorOpenVal}], borderColor:'#2E8B57', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:0 }
+    { label:'Single channel I (pA)', data:[], borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1.3, pointRadius:0, stepped:false, order:2 },
+    { label:'Closed', data:[{x:0,y:cursorClosedVal},{x:1,y:cursorClosedVal}], borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:1 },
+    { label:'Open', data:[{x:0,y:cursorOpenVal},{x:1,y:cursorOpenVal}], borderColor:'#6fb8ff', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:0 }
   ]},
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:true,position:'top',labels:{color:'#1B232D',font:{size:11}}}, tooltip:{enabled:true} },
+    plugins:{ legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}}}, tooltip:{enabled:true} },
     scales:{
-      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} },
-      y:{ title:{display:true,text:'Current (pA)',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} }
+      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
+      y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
     }
   }
 });
@@ -781,7 +781,7 @@ const chartSweeps = new Chart(document.getElementById('chartSweeps'), {
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
     plugins:{ legend:{display:false}, tooltip:{enabled:false} },
     scales:{
-      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} },
+      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
       y:{ display:false }
     }
   }
@@ -792,10 +792,10 @@ const chartEnsemble = new Chart(document.getElementById('chartEnsemble'), {
   type:'line',
   data:{ datasets:[] },
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:true,position:'top',labels:{color:'#1B232D',font:{size:11}, filter:(item)=>item.text==='Ensemble mean'}}, tooltip:{enabled:true} },
+    plugins:{ legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}, filter:(item)=>item.text==='Ensemble mean'}}, tooltip:{enabled:true} },
     scales:{
-      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} },
-      y:{ title:{display:true,text:'Mean current (pA)',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} }
+      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
+      y:{ title:{display:true,text:'Mean current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
     }
   }
 });
@@ -804,23 +804,23 @@ let ensembleMeanIdx = null, ensembleMarkerIdx = null, ensembleTestV = null;
 const ivChartOptions = (xlabel,ylabel)=>({ animation:false, responsive:true, maintainAspectRatio:false,
   plugins:{ legend:{display:false}, tooltip:{enabled:true} },
   scales:{
-    x:{ title:{display:true,text:xlabel,color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} },
-    y:{ title:{display:true,text:ylabel,color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} }
+    x:{ title:{display:true,text:xlabel,color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
+    y:{ title:{display:true,text:ylabel,color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
   }
 });
 const chartIV1 = new Chart(document.getElementById('chartIV1'), {
   type:'scatter',
-  data:{ datasets:[{ label:'Measured', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#111318', pointBorderColor:'#111318' }] },
+  data:{ datasets:[{ label:'Measured', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8' }] },
   options: ivChartOptions('Test potential (mV)','ΔI (pA)')
 });
 const chartIV2 = new Chart(document.getElementById('chartIV2'), {
   type:'scatter',
-  data:{ datasets:[{ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#111318', pointBorderColor:'#111318' }] },
+  data:{ datasets:[{ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8' }] },
   options: ivChartOptions('Test potential (mV)','I (pA)')
 });
 const chartIV3 = new Chart(document.getElementById('chartIV3'), {
   type:'scatter',
-  data:{ datasets:[{ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#111318', pointBorderColor:'#111318' }] },
+  data:{ datasets:[{ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8' }] },
   options: ivChartOptions('Test potential (mV)','I (pA)')
 });
 
@@ -885,14 +885,14 @@ function runSweeps(){
     offsets.push(offset);
     datasets.push({
       data: Array.from(res.time).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+(noisy[i2]+offset).toFixed(4)}; }),
-      borderColor:'#E4572E', backgroundColor:'transparent', borderWidth:1, pointRadius:0
+      borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1, pointRadius:0
     });
     rows.push({sweep:s+1, latency:res.firstOpenLatency, n:res.events.length, tot:res.openTimeInPulse, po:res.po});
   }
   sweepOffsets = offsets;
   sweepTestV = p.testV;
   sweepMarkerIdx = datasets.length;
-  datasets.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#F3A88F', pointBorderColor:'#8A2E12', borderWidth:1.5 });
+  datasets.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5 });
   chartSweeps.data.datasets = datasets;
   chartSweeps.update();
 
@@ -959,14 +959,14 @@ function runEnsemble(){
     }
   }
   const meanI = Array.from(sumI).map(v=>v/n);
-  const datasets = sampleTraces.map(tr=>({ data:tr, borderColor:'rgba(20,33,61,0.18)', backgroundColor:'transparent', borderWidth:1, pointRadius:0 }));
+  const datasets = sampleTraces.map(tr=>({ data:tr, borderColor:'rgba(77,255,160,0.18)', backgroundColor:'transparent', borderWidth:1, pointRadius:0 }));
   ensembleMeanIdx = datasets.length;
   datasets.push({
     label:'Ensemble mean', data: Array.from(timeRef).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+meanI[i2].toFixed(4)}; }),
-    borderColor:'#14213D', backgroundColor:'transparent', borderWidth:2.4, pointRadius:0
+    borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:2.4, pointRadius:0
   });
   ensembleMarkerIdx = datasets.length;
-  datasets.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#F3A88F', pointBorderColor:'#8A2E12', borderWidth:1.5 });
+  datasets.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5 });
   chartEnsemble.data.datasets = datasets;
   chartEnsemble.update();
   ensembleTestV = p.testV;
@@ -1010,35 +1010,35 @@ chartEnsemble.canvas.addEventListener('contextmenu', (e)=>{
 const chartHistScope = new Chart(document.getElementById('chartHistScope'), {
   type:'line',
   data:{ datasets:[
-    { label:'Current sweep', data:[], borderColor:'#E4572E', backgroundColor:'transparent', borderWidth:1.3, pointRadius:0, order:2 },
-    { label:'Pulse start', data:[], borderColor:'#4C5564', backgroundColor:'transparent', borderWidth:1.3, borderDash:[5,4], pointRadius:0, order:1 },
-    { label:'Pulse end', data:[], borderColor:'#4C5564', backgroundColor:'transparent', borderWidth:1.3, borderDash:[5,4], pointRadius:0, order:1 }
+    { label:'Current sweep', data:[], borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1.3, pointRadius:0, order:2 },
+    { label:'Pulse start', data:[], borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:1.3, borderDash:[5,4], pointRadius:0, order:1 },
+    { label:'Pulse end', data:[], borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:1.3, borderDash:[5,4], pointRadius:0, order:1 }
   ]},
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
     plugins:{ legend:{display:false}, tooltip:{enabled:false} },
     scales:{
-      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} },
-      y:{ title:{display:true,text:'Current (pA)',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'}, min:-1, max:2 }
+      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
+      y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'}, min:-1, max:2 }
     }
   }
 });
 const histBarOptions = (xlabel)=>({ animation:false, responsive:true, maintainAspectRatio:false,
   plugins:{ legend:{display:false}, tooltip:{enabled:true} },
   scales:{
-    x:{ title:{display:true,text:xlabel,color:'#1B232D'}, ticks:{color:'#1B232D', maxRotation:60, minRotation:60, autoSkip:true, maxTicksLimit:9}, grid:{display:false} },
-    y:{ title:{display:true,text:'Count',color:'#1B232D'}, ticks:{color:'#1B232D'}, grid:{color:'#E1DED2'} }
+    x:{ title:{display:true,text:xlabel,color:'#b8ae95'}, ticks:{color:'#b8ae95', maxRotation:60, minRotation:60, autoSkip:true, maxTicksLimit:9}, grid:{display:false} },
+    y:{ title:{display:true,text:'Count',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
   }
 });
 const chartClosedHist = new Chart(document.getElementById('chartClosedHist'), {
   data:{ labels:[], datasets:[
-    { type:'bar', data:[], backgroundColor:'#2D7DD2', order:1 },
-    { type:'line', data:[], borderColor:'#111318', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 }
+    { type:'bar', data:[], backgroundColor:'#e8a53d', order:1 },
+    { type:'line', data:[], borderColor:'#f4ecd8', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 }
   ]}, options: histBarOptions('Closed time (ms, log bins)')
 });
 const chartOpenHist = new Chart(document.getElementById('chartOpenHist'), {
   data:{ labels:[], datasets:[
-    { type:'bar', data:[], backgroundColor:'#2E8B57', order:1 },
-    { type:'line', data:[], borderColor:'#111318', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 }
+    { type:'bar', data:[], backgroundColor:'#6fb8ff', order:1 },
+    { type:'line', data:[], borderColor:'#f4ecd8', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 }
   ]}, options: histBarOptions('Open time (ms, log bins)')
 });
 
@@ -1304,7 +1304,7 @@ function runFit(which){
     const f = fits[m];
     const aicMark = m===bestAicM ? ' ◀ lowest AIC' : '';
     const bicMark = m===bestBicM ? ' ◀ lowest BIC' : '';
-    const rowStyle = m===selectedM ? 'color:#F3A88F;' : '';
+    const rowStyle = m===selectedM ? 'color:#e8a53d;' : '';
     html += `<tr style="${rowStyle}"><td>${m}</td><td>${f.logL.toFixed(1)}</td><td>${f.aic.toFixed(1)}${aicMark}</td><td>${f.bic.toFixed(1)}${bicMark}</td></tr>`;
   });
   html += `</table>`;
