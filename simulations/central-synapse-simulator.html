@@ -465,7 +465,8 @@
     revealK: false,
     isi: 50, nPulses: 2, facilStrength: 0.55, tauFacil: 120, tauRec: 600,
     histAmps: [], histRunning: false, histTimer: null, showFit: false,
-    lastK: null, lastPeak: null, lastKs: null, lastPeaks: null
+    lastK: null, lastPeak: null, lastKs: null, lastPeaks: null,
+    lastSingleTrace: null, lastTrainTrace: null, lastNTrials: 1
   };
 
   const rail = document.getElementById("rail");
@@ -503,32 +504,52 @@
       </div>
     `;
   }
+  // Any recording condition invalidates trials already collected in the histogram — otherwise
+  // trials from two different settings would silently blend into the same histogram/stats.
+  function noteConditionChanged() {
+    if (state.histAmps.length > 0) {
+      state.histAmps = [];
+      const countEl = document.getElementById("histCount");
+      if (countEl) countEl.textContent = "0";
+      if (state.tab === "hist") drawHistogram();
+    }
+  }
+
+  // Sliders and toggles here only update state + their own label. They deliberately do NOT
+  // redraw the scope or fire a new trial — only an explicit button (Stimulate / Run train /
+  // Average N trials / Start recording) should generate a new stochastic sweep.
   function bindShared() {
     document.getElementById("vhold").addEventListener("input", e => {
       state.vhold = parseFloat(e.target.value);
       document.getElementById("vholdVal").textContent = state.vhold + " mV";
-      renderStage();
+      noteConditionChanged();
     });
     document.querySelectorAll("#nSeg button").forEach(b => {
       b.addEventListener("click", () => {
         state.N = parseInt(b.dataset.n, 10);
         document.querySelectorAll("#nSeg button").forEach(x => x.classList.toggle("active", x === b));
         document.getElementById("dN").textContent = state.N;
-        renderStage();
+        noteConditionChanged();
       });
     });
     document.getElementById("pr").addEventListener("input", e => {
       state.Pr = parseFloat(e.target.value);
       document.getElementById("prVal").textContent = state.Pr.toFixed(2);
+      noteConditionChanged();
     });
     document.getElementById("ratio").addEventListener("input", e => {
       state.nmdaRatio = parseFloat(e.target.value);
       document.getElementById("ratioVal").textContent = state.nmdaRatio.toFixed(2);
+      noteConditionChanged();
     });
-    document.getElementById("mgToggle").addEventListener("change", e => { state.mgOn = e.target.checked; renderStage(); });
+    document.getElementById("mgToggle").addEventListener("change", e => {
+      state.mgOn = e.target.checked;
+      noteConditionChanged();
+    });
     document.getElementById("noise").addEventListener("input", e => {
       state.noiseSD = parseFloat(e.target.value);
       document.getElementById("noiseVal").textContent = state.noiseSD + " pA";
+      noteConditionChanged();
     });
     document.getElementById("dN").textContent = state.N;
   }
@@ -745,6 +766,7 @@
     const { t, I } = buildSweep(events, -5, sweepEnd, 0.25, state.vhold, state.nmdaRatio, state.mgOn, state.noiseSD);
     const peak = sweepPeak(t, I, state.vhold, 0);
     state.lastK = k; state.lastPeak = peak;
+    state.lastSingleTrace = { t, I };
     animateTrace(t, I, [0]);
     updateSingleReadouts();
   }
@@ -779,7 +801,8 @@
       for (let i = 0; i < state.N; i++) sites.push({ available: true, releasedAt: -1e9 });
       let facilLevel = 0;
       const trialI = new Float64Array(n).fill(0);
-      const ks = [], peaks = [];
+      const ks = [];
+      const pulseWindows = []; // [lo, hi] per pulse, so peaks are measured after noise is added below
 
       for (let p = 0; p < state.nPulses; p++) {
         const tp = pulseTimes[p];
@@ -811,22 +834,35 @@
           gA *= Q_AMPA; gN *= Q_AMPA * state.nmdaRatio * mg;
           trialI[i] += (gA + gN) * (state.vhold - E_REV);
         }
-        let lo = Math.min(Math.round((tp - tStart) / dt), n - 1);
-        let hi = Math.min(Math.round((tp + 60 - tStart) / dt), n - 1);
-        let pk = 0;
-        if (lo <= hi) {
-          if (state.vhold <= 0) { let m = Infinity; for (let i = lo; i <= hi; i++) if (trialI[i] < m) m = trialI[i]; pk = m; }
-          else { let m = -Infinity; for (let i = lo; i <= hi; i++) if (trialI[i] > m) m = trialI[i]; pk = m; }
-        }
-        peaks.push(pk);
+        const lo = Math.min(Math.round((tp - tStart) / dt), n - 1);
+        const hi = Math.min(Math.round((tp + 60 - tStart) / dt), n - 1);
+        pulseWindows.push([lo, hi]);
       }
-      for (let i = 0; i < n; i++) sumI[i] += trialI[i] + (nTrials === 1 ? gauss(0, state.noiseSD) : 0);
+
+      // Recording noise is added once per trial, on the finished trace — the same way for a
+      // single trial or an average of many — so it averages down with trial count like real
+      // signal averaging, instead of being either fully present or entirely absent.
+      for (let i = 0; i < n; i++) trialI[i] += gauss(0, state.noiseSD);
+
+      // Peaks are measured from this same (now noisy) trace, so the reported P1...P5/PPR
+      // numbers always match what the plotted trace actually shows.
+      const peaks = pulseWindows.map(([lo, hi]) => {
+        if (lo > hi) return 0;
+        let pk = 0;
+        if (state.vhold <= 0) { let m = Infinity; for (let i = lo; i <= hi; i++) if (trialI[i] < m) m = trialI[i]; pk = m; }
+        else { let m = -Infinity; for (let i = lo; i <= hi; i++) if (trialI[i] > m) m = trialI[i]; pk = m; }
+        return pk;
+      });
+
+      for (let i = 0; i < n; i++) sumI[i] += trialI[i];
       for (let p = 0; p < state.nPulses; p++) { ksAccum[p] += ks[p]; peaksAccum[p] += peaks[p]; }
     }
     const avgI = new Float64Array(n);
     for (let i = 0; i < n; i++) avgI[i] = sumI[i] / nTrials;
     state.lastKs = ksAccum.map(x => x / nTrials);
     state.lastPeaks = peaksAccum.map(x => x / nTrials);
+    state.lastNTrials = nTrials;
+    state.lastTrainTrace = { t: tAll, I: avgI, stimTimes: pulseTimes };
     animateTrace(tAll, avgI, pulseTimes);
     updateTrainReadouts(nTrials);
   }
@@ -1021,15 +1057,18 @@
   function renderStage() {
     buildStage();
     if (state.tab === "single") {
-      if (state.lastPeak === null) drawScopeStatic(new Float64Array([-5, state.mgOn ? 45 : 95]), new Float64Array([0,0]), [0]);
-      else fireSingle();
+      if (state.lastSingleTrace) drawScopeStatic(state.lastSingleTrace.t, state.lastSingleTrace.I, [0]);
+      else drawScopeStatic(new Float64Array([-5, state.mgOn ? 45 : 95]), new Float64Array([0,0]), [0]);
       updateSingleReadouts();
     } else if (state.tab === "train") {
-      if (!state.lastPeaks) {
+      if (!state.lastTrainTrace) {
         drawScopeStatic(new Float64Array([-5, state.mgOn ? 245 : 345]), new Float64Array([0,0]), [0]);
         const ro = document.getElementById("scopeReadouts");
         if (ro) ro.innerHTML = `<span class="r">set inter-stimulus interval and pulse count, then run the train</span>`;
-      } else updateTrainReadouts(1);
+      } else {
+        drawScopeStatic(state.lastTrainTrace.t, state.lastTrainTrace.I, state.lastTrainTrace.stimTimes);
+        updateTrainReadouts(state.lastNTrials);
+      }
     } else if (state.tab === "hist") {
       drawScopeStatic(new Float64Array([-5, state.mgOn ? 45 : 95]), new Float64Array([0,0]), [0]);
       updateHistScopeReadout();

@@ -85,6 +85,7 @@ details.panel[open] > summary::after{ transform:rotate(180deg); }
   color:var(--panel-text); font-family:var(--font-mono); font-size:12.5px; padding:6px 8px;
 }
 .field input[type=range]{ width:100%; accent-color:var(--accent); }
+.field input:disabled{ opacity:0.45; cursor:not-allowed; }
 button.reset-mini{
   border:none; background:transparent; color:var(--panel-text-dim); font-size:10.5px;
   cursor:pointer; text-decoration:underline; padding:0;
@@ -401,6 +402,7 @@ table.data-table tbody tr:hover{ background:#1B232D; }
         <div class="field"><label for="histTPre">Baseline before step (ms)</label><input type="number" id="histTPre" value="5" step="1"></div>
         <div class="field"><label for="histTPost">Tail after step (ms)</label><input type="number" id="histTPost" value="5" step="1"></div>
       </div>
+      <div class="note" style="margin:0 0 4px;">These fields lock once a run starts (including while paused) so the accumulated histogram always reflects one consistent protocol — press <b>Reset</b> to change them.</div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
         <button class="run-btn" id="startHistBtn" style="max-width:140px;">Start</button>
         <button class="ghost-btn" id="stopHistBtn" style="max-width:140px;">Stop</button>
@@ -691,6 +693,10 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     // The Dwell-Time Histograms tab has its own dedicated hold/test/pulse/tPre/tPost
     // fields, so the shared Voltage command panel is redundant there.
     document.getElementById('voltageCommandPanel').style.display = btn.dataset.tab==='histograms' ? 'none' : 'block';
+    // Leaving the Histograms tab while a run is in progress would otherwise let it
+    // keep ticking invisibly in the background (mutating a hidden chart) — stop it,
+    // same as switching conditions elsewhere invalidates a stale run.
+    if (btn.dataset.tab!=='histograms') stopHistRun();
   });
 });
 
@@ -1078,6 +1084,7 @@ function binCounts(values, edges){
 function meanOf(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
 
 let histRunning = false, histTimerId = null, histPulseIndex = 0;
+let lastHistTPulse = null; // the pulse duration actually used by the in-progress/last run
 let closedTimesAll = [], openTimesAll = [];
 const HIST_RATE_MS = 1000/3, HIST_N_BINS = 18, HIST_T_MIN = 0.02;
 function getNPulses(){ return Math.max(1, Math.round(+val('histNPulses')) || 200); }
@@ -1086,8 +1093,7 @@ function updateHistProgress(){
   document.getElementById('histProgress').textContent = `Pulse ${histPulseIndex} / ${getNPulses()}`;
 }
 function renderHistograms(){
-  const tPulse = +val('histTPulse');
-  const edges = logBinEdges(HIST_N_BINS, HIST_T_MIN, tPulse);
+  const edges = logBinEdges(HIST_N_BINS, HIST_T_MIN, lastHistTPulse);
   const labels = edges.slice(0,-1).map((e,i)=>Math.sqrt(e*edges[i+1]).toFixed(2));
   chartClosedHist.data.labels = labels;
   chartClosedHist.data.datasets[0].data = binCounts(closedTimesAll, edges);
@@ -1130,6 +1136,13 @@ function setHistButtons(){
   document.getElementById('startHistBtn').disabled = histRunning;
   document.getElementById('stopHistBtn').disabled = !histRunning;
 }
+// Locked for as long as a run has any progress (running OR paused mid-run OR
+// finished-but-not-reset) — editing these mid-flight would silently mix dwell
+// times collected under different windows/voltages into the same histogram.
+const HIST_FIELD_IDS = ['histHoldV','histTestV','histTPulse','histTPre','histTPost','histNPulses'];
+function setHistFieldsLocked(locked){
+  HIST_FIELD_IDS.forEach(id=>{ document.getElementById(id).disabled = locked; });
+}
 function updateHistScopeRanges(){
   const p = readParams();
   const testV = +val('histTestV');
@@ -1154,7 +1167,8 @@ function updateHistScopeRanges(){
 function startHistRun(){
   if (histRunning || histPulseIndex >= getNPulses()) return;
   histRunning = true;
-  updateHistScopeRanges();
+  if (histPulseIndex===0){ lastHistTPulse = +val('histTPulse'); updateHistScopeRanges(); }
+  setHistFieldsLocked(true);
   setHistButtons();
   histTimerId = setInterval(histTick, HIST_RATE_MS);
 }
@@ -1165,7 +1179,9 @@ function stopHistRun(){
 }
 function resetHistRun(){
   stopHistRun();
+  setHistFieldsLocked(false);
   histPulseIndex = 0;
+  lastHistTPulse = null;
   closedTimesAll = []; openTimesAll = [];
   updateHistProgress();
   chartHistScope.data.datasets[0].data = [];
@@ -1267,9 +1283,11 @@ function runFit(which){
     resultsEl.textContent = `Not enough events (n=${data.length}) to reliably fit ${selectedM} components — try fewer components or more pulses.`;
     return;
   }
-  // overlay the selected fit on the histogram, using its own current bin edges
-  const tPulse = +val('histTPulse');
-  const edges = logBinEdges(HIST_N_BINS, HIST_T_MIN, tPulse);
+  // overlay the selected fit using the SAME bin edges the bars themselves were drawn
+  // with (the pulse duration actually used to produce this data), not whatever the
+  // field currently shows — otherwise editing it after the run would relabel the
+  // axis without re-binning the bars, and the overlay would mismatch what's plotted.
+  const edges = logBinEdges(HIST_N_BINS, HIST_T_MIN, lastHistTPulse);
   const labels = edges.slice(0,-1).map((e,i)=>Math.sqrt(e*edges[i+1]).toFixed(2));
   chart.data.labels = labels;
   chart.data.datasets[1].data = expectedCountsForFit(selectedFit, edges);

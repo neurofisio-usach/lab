@@ -13,14 +13,12 @@
     --panel: #1c1914;
     --panel-edge: #2c2820;
     --scope-bg: #05130a;
-    --scope-grid: #0f3a22;
     --phosphor: #4dffa0;
     --phosphor-dim: rgba(77,255,160,0.28);
     --amber: #e8a53d;
     --amber-dim: #a97a2c;
     --paper: #f4ecd8;
     --paper-dim: #b8ae95;
-    --ink: #2a2318;
     --danger: #d9694f;
     font-size: 16px;
   }
@@ -356,7 +354,9 @@
   const Y_MIN = -0.15, Y_MAX = 4.0;  // mV, scope vertical range
   const AXIS_STEP = 0.5;             // mV, spacing of the plain-mV gridlines/ticks
   const SCOPE_PAD_B = 28;            // px, bottom margin reserved for time-axis labels
-  const HIST_MIN = 0, HIST_MAX = 3.6; // mV, histogram x-range (EPSPs can't be negative)
+  const HIST_MIN = -0.25, HIST_MAX = 3.6; // mV, histogram x-range (small negative tail is
+                                           // baseline recording noise on failure trials, not a real
+                                           // hyperpolarizing EPSP — see makeSweep() below)
   const BIN_W = Q/8;
   const N_BINS = Math.round((HIST_MAX-HIST_MIN)/BIN_W);
   const PERSIST = 12; // number of past sweeps kept faintly visible
@@ -395,10 +395,15 @@
   function makeSweep(){
     const n = poisson(M_TRUE);
     const sigma = Math.sqrt(SIGMA0*SIGMA0 + n*SIGMA_Q*SIGMA_Q);
-    // EPSPs can't be hyperpolarizing (the reversal potential is near 0 relative to
-    // baseline), so noise can't push a real recorded amplitude below zero — fold
-    // any negative draw back onto the positive side rather than discarding it.
-    const amp = Math.abs(n*Q + gaussian(0, sigma));
+    // The measured peak amplitude keeps symmetric, unmodified baseline recording noise —
+    // that noise is genuine electrical/thermal fluctuation in the recording, unrelated to
+    // the synapse, and is what the classical failure/variance estimators (and the
+    // Poisson-envelope curve below) are actually built to model; folding or clipping it
+    // would bias those statistics. A failure trial can therefore occasionally read as a
+    // very small negative "peak" — that's measurement noise, not a real hyperpolarizing
+    // EPSP, and it's small enough to be invisible once drawn (see drawTrace(), which
+    // floors the plotted *waveform* at 0 since an EPSP itself can't go negative).
+    const amp = n*Q + gaussian(0, sigma);
     return {n, amp};
   }
 
@@ -474,7 +479,10 @@
     let first = true;
     for(let px=0; px<=w; px++){
       const t = (px/w)*T_MAX;
-      const v = stimArtifact(t) + sweep.amp*eppShape(t);
+      // Visual-only floor: an EPSP can't be hyperpolarizing, so the drawn trace never
+      // dips below baseline, even though the underlying measured amp (used for the
+      // histogram/stats) is allowed to carry ordinary symmetric recording noise.
+      const v = Math.max(0, stimArtifact(t) + sweep.amp*eppShape(t));
       const x = px, y = yPix(v,h);
       if(first){ sctx.moveTo(x,y); first=false; } else sctx.lineTo(x,y);
     }
@@ -488,7 +496,8 @@
     const n = history.length;
     history.forEach((sw, i)=>{
       const isLast = i === n-1;
-      const alpha = isLast ? 1 : 0.08 + 0.32*(i/(n-1||1));
+      const age = n - 1 - i; // 0 = newest
+      const alpha = isLast ? 1 : Math.max(0.07, 0.8*Math.pow(0.72, age-1));
       const lw = isLast ? 2 : 1;
       drawTrace(sw, alpha, lw, `rgba(77,255,160,ALPHA)`);
       if(isLast && reveal){
@@ -525,7 +534,7 @@
     const padBottom = 42, padTop = 22, padLeft = 36;
     const plotW = w - padLeft;
     const plotH = h - padBottom - padTop;
-    const hx = v => padLeft + (v/HIST_MAX)*plotW;
+    const hx = v => padLeft + ((v-HIST_MIN)/(HIST_MAX-HIST_MIN))*plotW;
 
     // plain mV gridlines/ticks, regular round-number spacing (not tied to the hidden Q)
     hctx.font = '10px JetBrains Mono, monospace';
@@ -566,7 +575,7 @@
       const N = ampData.length;
       const NMAX = 9;
       for(let px=padLeft; px<=w; px++){
-        const x = ((px-padLeft)/plotW)*HIST_MAX;
+        const x = HIST_MIN + ((px-padLeft)/plotW)*(HIST_MAX-HIST_MIN);
         let density = 0;
         for(let k=0;k<=NMAX;k++){
           const pk = poissonPMF(k, M_TRUE);

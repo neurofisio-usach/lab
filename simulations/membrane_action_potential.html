@@ -23,26 +23,32 @@
 </script>
 <style>
   :root{
-    --bg:#12181F;
-    --panel:#1B232D;
-    --panel-border:#2B3542;
-    --panel-text:#C9D0D8;
-    --panel-text-dim:#8893A0;
-    --scope-bg:#F7F6F1;
-    --ink:#1B232D;
-    --accent:#E4572E;
-    --accent-soft:rgba(228,87,46,0.16);
-    --na:#E4572E;
-    --k:#2D7DD2;
-    --leak:#8A8F98;
-    --stim:#C2255C;
-    --vm:#14213D;
-    --grid:#E1DED2;
-    --good:#2E8B57;
-    --font-ui:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    --font-mono:'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --bg:#12100c;
+    --panel:#1c1914;
+    --panel-border:#2c2820;
+    --panel-text:#f4ecd8;
+    --panel-text-dim:#b8ae95;
+    --scope-bg:#05130a;
+    --ink:#dff5e8;
+    --accent:#e8a53d;
+    --accent-soft:rgba(232,165,61,0.16);
+    --na:#e8a53d;
+    --k:#4dc9ff;
+    --leak:#b8ae95;
+    --stim:#d9694f;
+    --vm:#4dffa0;
+    --grid:rgba(77,255,160,0.16);
+    --good:#4dffa0;
+    --phosphor:#4dffa0;
+    --phosphor-dim:rgba(77,255,160,0.28);
+    --amber-dim:#a97a2c;
+    --danger:#d9694f;
+    --font-ui:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono:'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --font-serif:'Source Serif 4', Georgia, 'Times New Roman', serif;
   }
   *{box-sizing:border-box;}
+  input[type=checkbox], input[type=radio]{ accent-color:var(--accent); }
   html,body{margin:0;padding:0;background:var(--bg);color:var(--panel-text);font-family:var(--font-ui);}
   body{min-height:100vh;}
 
@@ -53,21 +59,21 @@
     background:var(--panel);
   }
   header.app-head h1{
-    font-size:15px; font-weight:600; letter-spacing:.02em; margin:0;
+    font-family:var(--font-serif); font-size:19px; font-weight:600; letter-spacing:0; margin:0;
     color:var(--panel-text); white-space:nowrap;
   }
-  header.app-head h1 span{ color:var(--panel-text-dim); font-weight:400; }
+  header.app-head h1 span{ font-family:var(--font-ui); font-size:13px; color:var(--panel-text-dim); font-weight:400; }
 
   nav.tabs{ display:flex; gap:2px; flex-wrap:wrap; }
   nav.tabs button{
-    font-family:var(--font-ui); font-size:12.5px; font-weight:500;
+    font-family:var(--font-mono); font-size:12px; font-weight:500;
     padding:9px 14px; border:1px solid transparent; border-radius:6px;
     background:transparent; color:var(--panel-text-dim); cursor:pointer;
     transition:background .15s, color .15s;
   }
-  nav.tabs button:hover:not(:disabled){ background:#232D3A; color:var(--panel-text); }
+  nav.tabs button:hover:not(:disabled){ background:#241f18; color:var(--panel-text); }
   nav.tabs button.active{
-    background:var(--accent-soft); color:#F3A88F; border-color:rgba(228,87,46,0.35);
+    background:var(--accent-soft); color:#f0c37a; border-color:rgba(228,87,46,0.35);
   }
   nav.tabs button:disabled{ opacity:.38; cursor:default; }
 
@@ -83,11 +89,12 @@
   /* ---------- control panel sections ---------- */
   details.panel{
     border:1px solid var(--panel-border); border-radius:8px; margin-bottom:10px;
-    background:#171F28; overflow:hidden;
+    background:#171310; overflow:hidden;
   }
   details.panel > summary{
-    list-style:none; cursor:pointer; padding:10px 12px; font-size:12.5px;
-    font-weight:600; letter-spacing:.01em; color:var(--panel-text);
+    list-style:none; cursor:pointer; padding:10px 12px; font-size:11.5px;
+    font-family:var(--font-mono); font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--panel-text);
     display:flex; align-items:center; justify-content:space-between;
   }
   details.panel > summary::-webkit-details-marker{ display:none; }
@@ -100,7 +107,7 @@
   .field-row{ display:flex; align-items:center; gap:8px; margin:7px 0; }
   .field-row label{ flex:1; font-size:12px; color:var(--panel-text-dim); }
   .field-row input[type=number]{
-    width:64px; background:#0F151C; border:1px solid var(--panel-border); border-radius:5px;
+    width:64px; background:#0d0a07; border:1px solid var(--panel-border); border-radius:5px;
     color:var(--panel-text); font-family:var(--font-mono); font-size:12px; padding:5px 6px;
   }
   .field-row input[type=number]:focus{ outline:none; border-color:var(--accent); }
@@ -111,7 +118,7 @@
     color:var(--panel-text-dim); cursor:pointer; font-size:13px; line-height:1;
     display:flex; align-items:center; justify-content:center;
   }
-  .reset-btn:hover{ background:#232D3A; color:#F3A88F; }
+  .reset-btn:hover{ background:#241f18; color:#f0c37a; }
 
   .subgrid.subgrid-4{ grid-template-columns:1.7fr 1fr 1fr 1fr; }
   .row-label{
@@ -122,7 +129,7 @@
   .subgrid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px 10px; margin:6px 0 10px; }
   .subgrid .col-head{ font-size:10px; text-transform:none; color:var(--panel-text-dim); text-align:center; }
   .subgrid input[type=number]{
-    width:100%; background:#0F151C; border:1px solid var(--panel-border); border-radius:5px;
+    width:100%; background:#0d0a07; border:1px solid var(--panel-border); border-radius:5px;
     color:var(--panel-text); font-family:var(--font-mono); font-size:12px; padding:5px 4px; text-align:center;
   }
 
@@ -131,7 +138,7 @@
 
   .readout-mini{
     display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; margin-top:10px;
-    padding:9px 10px; background:#0F151C; border-radius:6px; border:1px solid var(--panel-border);
+    padding:9px 10px; background:#0d0a07; border-radius:6px; border:1px solid var(--panel-border);
     font-family:var(--font-mono); font-size:11.5px;
   }
   .readout-mini div{ color:var(--panel-text-dim); }
@@ -148,13 +155,13 @@
 
   button.run-btn{
     width:100%; margin-top:6px; padding:11px; border:none; border-radius:7px;
-    background:var(--accent); color:#fff; font-family:var(--font-ui); font-weight:600;
-    font-size:13px; cursor:pointer; letter-spacing:.01em;
+    background:var(--accent); color:#1c1408; font-family:var(--font-mono); font-weight:600;
+    font-size:12.5px; cursor:pointer; letter-spacing:.01em;
   }
-  button.run-btn:hover{ background:#D14A22; }
+  button.run-btn:hover{ background:#f0b455; }
   button.ghost-btn{
     width:100%; margin-top:8px; padding:9px; border:1px solid var(--panel-border); border-radius:7px;
-    background:transparent; color:var(--panel-text-dim); font-family:var(--font-ui); font-size:12px; cursor:pointer;
+    background:transparent; color:var(--panel-text-dim); font-family:var(--font-mono); font-size:11.5px; cursor:pointer;
   }
   button.ghost-btn:hover{ color:var(--panel-text); border-color:var(--panel-text-dim); }
 
@@ -162,18 +169,18 @@
 
   /* ---------- main stage ---------- */
   .stage-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
-  .stage-head h2{ font-size:18px; margin:0; color:#EDEFF2; font-weight:600; }
-  .stage-head p{ margin:2px 0 0; font-size:12.5px; color:#8893A0; }
+  .stage-head h2{ font-size:14px; font-family:var(--font-mono); letter-spacing:.03em; text-transform:uppercase; margin:0; color:#f4ecd8; font-weight:600; }
+  .stage-head p{ margin:4px 0 0; font-size:12.5px; color:#b8ae95; }
 
   .digital-readout{
     display:flex; gap:22px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--panel-border);
     border-radius:8px; padding:10px 16px; margin-bottom:14px; font-family:var(--font-mono); font-size:12.5px;
   }
   .digital-readout div span.k{ color:var(--panel-text-dim); margin-right:6px; }
-  .digital-readout div span.v{ color:#F3EDE4; font-weight:600; }
+  .digital-readout div span.v{ color:#4dffa0; font-weight:600; }
 
   .scope{
-    background:var(--scope-bg); border-radius:10px; padding:14px 18px 6px; border:1px solid #DAD6C8;
+    background:var(--scope-bg); border-radius:10px; padding:14px 18px 6px; border:1px solid #2c2820;
   }
   .scope-canvas-wrap{ position:relative; width:100%; height:520px; }
 
@@ -181,28 +188,28 @@
 
   .picked-panel{ margin-top:18px; }
   .picked-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
-  .picked-head h3{ margin:0 0 2px; font-size:14px; color:#EDEFF2; font-weight:600; }
-  .picked-head p{ margin:0; font-size:11.5px; color:#8893A0; }
+  .picked-head h3{ margin:0 0 2px; font-size:12px; font-family:var(--font-mono); letter-spacing:.04em; text-transform:uppercase; color:#f4ecd8; font-weight:600; }
+  .picked-head p{ margin:0; font-size:11.5px; color:#b8ae95; }
   .picked-actions{ display:flex; gap:8px; flex:none; }
   .picked-actions button{
     padding:7px 12px; border-radius:6px; border:1px solid var(--panel-border); background:var(--panel);
-    color:var(--panel-text); font-family:var(--font-ui); font-size:12px; cursor:pointer;
+    color:var(--panel-text); font-family:var(--font-mono); font-size:11.5px; cursor:pointer;
   }
-  .picked-actions button:hover{ border-color:var(--accent); color:#F3A88F; }
-  .picked-actions button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .picked-actions button:hover{ border-color:var(--accent); color:#f0c37a; }
+  .picked-actions button.primary{ background:var(--accent); border-color:var(--accent); color:#1c1408; }
   #pickedWrap{ max-height:220px; }
   .sim-row{ display:flex; gap:16px; align-items:flex-start; }
   .sim-row .scope{ flex:1.6; min-width:0; }
   .side-plot-panel{
-    flex:1; min-width:0; background:var(--scope-bg); border:1px solid #DAD6C8; border-radius:10px;
+    flex:1; min-width:0; background:var(--scope-bg); border:1px solid #2c2820; border-radius:10px;
     padding:12px 14px; display:flex; flex-direction:column;
   }
   .side-plot-head{ display:flex; flex-direction:column; gap:8px; margin-bottom:6px; }
   .side-plot-toggle{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); cursor:pointer; }
-  .axis-selectors{ display:flex; align-items:center; gap:8px; font-size:12px; color:#5B6472; }
+  .axis-selectors{ display:flex; align-items:center; gap:8px; font-size:12px; color:#b8ae95; }
   .axis-selectors select{
-    flex:1; min-width:0; background:#fff; color:var(--ink); border:1px solid #CFCBBB; border-radius:6px;
-    font-family:var(--font-ui); font-size:12px; padding:5px 6px;
+    flex:1; min-width:0; background:#0d0a07; color:var(--ink); border:1px solid #2c2820; border-radius:6px;
+    font-family:var(--font-mono); font-size:11.5px; padding:5px 6px;
   }
   .picked-plot-wrap{ position:relative; width:100%; flex:1; height:460px; margin-top:6px; }
   .side-column{ flex:1; min-width:0; display:flex; flex-direction:column; gap:16px; }
@@ -220,15 +227,15 @@
   .table-controls .left{ display:flex; align-items:center; gap:10px; }
   .table-controls select{
     background:var(--panel); color:var(--panel-text); border:1px solid var(--panel-border);
-    border-radius:6px; font-family:var(--font-ui); font-size:12px; padding:6px 8px;
+    border-radius:6px; font-family:var(--font-mono); font-size:11.5px; padding:6px 8px;
   }
   .table-controls button{
     padding:7px 12px; border-radius:6px; border:1px solid var(--panel-border); background:var(--panel);
-    color:var(--panel-text); font-family:var(--font-ui); font-size:12px; cursor:pointer;
+    color:var(--panel-text); font-family:var(--font-mono); font-size:11.5px; cursor:pointer;
   }
-  .table-controls button:hover{ border-color:var(--accent); color:#F3A88F; }
-  .table-controls button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
-  .table-controls button.primary:hover{ background:#D14A22; color:#fff; }
+  .table-controls button:hover{ border-color:var(--accent); color:#f0c37a; }
+  .table-controls button.primary{ background:var(--accent); border-color:var(--accent); color:#1c1408; }
+  .table-controls button.primary:hover{ background:#f0b455; color:#1c1408; }
 
   .table-wrap{
     max-height:360px; overflow:auto; border:1px solid var(--panel-border); border-radius:8px;
@@ -236,15 +243,15 @@
   }
   table.data-table{ border-collapse:collapse; width:100%; font-family:var(--font-mono); font-size:11.5px; }
   table.data-table thead th{
-    position:sticky; top:0; background:#EDEAE0; color:var(--ink); text-align:right; padding:7px 10px;
-    border-bottom:1px solid #CFCBBB; font-weight:600; white-space:nowrap;
+    position:sticky; top:0; background:#1c1914; color:var(--ink); text-align:right; padding:7px 10px;
+    border-bottom:1px solid #2c2820; font-weight:600; white-space:nowrap;
   }
   table.data-table thead th:first-child, table.data-table td:first-child{ text-align:left; }
-  table.data-table td{ text-align:right; padding:4px 10px; color:#2B3542; border-bottom:1px solid #EAE7DC; white-space:nowrap; }
-  table.data-table tbody tr:hover{ background:#EFEBDD; }
+  table.data-table td{ text-align:right; padding:4px 10px; color:#dff5e8; border-bottom:1px solid #2c2820; white-space:nowrap; }
+  table.data-table tbody tr:hover{ background:#201b14; }
 
-  footer.note{ margin:22px 0 10px; font-size:11px; color:#5B6472; line-height:1.6; max-width:760px; }
-  footer.note code{ font-family:var(--font-mono); background:#1B232D; padding:1px 5px; border-radius:4px; }
+  footer.note{ margin:22px 0 10px; font-size:11px; color:#b8ae95; line-height:1.6; max-width:760px; }
+  footer.note code{ font-family:var(--font-mono); background:rgba(77,255,160,0.08); color:var(--phosphor); padding:1px 5px; border-radius:4px; }
 
   @media (max-width:860px){
     .layout{ grid-template-columns:1fr; }
@@ -255,7 +262,7 @@
   .tab-view{ display:none; }
   .tab-view.active{ display:grid; }
   .iv-wrap{ position:relative; width:100%; height:340px; }
-  .family-note{ font-size:11px; color:#8893A0; margin-top:6px; }
+  .family-note{ font-size:11px; color:#b8ae95; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -357,15 +364,15 @@
         <div class="axis-label">Current (mA/cm²)</div>
         <div class="checklist">
           <label><span class="swatch" style="background:var(--stim)"></span><input type="checkbox" id="chk-Im" checked> I<sub>m</sub> — stimulus</label>
-          <label><span class="swatch" style="background:#5B6472"></span><input type="checkbox" id="chk-Ii"> I<sub>i</sub> — total ionic</label>
+          <label><span class="swatch" style="background:#7fae8f"></span><input type="checkbox" id="chk-Ii"> I<sub>i</sub> — total ionic</label>
           <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="chk-IK"> I<sub>K</sub></label>
           <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="chk-INa"> I<sub>Na</sub></label>
         </div>
         <div class="axis-label">Gating variables (0–1)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:#7A5CC0"></span><input type="checkbox" id="chk-n"> n</label>
-          <label><span class="swatch" style="background:#B08A2E"></span><input type="checkbox" id="chk-m"> m</label>
-          <label><span class="swatch" style="background:#3C8F7A"></span><input type="checkbox" id="chk-h"> h</label>
+          <label><span class="swatch" style="background:#b98dfa"></span><input type="checkbox" id="chk-n"> n</label>
+          <label><span class="swatch" style="background:#d4c24d"></span><input type="checkbox" id="chk-m"> m</label>
+          <label><span class="swatch" style="background:#e85d9e"></span><input type="checkbox" id="chk-h"> h</label>
         </div>
         <div class="axis-label">Conductance (mS/cm²)</div>
         <div class="checklist">
@@ -441,7 +448,7 @@
       <div class="table-wrap" id="pickedWrap">
         <table class="data-table" id="pickedTable">
           <thead><tr><th>#</th><th>t (ms)</th><th>Vm (mV)</th></tr></thead>
-          <tbody id="pickedBody"><tr><td colspan="3" style="text-align:center;color:#8893A0;">No points yet — right-click the plot.</td></tr></tbody>
+          <tbody id="pickedBody"><tr><td colspan="3" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -597,14 +604,14 @@
         <div class="checklist">
           <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="vc-chk-INa" checked> I<sub>Na</sub></label>
           <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="vc-chk-IK" checked> I<sub>K</sub></label>
-          <label><span class="swatch" style="background:#5B6472"></span><input type="checkbox" id="vc-chk-IL"> I<sub>L</sub></label>
-          <label><span class="swatch" style="background:#8A8F98"></span><input type="checkbox" id="vc-chk-Ii"> I<sub>i</sub> — total ionic</label>
+          <label><span class="swatch" style="background:#7fae8f"></span><input type="checkbox" id="vc-chk-IL"> I<sub>L</sub></label>
+          <label><span class="swatch" style="background:#a89a7f"></span><input type="checkbox" id="vc-chk-Ii"> I<sub>i</sub> — total ionic</label>
         </div>
         <div class="axis-label">Gating variables (0–1)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:#7A5CC0"></span><input type="checkbox" id="vc-chk-n"> n</label>
-          <label><span class="swatch" style="background:#B08A2E"></span><input type="checkbox" id="vc-chk-m"> m</label>
-          <label><span class="swatch" style="background:#3C8F7A"></span><input type="checkbox" id="vc-chk-h"> h</label>
+          <label><span class="swatch" style="background:#b98dfa"></span><input type="checkbox" id="vc-chk-n"> n</label>
+          <label><span class="swatch" style="background:#d4c24d"></span><input type="checkbox" id="vc-chk-m"> m</label>
+          <label><span class="swatch" style="background:#e85d9e"></span><input type="checkbox" id="vc-chk-h"> h</label>
         </div>
         <div class="axis-label">Conductance (mS/cm²)</div>
         <div class="checklist">
@@ -691,7 +698,7 @@
       <div class="table-wrap" id="vc-pickedWrap">
         <table class="data-table" id="vc-pickedTable">
           <thead><tr><th>#</th><th>t (ms)</th><th>Vm (mV)</th></tr></thead>
-          <tbody id="vc-pickedBody"><tr><td colspan="3" style="text-align:center;color:#8893A0;">No points yet — right-click the plot.</td></tr></tbody>
+          <tbody id="vc-pickedBody"><tr><td colspan="3" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -957,26 +964,30 @@ const HH = (() => {
    UI STATE + WIRING
    ========================================================================= */
 const el = (id) => document.getElementById(id);
+/* Reads a numeric field; falls back to `fallback` if the field is blank or
+   otherwise non-numeric, so a cleared input can't silently NaN the whole run. */
+const numOr = (id, fallback) => { const v = parseFloat(el(id).value); return isNaN(v) ? fallback : v; };
 
 function readParams(){
+  const d = DEFAULTS, n = (id) => numOr(id, d[id]);
   return {
-    TS0: parseFloat(el('in-delay').value),
-    a1: parseFloat(el('in-a1').value), TS1: parseFloat(el('in-delay').value) + parseFloat(el('in-d1').value),
-    a2: parseFloat(el('in-a2').value),
-    a3: parseFloat(el('in-a3').value),
-    TEND: parseFloat(el('in-tend').value),
-    GK: parseFloat(el('in-gk').value),
-    gNaBase: parseFloat(el('in-gna').value),
-    GL: parseFloat(el('in-gl').value),
-    radiusCm: parseFloat(el('in-radius').value) * 0.0001,
-    temp: parseFloat(el('in-temp').value),
+    TS0: n('in-delay'),
+    a1: n('in-a1'), TS1: n('in-delay') + n('in-d1'),
+    a2: n('in-a2'),
+    a3: n('in-a3'),
+    TEND: n('in-tend'),
+    GK: n('in-gk'),
+    gNaBase: n('in-gna'),
+    GL: n('in-gl'),
+    radiusCm: n('in-radius') * 0.0001,
+    temp: n('in-temp'),
     ideal: el('in-ideal').checked,
-    Nao: parseFloat(el('in-nao').value),
-    Nai: parseFloat(el('in-nai').value),
-    Ko: parseFloat(el('in-ko').value),
-    Ki: parseFloat(el('in-ki').value),
-    TTX: parseFloat(el('in-ttx').value),
-    GNaNI: parseFloat(el('in-pronase').value),
+    Nao: n('in-nao'),
+    Nai: n('in-nai'),
+    Ko: n('in-ko'),
+    Ki: n('in-ki'),
+    TTX: n('in-ttx'),
+    GNaNI: n('in-pronase'),
   };
 }
 
@@ -1011,7 +1022,7 @@ el('btnResetAll').addEventListener('click', () => {
   resetFields(Object.keys(DEFAULTS));
 });
 
-const AXIS_COLORS = { na: '#E4572E', k: '#2D7DD2', leak: '#8A8F98', stim: '#C2255C', vm: '#14213D' };
+const AXIS_COLORS = { na: '#e8a53d', k: '#4dc9ff', leak: '#b8ae95', stim: '#d9694f', vm: '#4dffa0' };
 
 /* ---------- main chart ---------- */
 const mainCtx = document.getElementById('mainChart').getContext('2d');
@@ -1028,7 +1039,7 @@ const mainChart = new Chart(mainCtx, {
       legend: {
         display: true, position: 'top',
         labels: {
-          color: '#1B232D', font: { size: 12 },
+          color: '#b8ae95', font: { size: 12 },
           generateLabels(chart){
             const seen = new Set();
             const items = [];
@@ -1048,11 +1059,11 @@ const mainChart = new Chart(mainCtx, {
       tooltip: { enabled: false }
     },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'time (ms)', color: '#1B232D' }, grid: { color: '#E1DED2' }, ticks: { color: '#1B232D' } },
-      yVm: { position: 'left', title: { display: true, text: 'Vm (mV)', color: '#14213D' }, grid: { color: '#E1DED2' }, ticks: { color: '#14213D' } },
-      yCurrent: { position: 'right', display: false, title: { display: true, text: 'I (mA/cm²)', color: '#4C5564' }, grid: { drawOnChartArea: false }, ticks: { color: '#4C5564' } },
-      yGate: { position: 'right', display: false, offset: true, min: 0, max: 1, title: { display: true, text: 'gating (0–1)', color: '#7A5CC0' }, grid: { drawOnChartArea: false }, ticks: { color: '#7A5CC0' } },
-      yCond: { position: 'right', display: false, offset: true, title: { display: true, text: 'g (mS/cm²)', color: '#B08A2E' }, grid: { drawOnChartArea: false }, ticks: { color: '#B08A2E' } }
+      x: { type: 'linear', title: { display: true, text: 'time (ms)', color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#b8ae95' } },
+      yVm: { position: 'left', title: { display: true, text: 'Vm (mV)', color: '#4dffa0' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#4dffa0' } },
+      yCurrent: { position: 'right', display: false, title: { display: true, text: 'I (mA/cm²)', color: '#b8ae95' }, grid: { drawOnChartArea: false }, ticks: { color: '#b8ae95' } },
+      yGate: { position: 'right', display: false, offset: true, min: 0, max: 1, title: { display: true, text: 'gating (0–1)', color: '#b98dfa' }, grid: { drawOnChartArea: false }, ticks: { color: '#b98dfa' } },
+      yCond: { position: 'right', display: false, offset: true, title: { display: true, text: 'g (mS/cm²)', color: '#d4c24d' }, grid: { drawOnChartArea: false }, ticks: { color: '#d4c24d' } }
     }
   }
 });
@@ -1061,13 +1072,13 @@ const mainChart = new Chart(mainCtx, {
 const stimCtx = document.getElementById('stimPreview').getContext('2d');
 const stimChart = new Chart(stimCtx, {
   type: 'line',
-  data: { datasets: [{ data: [], borderColor: '#C2255C', borderWidth: 1.5, pointRadius: 0, stepped: false }] },
+  data: { datasets: [{ data: [], borderColor: '#d9694f', borderWidth: 1.5, pointRadius: 0, stepped: false }] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { enabled: false } },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'ms', color: '#1B232D', font: { size: 9 } }, ticks: { color: '#1B232D', font: { size: 9 } }, grid: { color: '#E9E6DA' } },
-      y: { title: { display: true, text: 'µA', color: '#1B232D', font: { size: 9 } }, ticks: { color: '#1B232D', font: { size: 9 } }, grid: { color: '#E9E6DA' } }
+      x: { type: 'linear', title: { display: true, text: 'ms', color: '#b8ae95', font: { size: 9 } }, ticks: { color: '#b8ae95', font: { size: 9 } }, grid: { color: 'rgba(77,255,160,0.16)' } },
+      y: { title: { display: true, text: 'µA', color: '#b8ae95', font: { size: 9 } }, ticks: { color: '#b8ae95', font: { size: 9 } }, grid: { color: 'rgba(77,255,160,0.16)' } }
     }
   }
 });
@@ -1092,12 +1103,12 @@ function updateStimPreview(){
 /* ---------- variables-to-plot config ---------- */
 const VAR_CONFIG = [
   { chk: 'chk-Im',  key: 'Im',  label: 'Im (stim)', axis: 'yCurrent', color: AXIS_COLORS.stim, dash: [] },
-  { chk: 'chk-Ii',  key: 'Ii',  label: 'Ii (total ionic)', axis: 'yCurrent', color: '#5B6472', dash: [] },
+  { chk: 'chk-Ii',  key: 'Ii',  label: 'Ii (total ionic)', axis: 'yCurrent', color: '#7fae8f', dash: [] },
   { chk: 'chk-IK',  key: 'IK',  label: 'IK', axis: 'yCurrent', color: AXIS_COLORS.k, dash: [] },
   { chk: 'chk-INa', key: 'INa', label: 'INa', axis: 'yCurrent', color: AXIS_COLORS.na, dash: [] },
-  { chk: 'chk-n',   key: 'n',   label: 'n', axis: 'yGate', color: '#7A5CC0', dash: [] },
-  { chk: 'chk-m',   key: 'm',   label: 'm', axis: 'yGate', color: '#B08A2E', dash: [] },
-  { chk: 'chk-h',   key: 'h',   label: 'h', axis: 'yGate', color: '#3C8F7A', dash: [] },
+  { chk: 'chk-n',   key: 'n',   label: 'n', axis: 'yGate', color: '#b98dfa', dash: [] },
+  { chk: 'chk-m',   key: 'm',   label: 'm', axis: 'yGate', color: '#d4c24d', dash: [] },
+  { chk: 'chk-h',   key: 'h',   label: 'h', axis: 'yGate', color: '#e85d9e', dash: [] },
   { chk: 'chk-gK',  key: 'gK',  label: 'gK', axis: 'yCond', color: AXIS_COLORS.k, dash: [] },
   { chk: 'chk-gNa', key: 'gNa', label: 'gNa', axis: 'yCond', color: AXIS_COLORS.na, dash: [] },
 ];
@@ -1111,7 +1122,8 @@ function buildDatasets(run, opacity){
 
   datasets.push({
     label: 'Vm', yAxisID: 'yVm', borderColor: a(AXIS_COLORS.vm, opacity), backgroundColor: 'transparent',
-    borderWidth: 2, pointRadius: 0, data: run.time.map((t,i) => ({ x: t, y: run.Vm[i] }))
+    borderWidth: 2, pointRadius: 0, sourceRun: run, sourceKey: 'Vm',
+    data: run.time.map((t,i) => ({ x: t, y: run.Vm[i] }))
   });
 
   const activeAxes = new Set();
@@ -1120,16 +1132,17 @@ function buildDatasets(run, opacity){
       activeAxes.add(cfg.axis);
       datasets.push({
         label: cfg.label, yAxisID: cfg.axis, borderColor: a(cfg.color, opacity), backgroundColor: 'transparent',
-        borderWidth: 1.4, pointRadius: 0, data: run.time.map((t,i) => ({ x: t, y: run[cfg.key][i] }))
+        borderWidth: 1.4, pointRadius: 0, sourceRun: run, sourceKey: cfg.key,
+        data: run.time.map((t,i) => ({ x: t, y: run[cfg.key][i] }))
       });
     }
   });
 
   if (el('chk-Erefs').checked){
     activeAxes.add('yVm');
-    datasets.push({ label: 'ENa', yAxisID: 'yVm', borderColor: a('#2E8B57', opacity), borderDash: [5,4], borderWidth: 1, pointRadius: 0,
+    datasets.push({ label: 'ENa', yAxisID: 'yVm', borderColor: a('#e8a53d', opacity), borderDash: [5,4], borderWidth: 1, pointRadius: 0,
       data: [{ x: run.time[0], y: run.ENa }, { x: run.time[run.time.length-1], y: run.ENa }] });
-    datasets.push({ label: 'EK', yAxisID: 'yVm', borderColor: a('#2D7DD2', opacity), borderDash: [5,4], borderWidth: 1, pointRadius: 0,
+    datasets.push({ label: 'EK', yAxisID: 'yVm', borderColor: a('#4dc9ff', opacity), borderDash: [5,4], borderWidth: 1, pointRadius: 0,
       data: [{ x: run.time[0], y: run.EK }, { x: run.time[run.time.length-1], y: run.EK }] });
   }
 
@@ -1182,7 +1195,7 @@ function runSimulation(){
   applyChartUpdate();
   renderTable();
   renderPickedTable();
-  updateReadoutFromIndex(run.time.length - 1);
+  updateReadoutFromRun(run, run.time.length - 1);
 }
 
 /* live-replot (no re-simulation) whenever a plotted variable is toggled */
@@ -1233,72 +1246,65 @@ function downloadCsv(){
 }
 
 /* ---------- live digital readout on hover ---------- */
-function updateReadoutFromIndex(i){
-  if (!lastRun || i < 0 || i >= lastRun.time.length) return;
-  const r = lastRun;
-  el('rd-t').textContent = r.time[i].toFixed(2);
-  el('rd-vm').textContent = r.Vm[i].toFixed(2);
-  el('rd-ina').textContent = r.INa[i].toFixed(4);
-  el('rd-ik').textContent = r.IK[i].toFixed(4);
-  el('rd-ii').textContent = r.Ii[i].toFixed(4);
+function updateReadoutFromRun(run, i){
+  el('rd-t').textContent = run.time[i].toFixed(2);
+  el('rd-vm').textContent = run.Vm[i].toFixed(2);
+  el('rd-ina').textContent = run.INa[i].toFixed(4);
+  el('rd-ik').textContent = run.IK[i].toFixed(4);
+  el('rd-ii').textContent = run.Ii[i].toFixed(4);
 }
 
-let lastHoverIndex = null;
-document.getElementById('mainChart').addEventListener('mousemove', (evt) => {
-  const i = nearestIndexForEvent(evt);
-  if (i == null) return;
-  updateReadoutFromIndex(i);
-  if (i !== lastHoverIndex){
-    lastHoverIndex = i;
-    updateHoverMarker(i);
+/* Finds the actual rendered point nearest the cursor in both X and Y — not just
+   nearest time — so hover/click always resolves to the exact trace under the
+   mouse: the right source run (even an older dimmed overlay trace) and the
+   right axis/value (e.g. INa, not always Vm). Matches the fix used in the
+   Voltage Clamp tab. */
+function findNearestPoint(evt){
+  const elements = mainChart.getElementsAtEventForMode(evt, 'nearest', { intersect: false, axis: 'xy' }, true);
+  for (const hitEl of elements){
+    const ds = mainChart.data.datasets[hitEl.datasetIndex];
+    if (ds && ds.sourceRun){
+      const pt = ds.data[hitEl.index];
+      return { run: ds.sourceRun, index: hitEl.index, yAxisID: ds.yAxisID, x: pt.x, y: pt.y, key: ds.sourceKey };
+    }
   }
+  return null;
+}
+
+function updateHoverMarker(hit){
+  mainChart.data.datasets = mainChart.data.datasets.filter(ds => ds.label !== 'Cursor');
+  if (hit){
+    mainChart.data.datasets.push({
+      label: 'Cursor', yAxisID: hit.yAxisID, showLine: false,
+      pointRadius: 5, pointBackgroundColor: '#d9694f', pointBorderColor: '#f4ecd8', pointBorderWidth: 1.5,
+      data: [{ x: hit.x, y: hit.y }]
+    });
+  }
+  mainChart.update('none');
+}
+
+let lastHoverKey = null;
+document.getElementById('mainChart').addEventListener('mousemove', (evt) => {
+  const hit = findNearestPoint(evt);
+  if (!hit) return;
+  updateReadoutFromRun(hit.run, hit.index);
+  const key = hit.run.time[hit.index] + '|' + hit.key;
+  if (key !== lastHoverKey){ lastHoverKey = key; updateHoverMarker(hit); }
 });
 document.getElementById('mainChart').addEventListener('mouseleave', () => {
-  lastHoverIndex = null;
+  lastHoverKey = null;
   updateHoverMarker(null);
 });
 document.getElementById('mainChart').addEventListener('contextmenu', (evt) => {
   evt.preventDefault(); // always suppress the native menu, even if picking fails below
   try {
-    const i = nearestIndexForEvent(evt);
-    if (i == null) return;
-    addPickedPoint(i);
+    const hit = findNearestPoint(evt);
+    if (!hit) return;
+    addPickedPoint(hit);
   } catch (err){
     console.error('Point picking failed:', err);
   }
 });
-
-/* Finds the sample index nearest the cursor by mapping pixel -> time directly
-   through the x-scale, then binary-searching lastRun.time. This is independent
-   of how many extra datasets (hover marker, picked points) are on the chart. */
-function nearestIndexForEvent(evt){
-  if (!lastRun) return null;
-  const rect = mainChart.canvas.getBoundingClientRect();
-  const xPixel = evt.clientX - rect.left;
-  const tVal = mainChart.scales.x.getValueForPixel(xPixel);
-  const arr = lastRun.time;
-  if (tVal == null || isNaN(tVal)) return null;
-  if (tVal <= arr[0]) return 0;
-  if (tVal >= arr[arr.length - 1]) return arr.length - 1;
-  let lo = 0, hi = arr.length - 1;
-  while (hi - lo > 1){
-    const mid = (lo + hi) >> 1;
-    if (arr[mid] < tVal) lo = mid; else hi = mid;
-  }
-  return (tVal - arr[lo] <= arr[hi] - tVal) ? lo : hi;
-}
-
-function updateHoverMarker(index){
-  mainChart.data.datasets = mainChart.data.datasets.filter(ds => ds.label !== 'Cursor');
-  if (index != null && lastRun){
-    mainChart.data.datasets.push({
-      label: 'Cursor', yAxisID: 'yVm', showLine: false,
-      pointRadius: 4, pointBackgroundColor: '#C2255C', pointBorderColor: '#FFFFFF', pointBorderWidth: 1.5,
-      data: [{ x: lastRun.time[index], y: lastRun.Vm[index] }]
-    });
-  }
-  mainChart.update('none');
-}
 
 /* ---------- picked points (right-click capture) ---------- */
 let pickedPoints = [];
@@ -1325,7 +1331,7 @@ function renderPickedTable(){
 
   const body = el('pickedBody');
   if (!pickedPoints.length){
-    body.innerHTML = `<tr><td colspan="${cols.length + 1}" style="text-align:center;color:#8893A0;">No points yet — right-click the plot.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${cols.length + 1}" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr>`;
     updatePickedPlot();
     return;
   }
@@ -1336,24 +1342,27 @@ function renderPickedTable(){
 }
 
 function refreshPickedOverlay(){
-  mainChart.data.datasets = mainChart.data.datasets.filter(ds => ds.label !== 'Picked points');
-  if (pickedPoints.length){
+  mainChart.data.datasets = mainChart.data.datasets.filter(ds => !ds.isPickedOverlay);
+  const byAxis = {};
+  pickedPoints.forEach(p => { (byAxis[p.markerAxis] = byAxis[p.markerAxis] || []).push({ x: p.time, y: p.markerY }); });
+  Object.keys(byAxis).forEach(axis => {
     mainChart.data.datasets.push({
-      label: 'Picked points', yAxisID: 'yVm', showLine: false,
-      pointRadius: 5, pointHoverRadius: 6, pointBackgroundColor: '#FFFFFF',
-      pointBorderColor: '#E4572E', pointBorderWidth: 2,
-      data: pickedPoints.map(p => ({ x: p.time, y: p.Vm }))
+      label: 'Picked points', yAxisID: axis, showLine: false, isPickedOverlay: true,
+      pointRadius: 5, pointHoverRadius: 6, pointBackgroundColor: '#f4ecd8',
+      pointBorderColor: '#e8a53d', pointBorderWidth: 2,
+      data: byAxis[axis]
     });
-  }
+  });
   mainChart.update();
 }
 
-function addPickedPoint(index){
-  const r = lastRun;
+function addPickedPoint(hit){
+  const r = hit.run, index = hit.index;
   pickedPoints.push({
     time: r.time[index], Vm: r.Vm[index], n: r.n[index], m: r.m[index], h: r.h[index],
     INa: r.INa[index], IK: r.IK[index], IL: r.IL[index], Ii: r.Ii[index], Im: r.Im[index],
-    gNa: r.gNa[index], gK: r.gK[index]
+    gNa: r.gNa[index], gK: r.gK[index],
+    markerAxis: hit.yAxisID, markerY: hit.y
   });
   renderPickedTable();
   refreshPickedOverlay();
@@ -1409,14 +1418,14 @@ const pickedPlotChart = new Chart(document.getElementById('pickedPlotChart').get
   data: { datasets: [{
     label: 'Picked points', data: [], showLine: false,
     pointStyle: 'circle', pointRadius: 5, pointHoverRadius: 6,
-    backgroundColor: '#000000', borderColor: '#000000', borderWidth: 1
+    backgroundColor: '#4dffa0', borderColor: '#4dffa0', borderWidth: 1
   }] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { enabled: true } },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'Trace #', color: '#1B232D' }, ticks: { color: '#1B232D' }, grid: { color: '#E1DED2' } },
-      y: { title: { display: true, text: 'Vm (mV)', color: '#1B232D' }, ticks: { color: '#1B232D' }, grid: { color: '#E1DED2' } }
+      x: { type: 'linear', title: { display: true, text: 'Trace #', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } },
+      y: { title: { display: true, text: 'Vm (mV)', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } }
     }
   }
 });
@@ -1522,23 +1531,24 @@ el('vc-chk-family').addEventListener('change', () => {
 });
 
 function vcReadParams(){
+  const d = VC_DEFAULTS, n = (id) => numOr(id, d[id]);
   return {
-    HP: parseFloat(el('vc-in-hp').value),
-    delay: parseFloat(el('vc-in-delay').value),
-    pulseDur: parseFloat(el('vc-in-pulsedur').value),
+    HP: n('vc-in-hp'),
+    delay: n('vc-in-delay'),
+    pulseDur: n('vc-in-pulsedur'),
     tail: el('vc-chk-tail').checked,
-    tailDur: parseFloat(el('vc-in-taildur').value),
-    GK: parseFloat(el('vc-in-gk').value),
-    gNaBase: parseFloat(el('vc-in-gna').value),
-    GL: parseFloat(el('vc-in-gl').value),
-    temp: parseFloat(el('vc-in-temp').value),
+    tailDur: n('vc-in-taildur'),
+    GK: n('vc-in-gk'),
+    gNaBase: n('vc-in-gna'),
+    GL: n('vc-in-gl'),
+    temp: n('vc-in-temp'),
     ideal: el('vc-in-ideal').checked,
-    Nao: parseFloat(el('vc-in-nao').value),
-    Nai: parseFloat(el('vc-in-nai').value),
-    Ko: parseFloat(el('vc-in-ko').value),
-    Ki: parseFloat(el('vc-in-ki').value),
-    TTX: parseFloat(el('vc-in-ttx').value),
-    GNaNI: parseFloat(el('vc-in-pronase').value)
+    Nao: n('vc-in-nao'),
+    Nai: n('vc-in-nai'),
+    Ko: n('vc-in-ko'),
+    Ki: n('vc-in-ki'),
+    TTX: n('vc-in-ttx'),
+    GNaNI: n('vc-in-pronase')
   };
 }
 
@@ -1546,11 +1556,11 @@ const VC_VAR_CONFIG = [
   { chk: 'vc-chk-Vm',  key: 'Vm',  label: 'Vm (command)', axis: 'vcyVm',      color: AXIS_COLORS.vm },
   { chk: 'vc-chk-INa', key: 'INa', label: 'INa', axis: 'vcyCurrent', color: AXIS_COLORS.na },
   { chk: 'vc-chk-IK',  key: 'IK',  label: 'IK',  axis: 'vcyCurrent', color: AXIS_COLORS.k },
-  { chk: 'vc-chk-IL',  key: 'IL',  label: 'IL',  axis: 'vcyCurrent', color: '#5B6472' },
-  { chk: 'vc-chk-Ii',  key: 'Ii',  label: 'Ii (total ionic)', axis: 'vcyCurrent', color: '#8A8F98' },
-  { chk: 'vc-chk-n',   key: 'n',   label: 'n', axis: 'vcyGate', color: '#7A5CC0' },
-  { chk: 'vc-chk-m',   key: 'm',   label: 'm', axis: 'vcyGate', color: '#B08A2E' },
-  { chk: 'vc-chk-h',   key: 'h',   label: 'h', axis: 'vcyGate', color: '#3C8F7A' },
+  { chk: 'vc-chk-IL',  key: 'IL',  label: 'IL',  axis: 'vcyCurrent', color: '#7fae8f' },
+  { chk: 'vc-chk-Ii',  key: 'Ii',  label: 'Ii (total ionic)', axis: 'vcyCurrent', color: '#a89a7f' },
+  { chk: 'vc-chk-n',   key: 'n',   label: 'n', axis: 'vcyGate', color: '#b98dfa' },
+  { chk: 'vc-chk-m',   key: 'm',   label: 'm', axis: 'vcyGate', color: '#d4c24d' },
+  { chk: 'vc-chk-h',   key: 'h',   label: 'h', axis: 'vcyGate', color: '#e85d9e' },
   { chk: 'vc-chk-gK',  key: 'gK',  label: 'gK', axis: 'vcyCond', color: AXIS_COLORS.k },
   { chk: 'vc-chk-gNa', key: 'gNa', label: 'gNa', axis: 'vcyCond', color: AXIS_COLORS.na }
 ];
@@ -1565,7 +1575,7 @@ const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext(
       legend: {
         display: true, position: 'top',
         labels: {
-          color: '#1B232D', font: { size: 12 },
+          color: '#b8ae95', font: { size: 12 },
           generateLabels(chart){
             const seen = new Set();
             const items = [];
@@ -1582,11 +1592,11 @@ const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext(
       tooltip: { enabled: false }
     },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'time (ms)', color: '#1B232D' }, grid: { color: '#E1DED2' }, ticks: { color: '#1B232D' } },
-      vcyVm: { position: 'left', title: { display: true, text: 'Vm (mV)', color: '#14213D' }, grid: { color: '#E1DED2' }, ticks: { color: '#14213D' } },
-      vcyCurrent: { position: 'right', display: true, title: { display: true, text: 'I (mA/cm²)', color: '#4C5564' }, grid: { drawOnChartArea: false }, ticks: { color: '#4C5564' } },
-      vcyGate: { position: 'right', display: false, offset: true, min: 0, max: 1, title: { display: true, text: 'gating (0–1)', color: '#7A5CC0' }, grid: { drawOnChartArea: false }, ticks: { color: '#7A5CC0' } },
-      vcyCond: { position: 'right', display: false, offset: true, title: { display: true, text: 'g (mS/cm²)', color: '#B08A2E' }, grid: { drawOnChartArea: false }, ticks: { color: '#B08A2E' } }
+      x: { type: 'linear', title: { display: true, text: 'time (ms)', color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#b8ae95' } },
+      vcyVm: { position: 'left', title: { display: true, text: 'Vm (mV)', color: '#4dffa0' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#4dffa0' } },
+      vcyCurrent: { position: 'right', display: true, title: { display: true, text: 'I (mA/cm²)', color: '#b8ae95' }, grid: { drawOnChartArea: false }, ticks: { color: '#b8ae95' } },
+      vcyGate: { position: 'right', display: false, offset: true, min: 0, max: 1, title: { display: true, text: 'gating (0–1)', color: '#b98dfa' }, grid: { drawOnChartArea: false }, ticks: { color: '#b98dfa' } },
+      vcyCond: { position: 'right', display: false, offset: true, title: { display: true, text: 'g (mS/cm²)', color: '#d4c24d' }, grid: { drawOnChartArea: false }, ticks: { color: '#d4c24d' } }
     }
   }
 });
@@ -1594,15 +1604,15 @@ const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext(
 const vcIVChart = new Chart(document.getElementById('vcIVChart').getContext('2d'), {
   type: 'scatter',
   data: { datasets: [
-    { label: 'Peak INa', data: [], showLine: true, borderColor: '#000000', borderWidth: 1, pointStyle: 'circle', pointRadius: 5, backgroundColor: '#000000' },
-    { label: 'Steady-state IK', data: [], showLine: true, borderColor: '#000000', borderWidth: 1, pointStyle: 'circle', pointRadius: 5, backgroundColor: '#FFFFFF' }
+    { label: 'Peak INa', data: [], showLine: true, borderColor: '#e8a53d', borderWidth: 1.5, pointStyle: 'circle', pointRadius: 5, backgroundColor: '#e8a53d' },
+    { label: 'Steady-state IK', data: [], showLine: true, borderColor: '#4dc9ff', borderWidth: 2, pointStyle: 'circle', pointRadius: 5, backgroundColor: 'transparent' }
   ] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: true, position: 'top', labels: { color: '#1B232D', font: { size: 11 } } }, tooltip: { enabled: true } },
+    plugins: { legend: { display: true, position: 'top', labels: { color: '#b8ae95', font: { size: 11 } } }, tooltip: { enabled: true } },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'Test potential (mV)', color: '#1B232D' }, ticks: { color: '#1B232D' }, grid: { color: '#E1DED2' } },
-      y: { title: { display: true, text: 'I (mA/cm²)', color: '#1B232D' }, ticks: { color: '#1B232D' }, grid: { color: '#E1DED2' } }
+      x: { type: 'linear', title: { display: true, text: 'Test potential (mV)', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } },
+      y: { title: { display: true, text: 'I (mA/cm²)', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } }
     }
   }
 });
@@ -1634,38 +1644,61 @@ let vcOverlayDatasets = [];
 let vcPickedPoints = [];
 let vcCurrentRuns = [];     // whichever run(s) are currently plotted — reused by the gating-particles panel
 
+const VC_MAX_FAMILY_STEPS = 25; // guards against a tiny/zero step spawning huge numbers of traces
+
+/* Rebuilds the chart's datasets from vcCurrentRuns + current checkbox state +
+   any dimmed overlay runs, without re-simulating. Used both after a fresh run
+   and whenever a "variables to plot" checkbox is toggled, so a display-only
+   toggle never counts as a new "run" for overlay-history purposes. */
+function vcApplyChartUpdate(){
+  if (!vcCurrentRuns.length) return;
+  let allDatasets = [];
+  const activeAxes = new Set();
+  const n = vcCurrentRuns.length;
+  vcCurrentRuns.forEach((run, i) => {
+    const opacity = n > 1 ? 0.35 + 0.65 * (i / (n - 1)) : 1;
+    const built = vcBuildDatasets(run, opacity, '');
+    allDatasets = allDatasets.concat(built.datasets);
+    built.activeAxes.forEach(a => activeAxes.add(a));
+  });
+  ['vcyCurrent','vcyGate','vcyCond'].forEach(ax => { vcMainChart.options.scales[ax].display = activeAxes.has(ax); });
+  vcOverlayDatasets.forEach(group => { allDatasets = allDatasets.concat(group); });
+  vcMainChart.data.datasets = allDatasets;
+  vcRefreshPickedOverlay();
+}
+
 function vcRunSimulation(){
   const p = vcReadParams();
   const family = el('vc-chk-family').checked;
   const keepOverlay = el('vc-chk-overlay').checked;
   if (!keepOverlay){ vcOverlayDatasets = []; }
   else if (vcMainChart.data.datasets.length){
-    const prevReal = vcMainChart.data.datasets.filter(ds => ds.label !== 'Cursor' && ds.label !== 'Picked points');
+    const prevReal = vcMainChart.data.datasets.filter(ds => ds.label !== 'Cursor' && !ds.isPickedOverlay);
     vcOverlayDatasets.push(prevReal.map(ds => ({ ...ds, borderWidth: Math.max(1, ds.borderWidth - 0.4) })));
     if (vcOverlayDatasets.length > 6) vcOverlayDatasets = vcOverlayDatasets.slice(-6);
   }
 
-  let allDatasets = [];
-  let activeAxes = new Set();
   let lastFamilyRun = null;
 
   if (!family){
-    const Vtest = parseFloat(el('vc-in-vtest').value);
+    const Vtest = numOr('vc-in-vtest', VC_DEFAULTS['vc-in-vtest']);
     const run = HH.simulateVoltageClamp(p, Vtest);
     vcLastRun = run;
     vcCurrentRuns = [run];
     el('vc-out-ena').textContent = run.ENa.toFixed(1);
     el('vc-out-ek').textContent = run.EK.toFixed(1);
     el('vc-out-el').textContent = run.EL.toFixed(1);
-    const built = vcBuildDatasets(run, 1, '');
-    allDatasets = built.datasets;
-    activeAxes = built.activeAxes;
     el('vc-iv-panel').style.display = 'none';
     el('vc-table-note').style.display = 'none';
     vcRenderTable(run);
   } else {
     vcLastRun = null;
-    const from = parseFloat(el('vc-in-vfrom').value), to = parseFloat(el('vc-in-vto').value), step = Math.abs(parseFloat(el('vc-in-vstep').value)) || 1;
+    const from = numOr('vc-in-vfrom', VC_DEFAULTS['vc-in-vfrom']), to = numOr('vc-in-vto', VC_DEFAULTS['vc-in-vto']);
+    let step = Math.abs(numOr('vc-in-vstep', VC_DEFAULTS['vc-in-vstep'])) || 1;
+    const range = Math.abs(to - from);
+    if (step > 0 && range / step + 1 > VC_MAX_FAMILY_STEPS){
+      step = range / (VC_MAX_FAMILY_STEPS - 1); // keep full From-To coverage, just coarser
+    }
     const steps = [];
     if (from <= to){ for (let v = from; v <= to + 1e-9; v += step) steps.push(Math.round(v*100)/100); }
     else { for (let v = from; v >= to - 1e-9; v -= step) steps.push(Math.round(v*100)/100); }
@@ -1679,13 +1712,6 @@ function vcRunSimulation(){
       el('vc-out-ek').textContent = last.EK.toFixed(1);
       el('vc-out-el').textContent = last.EL.toFixed(1);
     }
-    const n = runs.length;
-    runs.forEach((run, i) => {
-      const opacity = n > 1 ? 0.35 + 0.65 * (i / (n - 1)) : 1;
-      const built = vcBuildDatasets(run, opacity, '');
-      allDatasets = allDatasets.concat(built.datasets);
-      built.activeAxes.forEach(a => activeAxes.add(a));
-    });
 
     // I-V summary from the family
     const ivNa = [], ivK = [];
@@ -1704,11 +1730,7 @@ function vcRunSimulation(){
     if (runs.length) vcRenderTable(runs[runs.length - 1]);
   }
 
-  ['vcyCurrent','vcyGate','vcyCond'].forEach(ax => { vcMainChart.options.scales[ax].display = activeAxes.has(ax); });
-
-  vcOverlayDatasets.forEach(group => { allDatasets = allDatasets.concat(group); });
-  vcMainChart.data.datasets = allDatasets;
-  vcRefreshPickedOverlay();
+  vcApplyChartUpdate();
 
   const readoutRun = vcLastRun || lastFamilyRun;
   if (readoutRun) vcUpdateReadoutFromRun(readoutRun, readoutRun.time.length - 1);
@@ -1718,7 +1740,7 @@ function vcRunSimulation(){
 
 el('vc-btnRun').addEventListener('click', vcRunSimulation);
 el('vc-btnClear').addEventListener('click', () => { vcOverlayDatasets = []; vcRunSimulation(); });
-VC_VAR_CONFIG.forEach(cfg => { el(cfg.chk).addEventListener('change', vcRunSimulation); });
+VC_VAR_CONFIG.forEach(cfg => { el(cfg.chk).addEventListener('change', () => { vcApplyChartUpdate(); vcRenderPickedTable(); }); });
 
 /* ---------- digital readout / hover / right-click picking ----------
    Finds the specific dataset (curve) nearest the cursor in both X and Y —
@@ -1750,7 +1772,7 @@ function vcUpdateHoverMarker(hit){
   if (hit){
     vcMainChart.data.datasets.push({
       label: 'Cursor', yAxisID: hit.yAxisID, showLine: false,
-      pointRadius: 5, pointBackgroundColor: '#C2255C', pointBorderColor: '#FFFFFF', pointBorderWidth: 1.5,
+      pointRadius: 5, pointBackgroundColor: '#d9694f', pointBorderColor: '#f4ecd8', pointBorderWidth: 1.5,
       data: [{ x: hit.x, y: hit.y }]
     });
   }
@@ -1799,7 +1821,7 @@ function vcRenderPickedTable(){
   el('vc-pickedTable').querySelector('thead tr').innerHTML = '<th>#</th>' + cols.map(c => `<th>${c.label}</th>`).join('');
   const body = el('vc-pickedBody');
   if (!vcPickedPoints.length){
-    body.innerHTML = `<tr><td colspan="${cols.length + 1}" style="text-align:center;color:#8893A0;">No points yet — right-click the plot.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="${cols.length + 1}" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr>`;
     vcUpdatePickedPlot();
     return;
   }
@@ -1844,14 +1866,14 @@ const vcPickedPlotChart = new Chart(document.getElementById('vc-pickedPlotChart'
   data: { datasets: [{
     label: 'Picked points', data: [], showLine: false,
     pointStyle: 'circle', pointRadius: 5, pointHoverRadius: 6,
-    backgroundColor: '#000000', borderColor: '#000000', borderWidth: 1
+    backgroundColor: '#4dffa0', borderColor: '#4dffa0', borderWidth: 1
   }] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { enabled: true } },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'Vm (mV)', color: '#1B232D' }, ticks: { color: '#1B232D' }, grid: { color: '#E1DED2' } },
-      y: { title: { display: true, text: 'INa (mA/cm²)', color: '#1B232D' }, ticks: { color: '#1B232D' }, grid: { color: '#E1DED2' } }
+      x: { type: 'linear', title: { display: true, text: 'Vm (mV)', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } },
+      y: { title: { display: true, text: 'INa (mA/cm²)', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } }
     }
   }
 });
@@ -1882,9 +1904,9 @@ el('vc-selPlotY').addEventListener('change', vcUpdatePickedPlot);
    Reuses whichever run(s) are currently plotted — n/m/h are already computed for every
    time point regardless of what's checked elsewhere, so no re-simulation is needed here. */
 const VC_GATE_CONFIG = [
-  { chk: 'vc-chk-gate-n', key: 'n', label: 'n', color: '#7A5CC0' },
-  { chk: 'vc-chk-gate-m', key: 'm', label: 'm', color: '#B08A2E' },
-  { chk: 'vc-chk-gate-h', key: 'h', label: 'h', color: '#3C8F7A' }
+  { chk: 'vc-chk-gate-n', key: 'n', label: 'n', color: '#b98dfa' },
+  { chk: 'vc-chk-gate-m', key: 'm', label: 'm', color: '#d4c24d' },
+  { chk: 'vc-chk-gate-h', key: 'h', label: 'h', color: '#e85d9e' }
 ];
 
 const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getContext('2d'), {
@@ -1897,7 +1919,7 @@ const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getCon
       legend: {
         display: true, position: 'top',
         labels: {
-          color: '#1B232D', font: { size: 11 },
+          color: '#b8ae95', font: { size: 11 },
           generateLabels(chart){
             const seen = new Set();
             const items = [];
@@ -1913,8 +1935,8 @@ const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getCon
       tooltip: { enabled: true }
     },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'time (ms)', color: '#1B232D' }, grid: { color: '#E1DED2' }, ticks: { color: '#1B232D' } },
-      y: { min: 0, max: 1, title: { display: true, text: 'gating value (0–1)', color: '#1B232D' }, grid: { color: '#E1DED2' }, ticks: { color: '#1B232D' } }
+      x: { type: 'linear', title: { display: true, text: 'time (ms)', color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#b8ae95' } },
+      y: { min: 0, max: 1, title: { display: true, text: 'gating value (0–1)', color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#b8ae95' } }
     }
   }
 });
@@ -1944,8 +1966,8 @@ function vcRefreshPickedOverlay(){
   Object.keys(byAxis).forEach(axis => {
     vcMainChart.data.datasets.push({
       label: 'Picked points', yAxisID: axis, showLine: false, isPickedOverlay: true,
-      pointRadius: 5, pointHoverRadius: 6, pointBackgroundColor: '#FFFFFF',
-      pointBorderColor: '#E4572E', pointBorderWidth: 2,
+      pointRadius: 5, pointHoverRadius: 6, pointBackgroundColor: '#f4ecd8',
+      pointBorderColor: '#e8a53d', pointBorderWidth: 2,
       data: byAxis[axis]
     });
   });
