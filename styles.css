@@ -127,6 +127,13 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.brand .logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: block;
+}
 
 .nav-toggle {
   display: none;
@@ -448,11 +455,34 @@ section + section { border-top: 1px solid var(--line); }
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 20px;
 }
 .site-footer a { color: var(--paper-text-soft); }
 .site-footer a:hover { color: var(--trace-bright); }
 .footer-mono { font-family: var(--font-mono); font-size: 0.8rem; }
+
+.footer-text {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.footer-logos {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.footer-logos img {
+  height: 30px;
+  width: auto;
+  opacity: 0.82;
+  transition: opacity 0.15s;
+}
+.footer-logos a:hover img { opacity: 1; }
+@media (max-width: 640px) {
+  .footer-logos { gap: 18px; }
+  .footer-logos img { height: 24px; }
+}
 
 /* ---------------- Misc utility ---------------- */
 .tag-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
