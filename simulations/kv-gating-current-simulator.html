@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K⁺ Channel Gating Currents — Voltage-Clamp Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --danger: #d9694f;
+    --blue: #6db8f2;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1180px; }
+
+  header{ margin-bottom: 22px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.9rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p{
+    max-width: 760px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+  header a{ color: var(--phosphor); text-decoration: none; border-bottom:1px solid rgba(77,255,160,0.35); }
+  header a:hover{ border-bottom-color: var(--phosphor); }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel + .panel{ margin-top: 18px; }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; }
+  #scopeCanvas{ background: var(--scope-bg); }
+  #gvCanvas, #qvCanvas, #avgIKCanvas, #avgChargeCanvas{ background: var(--scope-bg); }
+
+  .controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:14px 20px;
+    margin-top: 14px;
+  }
+  .slider-group{
+    display:flex; flex-direction:column; gap:4px;
+    min-width: 190px;
+    flex: 1 1 190px;
+  }
+  .slider-group .lbl{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+  }
+  .slider-group .lbl b{ color: var(--phosphor); font-weight:500; }
+  .numctl{ display:flex; align-items:center; gap:4px; }
+  .numctl i{ font-style:normal; color: var(--paper-dim); font-size:0.7rem; }
+  input[type=number]{
+    width: 52px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    font-weight: 500;
+    background: var(--bg);
+    color: var(--phosphor);
+    border: 1px solid var(--panel-edge);
+    border-radius: 4px;
+    padding: 2px 5px;
+    text-align: right;
+  }
+  input[type=number]:focus{ outline:none; border-color: var(--amber-dim); }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type=number]{ -moz-appearance: textfield; }
+  .stepper{ display:inline-flex; flex-direction:column; gap:1px; }
+  .stepper button{
+    width:14px; height:8px; padding:0; margin:0;
+    border:none; background:transparent; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:2px;
+  }
+  .stepper button:hover{ background: rgba(232,165,61,0.18); }
+  .stepper button:active{ background: rgba(232,165,61,0.32); }
+  .tri-up{ width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-bottom:5px solid var(--paper-dim); }
+  .tri-down{ width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-top:5px solid var(--paper-dim); }
+  .stepper button:hover .tri-up{ border-bottom-color: var(--amber); }
+  .stepper button:hover .tri-down{ border-top-color: var(--amber); }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:4px;
+    background: var(--panel-edge);
+    border-radius: 2px;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:14px; height:14px; border-radius:50%;
+    background: var(--amber);
+    border: 2px solid #1c1408;
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%;
+    background: var(--amber);
+    border: 2px solid #1c1408;
+    cursor:pointer;
+  }
+
+  button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: border-color .15s ease, color .15s ease;
+    white-space: nowrap;
+  }
+  button:hover{ border-color: var(--amber-dim); color: var(--amber); }
+  button.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+  }
+  button.primary:hover{ background:#f0b455; color:#1c1408; }
+  button.primary.running{ background: var(--danger); border-color: var(--danger); color:#2a0d06; }
+  button.primary.running:hover{ background:#e57b60; }
+
+  .readout{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--phosphor);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .legend{
+    display:flex; gap:16px; flex-wrap:wrap;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    margin-top: 10px;
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .swatch{ width:12px; height:3px; border-radius:2px; display:inline-block; }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+  }
+  .stats .row{
+    display:flex; justify-content:space-between;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); }
+  .stats .row .v.amber{ color: var(--amber); }
+  .stats .section-label{
+    grid-column: 1 / -1;
+    color: var(--paper-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    border-top: 1px solid var(--panel-edge);
+    padding-top: 8px;
+  }
+  .stats .section-label:first-child{ border-top:none; margin-top:0; padding-top:0; }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+    margin: 10px 0 0;
+  }
+  details p code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  .advanced-grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
+    margin-top: 6px;
+  }
+  @media (max-width: 600px){ .advanced-grid{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · MEMBRANE BIOPHYSICS</p>
+    <h1>Gating Currents in the Voltage-Gated K⁺ Channel</h1>
+    <p>
+      A voltage-clamp step drives the delayed-rectifier K⁺ channel's four independent activation
+      particles (Hodgkin–Huxley <code style="font-family:'JetBrains Mono',monospace;background:rgba(77,255,160,0.08);color:var(--phosphor);padding:1px 5px;border-radius:3px;">n</code> gate)
+      between resting and activated states. Their movement carries a small displacement
+      (gating) current that precedes and predicts the much larger ionic current carried once the pore opens —
+      the experimental basis for separating charge movement from conduction. Background:
+      <a href="https://en.wikipedia.org/wiki/Gating_current" target="_blank" rel="noopener">gating current, general overview</a>.
+    </p>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT: SCOPE -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">
+          <h2>VOLTAGE-CLAMP RECORD</h2>
+          <span id="sweepReadout">sweep 0</span>
+        </div>
+        <canvas id="scopeCanvas" width="700" height="430"></canvas>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--paper-dim)"></i> command V<sub>m</sub></span>
+          <span><i class="swatch" style="background:rgba(184,174,149,0.7)"></i> individual sweeps</span>
+          <span><i class="swatch" style="background:var(--phosphor)"></i> I<sub>K</sub>, average</span>
+          <span><i class="swatch" style="background:var(--amber)"></i> I<sub>gating</sub>, average</span>
+          <span style="color:var(--paper-dim)">┆ ┆ drag either dashed cursor to set the charge (Q-V) measurement window</span>
+        </div>
+        <div class="controls">
+          <button id="runBtn" class="primary running">Stop sweeps</button>
+          <button id="resetBtn">Reset trace</button>
+          <button id="resetAvgBtn">Reset averages</button>
+          <span class="readout" id="cycleReadout">runs N sweeps at 2/s, then stops</span>
+        </div>
+        <div class="controls">
+          <div class="slider-group">
+            <div class="lbl"><span>test pulse V<sub>m</sub></span><span class="numctl"><input type="number" id="vTestVal" min="-120" max="60" step="1" value="-120"><span class="stepper"><button type="button" id="vTestUp" aria-label="increase 5 mV"><span class="tri-up"></span></button><button type="button" id="vTestDown" aria-label="decrease 5 mV"><span class="tri-down"></span></button></span><i>mV</i></span></div>
+            <input type="range" id="vTest" min="-120" max="60" step="1" value="-120">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>holding potential</span><span class="numctl"><input type="number" id="vHoldVal" min="-120" max="-60" step="1" value="-120"><i>mV</i></span></div>
+            <input type="range" id="vHold" min="-120" max="-60" step="1" value="-120">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>pulse duration</span><span class="numctl"><input type="number" id="pulseDurVal" min="2" max="40" step="1" value="20"><i>ms</i></span></div>
+            <input type="range" id="pulseDur" min="2" max="40" step="1" value="20">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>traces to average</span><span class="numctl"><i>N =</i><input type="number" id="avgCountVal" min="1" max="30" step="1" value="3"></span></div>
+            <input type="range" id="avgCount" min="1" max="30" step="1" value="3">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <h2>STORED AVERAGES — ALL COMPLETED RUNS</h2>
+          <span id="storedReadout">no runs stored yet</span>
+        </div>
+        <div class="advanced-grid">
+          <div>
+            <div class="panel-title" style="margin-bottom:4px;"><span style="font-size:0.7rem;color:var(--phosphor)">I_K, averaged</span></div>
+            <canvas id="avgIKCanvas" width="330" height="150"></canvas>
+          </div>
+          <div>
+            <div class="panel-title" style="margin-bottom:4px;"><span style="font-size:0.7rem;color:var(--blue)">gating charge Q(t), averaged</span></div>
+            <canvas id="avgChargeCanvas" width="330" height="150"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats" style="background:var(--panel); border:1px solid var(--panel-edge); border-radius:10px; padding:14px 16px;">
+        <div class="section-label">CURRENT RUN (IN PROGRESS)</div>
+        <div class="row"><span class="k">n<sub>∞</sub>(holding) → n<sub>∞</sub>(test)</span><span class="v" id="statNinf">—</span></div>
+        <div class="row"><span class="k">τ<sub>n</sub>(test) / τ<sub>n</sub>(holding)</span><span class="v" id="statTau">—</span></div>
+        <div class="row"><span class="k">peak I<sub>K</sub> (averaged so far)</span><span class="v" id="statIK">—</span></div>
+        <div class="row"><span class="k">peak I<sub>gating</sub>, ON / OFF (averaged so far)</span><span class="v amber" id="statIg">—</span></div>
+        <div class="row"><span class="k">gating charge moved, ON / net (averaged so far)</span><span class="v" style="color:var(--blue)" id="statQcharge">—</span></div>
+        <div class="section-label">LAST STORED RUN</div>
+        <div class="row"><span class="k">test V<sub>m</sub></span><span class="v" id="statStoredV">—</span></div>
+        <div class="row"><span class="k">chord conductance G (tail, fixed)</span><span class="v" id="statG">—</span></div>
+        <div class="row"><span class="k">ON gating charge Q</span><span class="v amber" id="statQ">—</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: G-V AND Q-V (empirical, built from stored runs) -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">
+          <h2>CONDUCTANCE – VOLTAGE (G–V)</h2>
+          <span>empirical — one point per stored run</span>
+        </div>
+        <canvas id="gvCanvas" width="420" height="210"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-title">
+          <h2>GATING CHARGE – VOLTAGE (Q–V)</h2>
+          <span>empirical — one point per stored run</span>
+        </div>
+        <canvas id="qvCanvas" width="420" height="210"></canvas>
+      </div>
+
+      <details open>
+        <summary>Advanced parameters</summary>
+        <div class="advanced-grid">
+          <div class="slider-group">
+            <div class="lbl"><span>ḡ<sub>K</sub> (max conductance)</span><b id="gKVal">88 nS</b></div>
+            <input type="range" id="gK" min="10" max="200" step="1" value="88">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>E<sub>K</sub> (reversal)</span><b id="eKVal">-77 mV</b></div>
+            <input type="range" id="eK" min="-100" max="-55" step="1" value="-77">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>gating current gain</span><b id="gainVal">×1.0</b></div>
+            <input type="range" id="gain" min="0.2" max="3" step="0.1" value="1.0">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>kinetics speed (Q₁₀-like)</span><b id="speedVal">×1.0</b></div>
+            <input type="range" id="speed" min="0.3" max="3" step="0.1" value="1.0">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>I<sub>K</sub> recording noise</span><b id="noiseIKVal">0.15 nA</b></div>
+            <input type="range" id="noiseIK" min="0" max="1" step="0.05" value="0.15">
+          </div>
+          <div class="slider-group">
+            <div class="lbl"><span>I<sub>gating</sub> recording noise</span><b id="noiseIgVal">8 pA</b></div>
+            <input type="range" id="noiseIg" min="0" max="30" step="1" value="8">
+          </div>
+        </div>
+      </details>
+    </div>
+
+  </div>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      The ionic side is the standard Hodgkin–Huxley delayed rectifier: the channel opens as
+      <code>n⁴</code>, where <code>n</code> is a single activation gating variable relaxing toward its
+      voltage-dependent steady state <code>n∞(V)</code> with time constant <code>τn(V)</code>, using the
+      classical rate functions <code>αn(V) = 0.01(V+55) / (1 − e^{−(V+55)/10})</code> and
+      <code>βn(V) = 0.125·e^{−(V+65)/80}</code>. The ionic current at any moment is
+      <code>I_K(t) = ḡ_K · n(t)⁴ · (V_m(t) − E_K)</code>, computed continuously through the pulse and the
+      return to holding potential — which is why you'll see a small "tail current" right after the step back,
+      the same signature used experimentally to confirm a current is carried through open K⁺ channels.
+      The default ḡ_K (88 nS) and E_K (−77 mV) are calibrated so a step to +50 mV settles near
+      <b>10 nA</b>, a realistic whole-cell amplitude — adjust ḡ_K in the advanced panel to rescale.
+    </p>
+    <p>
+      The gating current is modelled the simplest way that still reproduces the classic ON/OFF signature:
+      each of the four activation particles is treated as a two-state resting ⇌ activated gate governed by
+      the <i>same</i> <code>αn</code>/<code>βn</code> rates, so <code>n(t)</code> is literally the fraction of
+      particles in the activated state and the charge-movement current is proportional to its rate of change,
+      <code>I_gating(t) ∝ dn/dt</code>. A depolarizing step makes <code>n</code> rise toward a larger
+      <code>n∞</code>, giving a decaying ON transient; stepping back to holding makes <code>n</code> fall again,
+      giving a mirror-image OFF transient of the opposite sign. The default gating-charge scale is calibrated
+      so that, at the same +50 mV reference pulse, the ON gating-current peak lands at roughly
+      <b>1/100th</b> of the ionic peak (tens to ~100 pA) — consistent with how much smaller real gating
+      currents are than the ionic currents they precede — and the "gating current gain" slider rescales
+      from that point.
+    </p>
+    <p>
+      Both traces carry independent Gaussian recording noise (adjustable in the advanced panel, default
+      0.15 nA SD on I_K and 8 pA SD on I_gating), so the small gating-current trace reads visibly noisier
+      relative to its signal than the much larger ionic current does — as in a real patch/voltage-clamp
+      recording, where the gating current sits closer to the noise floor. Clicking "Start sweeps" runs a
+      finite batch of N sweeps (N = the "traces to average" slider) at 2/s for <i>both</i> currents together,
+      shows each raw sweep in gray, and once all N have arrived, overlays the trial-averaged trace in color —
+      exactly the signal-averaging approach used to pull small, noisy gating currents out of the noise floor
+      in a real recording.
+    </p>
+    <p>
+      When a run's N sweeps complete, its averaged I_K and I_gating traces are <i>stored</i>, the way a
+      storage oscilloscope keeps every exposed trace lit on its screen for a photograph rather than letting
+      it decay: the "stored averages" panel accumulates one I_K trace and one gating-charge Q(t) trace per
+      completed run (Q(t) = the running time-integral of that run's averaged I_gating), all shown together,
+      not just the latest. Run sweeps at several test voltages and each one adds another trace to the
+      display — exactly like recording a family of voltage-clamp pulses on a storage scope before the
+      photograph. Nothing is erased until you press "Reset averages," which clears every stored trace at
+      once (independently of "Reset trace", which only clears the sweep currently in progress). Each stored
+      run also adds one point to the G–V and Q–V plots at that run's test voltage, so those two curves are
+      built up empirically, one stored run at a time, the same way a real family of voltage-clamp pulses is
+      used to construct an I–V or G–V relation. Running the same test voltage again re-exposes (replaces)
+      that voltage's trace and point rather than duplicating them.
+    </p>
+    <p>
+      G–V is measured from the <b>tail current</b>, not the steady-state current during the pulse. The
+      straightforward formula <code>G = I_K,steady / (V_test − E_K)</code> has a problem: as V_test sweeps
+      across the family of test pulses that make up the curve, it necessarily passes close to E_K somewhere
+      in the middle — exactly where the curve's rising phase is most interesting — and dividing by a driving
+      force near zero there amplifies any noise in I_K enormously, which is why points near E_K can look far
+      jumpier than the rest of the curve. The fix is the standard electrophysiology one: at the instant of
+      repolarization, the current jumps to a value set by that pulse's conductance (n(t2)⁴, which hasn't had
+      time to relax yet) but now driven by the <i>holding</i> potential instead — <code>G = I_tail /
+      (V_hold − E_K)</code>. Since V_hold is one fixed value for a whole family of runs (rather than sweeping
+      through the family the way V_test does), this denominator stays comfortably away from zero throughout
+      the whole curve. I_tail itself is read from a single fixed point 0.5 ms after repolarization — early
+      enough that deactivation hasn't relaxed the tail current much, but past the brief capacitive transient
+      right at the step — shown as a thin dotted green line on the I_K panel; it isn't draggable, since a
+      tail-current measurement is meant to be one well-defined instant, not an averaged window.
+    </p>
+    <p>
+      Q–V, on the other hand, keeps the original Clampfit-style treatment: the two dashed cursors spanning
+      the I_K/I_gating panels mark the window the ON gating charge is averaged over — drag either line to
+      move it, and every stored run's Q-V point is re-measured immediately, so the curve updates live for
+      traces you've already recorded, not just the next one. The window defaults to the last 5 ms of the
+      pulse, backed off 0.5 ms from the step edge, and re-centers there automatically whenever pulse duration
+      changes; it's left wherever you drag it across every other parameter change. Charge has no analogous
+      near-E_K singularity to fix (it's a time integral, not a ratio), which is why it's the one still built
+      from an adjustable window rather than a single fixed point.
+    </p>
+    <p>
+      One note on residual noise, since it's genuine and worth understanding rather than hiding: trial-
+      averaging N sweeps shrinks the noise band by <code>√N</code> — it doesn't remove it, since a fresh
+      independent noise value is still added at every single time sample. An N-sweep average will always show
+      some sample-to-sample jitter; it's just N-fold-smaller jitter than any one raw sweep. Because the tail
+      current is now a single fixed sample rather than a window average, its noise doesn't shrink any further
+      than that — a wider window would help, the same way it would for any non-cumulative current, but that
+      trade-off (smoother G-V vs. a true instantaneous tail reading) is deliberately not offered here. Q, by
+      contrast, gets essentially no benefit from widening its window either way: it's a running <i>sum</i> of
+      the noisy current, and consecutive values of a running sum are highly correlated, so noise that has
+      already accumulated like a random walk over the integration isn't undone by averaging nearby points on
+      that walk. The two real levers for a smoother Q–V curve are raising N (which reduces the noise entering
+      the integral before it's ever summed) and/or lowering the I_gating recording-noise slider; the charge is
+      also referenced to the sample right at pulse onset rather than to the start of the recording, so the
+      unavoidable ~5 ms of pre-pulse dead time doesn't add its own extra random-walk noise on top. This is
+      also why very small signals — test voltages close to the holding potential, where the true charge moved
+      is tiny to begin with — can show Q-V traces that don't cleanly separate or even cross each other run to
+      run: when the true signal is smaller than the noise floor, the noise dominates what you see, and no
+      amount of re-reading the same few sweeps fixes that — only more trials (raise N) or a genuinely larger
+      signal (a bigger voltage step) will.
+    </p>
+    <p>
+      Because conductance depends on <code>n⁴</code> but total charge moved depends only on <code>n</code>
+      itself (one power, not four — each particle moves once whether or not the other three have also moved),
+      the G–V curve comes out steeper and shifted to more positive voltages than the Q–V curve once you've
+      populated both across a range of test voltages. That leftward offset is the classic result: charge
+      moves at voltages where the pore is still mostly closed, i.e. gating precedes conduction. This is a
+      deliberately simplified two-state-per-particle picture (real gating currents show additional kinetic
+      components, e.g. from a Cole–Moore shift and non-independent subunit transitions) — good for building
+      intuition, not a fit to any specific published recording.
+    </p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  // ---------- rate functions (classical squid-axon delayed rectifier, mV absolute) ----------
+  function alphaN(V){
+    const x = V + 55;
+    if (Math.abs(x) < 1e-6) return 0.1; // remove 0/0 singularity at V=-55
+    return 0.01*x/(1-Math.exp(-x/10));
+  }
+  function betaN(V){ return 0.125*Math.exp(-(V+65)/80); }
+  function nInf(V){ const a=alphaN(V), b=betaN(V); return a/(a+b); }
+  function tauN(V, speed){ const a=alphaN(V), b=betaN(V); return 1/((a+b)*speed); }
+
+  // ---------- DOM ----------
+  const scopeC = document.getElementById('scopeCanvas');
+  const gvC = document.getElementById('gvCanvas');
+  const qvC = document.getElementById('qvCanvas');
+  const avgIKC = document.getElementById('avgIKCanvas');
+  const avgQC = document.getElementById('avgChargeCanvas');
+  const sctx = scopeC.getContext('2d');
+  const gctx = gvC.getContext('2d');
+  const qctx = qvC.getContext('2d');
+  const aikctx = avgIKC.getContext('2d');
+  const aqctx = avgQC.getContext('2d');
+
+  const vTest = document.getElementById('vTest');
+  const vHold = document.getElementById('vHold');
+  const pulseDur = document.getElementById('pulseDur');
+  const gK = document.getElementById('gK');
+  const eK = document.getElementById('eK');
+  const gain = document.getElementById('gain');
+  const speedSlider = document.getElementById('speed');
+  const noiseIKSlider = document.getElementById('noiseIK');
+  const noiseIgSlider = document.getElementById('noiseIg');
+  const avgCountSlider = document.getElementById('avgCount');
+
+  const vTestVal = document.getElementById('vTestVal');
+  const vHoldVal = document.getElementById('vHoldVal');
+  const pulseDurVal = document.getElementById('pulseDurVal');
+  const gKVal = document.getElementById('gKVal');
+  const eKVal = document.getElementById('eKVal');
+  const gainVal = document.getElementById('gainVal');
+  const speedVal = document.getElementById('speedVal');
+  const noiseIKVal = document.getElementById('noiseIKVal');
+  const noiseIgVal = document.getElementById('noiseIgVal');
+  const avgCountVal = document.getElementById('avgCountVal');
+
+  const runBtn = document.getElementById('runBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const resetAvgBtn = document.getElementById('resetAvgBtn');
+  const sweepReadout = document.getElementById('sweepReadout');
+  const storedReadout = document.getElementById('storedReadout');
+
+  const statNinf = document.getElementById('statNinf');
+  const statTau = document.getElementById('statTau');
+  const statIK = document.getElementById('statIK');
+  const statIg = document.getElementById('statIg');
+  const statQcharge = document.getElementById('statQcharge');
+  const statStoredV = document.getElementById('statStoredV');
+  const statG = document.getElementById('statG');
+  const statQ = document.getElementById('statQ');
+
+  // ---------- sweep timing (ms) ----------
+  const T_PRE = 5;    // holding period shown before the step
+  const T_POST = 20;  // post-pulse period shown (captures OFF transient + tail current)
+  const TICK_MS = 500; // 2 gating-current sweeps / second
+
+  let running = false;
+  let sweepCount = 0;
+  let timer = null;
+  let runGrid = null;            // shared {t,V,t1,t2,Ttot} for the run currently in progress (set from its first sweep)
+  let ikHistory = [];             // rolling buffer of raw I_K sweeps (Float64Array, nA), capped at N
+  let igHistory = [];            // rolling buffer of raw I_gating sweeps (Float64Array, nA); capped at the "traces to average" slider value
+  let scaleRef = {ikMax: 1, igMax: 5, qMax: 20}; // stable (noise-independent) axis scales, recomputed on param change
+
+  // Committed data from completed runs — persists across "Reset trace", cleared only by "Reset averages".
+  // Every completed run's averaged traces, kept until "Reset averages" is pressed —
+  // like a storage oscilloscope, each new trace is added on top rather than replacing
+  // the last one. Each entry: {Vtest, t, t1, t2, Ttot, avgIK, avgIg, avgQ, n}.
+  let storedRuns = [];
+  const MAX_STORED_RUNS = 30; // safety cap, well above a typical -120..+60 mV family sweep
+  let ivPoints = [];             // [{V, val}] chord conductance G (nS) vs test V — one point per stored run
+  let qvPoints = [];             // [{V, val}] ON gating charge Q (fC) vs test V — one point per stored run
+
+  // Clampfit-style measurement cursors: G-V/Q-V values are the mean of I_K / Q between
+  // these two times (ms, absolute on the current sweep's timeline). Null until the
+  // first run defines a timeline; reset to "last 5 ms of the pulse" whenever pulse
+  // duration changes, otherwise left wherever the user last dragged them.
+  let cursorStart = null, cursorEnd = null;
+  let dragging = null; // 'start' | 'end' | null
+
+  // ---------- physical calibration ----------
+  // gKbar in nS, V in mV -> I[nA] = gKbar[nS] * n^4 * (V-EK)[mV] * 0.001
+  // Default gKbar (88 nS) with EK=-77 mV puts steady-state I_K at a +50 mV pulse
+  // at ~10 nA, a realistic whole-cell K+ current amplitude.
+  const I_SCALE = 0.001; // nS * mV -> nA
+  // Gating charge scale (nA per unit of dn/dt[1/ms]), calibrated so that at the
+  // same +50 mV reference pulse the ON gating-current peak lands at ~1/100th of
+  // the ionic peak (gain=1 is the calibrated default; the gain slider scales from there).
+  const QBAR = 0.115; // nA·ms
+  function gaussianNoise(sd){
+    if(sd<=0) return 0;
+    let u=0,v=0;
+    while(u===0) u=Math.random();
+    while(v===0) v=Math.random();
+    return sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+
+  function params(){
+    return {
+      Vh: +vHold.value,
+      Vt: +vTest.value,
+      Tp: +pulseDur.value,
+      gKbar: +gK.value,
+      EK: +eK.value,
+      gain: +gain.value,
+      speed: +speedSlider.value,
+      noiseIK: +noiseIKSlider.value,   // nA, SD
+      noiseIg: +noiseIgSlider.value    // pA, SD
+    };
+  }
+
+  function totalSweepDuration(p){ return T_PRE + p.Tp + T_POST; }
+
+  // Compute n(t), V(t), IK(t) [nA], Ig(t) [nA] for the whole sweep at sample resolution.
+  function computeSweep(p, dt){
+    const Ttot = totalSweepDuration(p);
+    const N = Math.round(Ttot/dt)+1;
+    const t = new Float64Array(N), V = new Float64Array(N), n = new Float64Array(N),
+          IK = new Float64Array(N), Ig = new Float64Array(N);
+
+    const t1 = T_PRE, t2 = T_PRE + p.Tp;
+    let n0 = nInf(p.Vh); // steady state at holding, start of sweep
+    let segStart = 0, segV = p.Vh, segN0 = n0;
+
+    for(let i=0;i<N;i++){
+      const ti = i*dt;
+      t[i] = ti;
+      let Vi;
+      if(ti < t1){ Vi = p.Vh; }
+      else if(ti < t2){ Vi = p.Vt; }
+      else { Vi = p.Vh; }
+      V[i] = Vi;
+
+      // detect segment change
+      if(Vi !== segV){
+        // segment boundary: n0 for new segment = n at end of previous segment
+        segN0 = n[i-1] !== undefined ? n[i-1] : segN0;
+        segStart = ti;
+        segV = Vi;
+      }
+      const ninf = nInf(Vi), tau = tauN(Vi, p.speed);
+      const ni = ninf + (segN0 - ninf)*Math.exp(-(ti-segStart)/tau);
+      n[i] = ni;
+      IK[i] = p.gKbar * Math.pow(ni,4) * (Vi - p.EK) * I_SCALE   // nA
+              + gaussianNoise(p.noiseIK);
+    }
+    // dn/dt via central differences -> gating current (nA), plus recording noise (given in pA)
+    for(let i=0;i<N;i++){
+      let dndt;
+      if(i===0) dndt = (n[1]-n[0])/dt;
+      else if(i===N-1) dndt = (n[N-1]-n[N-2])/dt;
+      else dndt = (n[i+1]-n[i-1])/(2*dt);
+      Ig[i] = p.gain * QBAR * dndt + gaussianNoise(p.noiseIg/1000); // pA noise -> nA
+    }
+    return {t, V, n, IK, Ig, t1, t2, Ttot};
+  }
+
+  // Cumulative charge Q(t) = integral of Ig(t) dt. With Ig in pA and dt in ms, the
+  // running sum is numerically already in femtocoulombs (pA * ms = 1e-15 C = fC).
+  function cumulativeCharge(IgNA, dt){
+    const q = new Float64Array(IgNA.length);
+    let acc = 0;
+    for(let i=0;i<IgNA.length;i++){
+      acc += IgNA[i]*1000*dt; // nA->pA, times dt(ms) -> fC
+      q[i] = acc;
+    }
+    return q;
+  }
+
+  // Index of the last sample strictly before targetT (e.g. "the last pre-pulse sample",
+  // "the last sample of the ON phase").
+  function indexAtTime(tArr, targetT){
+    let idx = 0;
+    for(let i=0;i<tArr.length;i++){ if(tArr[i] < targetT) idx = i; }
+    return idx;
+  }
+
+  // A stable (noise-free) reference scale, recomputed only when a parameter changes,
+  // so panel scales don't jitter sweep-to-sweep with random noise.
+  function recomputeScaleRef(){
+    const p = params();
+    const dt = 0.1;
+    const clean = computeSweep(Object.assign({}, p, {noiseIK:0, noiseIg:0}), dt);
+    let ik=0, ig=0;
+    for(let i=0;i<clean.IK.length;i++) ik = Math.max(ik, Math.abs(clean.IK[i]));
+    for(let i=0;i<clean.Ig.length;i++) ig = Math.max(ig, Math.abs(clean.Ig[i]*1000));
+    const q = cumulativeCharge(clean.Ig, dt);
+    let qm=0; for(let i=0;i<q.length;i++) qm = Math.max(qm, Math.abs(q[i]));
+    scaleRef.ikMax = Math.max(ik*1.25 + p.noiseIK*3, 0.05);
+    scaleRef.igMax = Math.max(ig*1.25 + p.noiseIg*3, 5);
+    scaleRef.qMax = Math.max(qm*1.3, 3);
+  }
+
+  function resetHistory(){
+    if(timer){ clearInterval(timer); timer=null; }
+    ikHistory = [];
+    igHistory = [];
+    runGrid = null;
+    sweepCount = 0;
+    sweepReadout.textContent = 'sweep 0';
+  }
+
+  // Clears the STORED (committed) averages and the empirical G-V/Q-V curves —
+  // independent of resetHistory(), which only clears the in-progress raw run.
+  function resetAverages(){
+    storedRuns = [];
+    ivPoints = [];
+    qvPoints = [];
+    storedReadout.textContent = 'no runs stored yet';
+  }
+
+  // Keep only the most recent N raw sweeps, N = the "traces to average" slider.
+  function trimHistory(){
+    const N = +avgCountSlider.value;
+    if(ikHistory.length > N) ikHistory = ikHistory.slice(ikHistory.length - N);
+    if(igHistory.length > N) igHistory = igHistory.slice(igHistory.length - N);
+  }
+
+  function averageArrays(history){
+    const N = +avgCountSlider.value;
+    if(history.length < N) return null;
+    const len = history[history.length-1].length;
+    const avg = new Float64Array(len);
+    for(let k=0;k<history.length;k++){
+      const arr = history[k];
+      for(let i=0;i<len;i++) avg[i] += arr[i];
+    }
+    for(let i=0;i<len;i++) avg[i] /= history.length;
+    return avg;
+  }
+
+  // Average of ALL raw I_K sweeps currently held. Returns null until the buffer holds N.
+  function computeAvgIK(){
+    const avg = averageArrays(ikHistory);
+    return avg ? {avg, n: ikHistory.length} : null;
+  }
+
+  // Average of ALL raw I_gating sweeps currently held, plus the cumulative charge of
+  // that average. Returns null until the buffer holds N.
+  //
+  // The charge is zeroed at pulse ONSET (t1), not at the start of the recorded sweep:
+  // integrating from t=0 would needlessly accumulate ~5 ms worth of pre-pulse recording
+  // noise (a random walk — its variance grows with the number of samples integrated)
+  // before the voltage step even happens. Referencing to t1 removes that dead-time
+  // contribution and matches how ON gating charge is normally reported (relative to
+  // the holding baseline).
+  function computeAvgIg(){
+    const avg = averageArrays(igHistory);
+    if(!avg) return null;
+    const q = cumulativeCharge(avg, 0.05);
+    if(runGrid){
+      const idx1 = indexAtTime(runGrid.t, runGrid.t1);
+      const baseline = q[idx1];
+      for(let i=0;i<q.length;i++) q[i] -= baseline;
+    }
+    return {avg, n: igHistory.length, q};
+  }
+
+  // Insert or replace (by exact V match) a point in a sorted-by-V points array.
+  function upsertPoint(arr, V, val){
+    const idx = arr.findIndex(p=>p.V===V);
+    if(idx>=0) arr[idx].val = val; else arr.push({V, val});
+    arr.sort((a,b)=>a.V-b.V);
+  }
+
+  // Called once a run's N sweeps have all completed: adds this run's averaged traces
+  // to the stored set (like exposing a new trace onto a storage scope's screen — it
+  // stays lit alongside every earlier one until "Reset averages" erases the screen),
+  // and adds/updates one point on each of the G-V and Q-V curves.
+  //
+  // G-V is measured from the TAIL current, not the steady-state current during the
+  // pulse: right after repolarization, the current jumps to a value set by the test
+  // pulse's conductance (n(t2)⁴, not yet relaxed) but with the FIXED holding-potential
+  // driving force (V_hold − E_K) — which stays well away from zero across a whole
+  // family of test voltages, unlike (V_test − E_K), which necessarily passes through
+  // zero right where the G-V curve is most interesting (near E_K) and blows up the
+  // division there. This is a single fixed sample a short, fixed offset after
+  // repolarization (not an average over a user-movable window) — the tail current is
+  // read at one well-defined instant, the same way a real tail-current measurement
+  // picks one point right after the step back.
+  const TAIL_OFFSET_MS = 0.5; // fixed offset after repolarization; not user-adjustable
+
+  // The draggable cursors are back to their original job: marking the window (inside
+  // the pulse) that the ON gating charge for Q-V is averaged over. Default: ~5 ms
+  // wide, ending 0.5 ms before the pulse ends (backed off from the step edge, where a
+  // capacitive transient could bias the measurement).
+  function defaultCursorWindow(){
+    const p = params();
+    const t2 = T_PRE + p.Tp, t1 = T_PRE;
+    const start = Math.max(t1, t2 - 5);
+    const end = Math.max(start, t2 - 0.5);
+    return {start, end};
+  }
+
+  function meanOverWindow(arr, tArr, start, end){
+    let idxLo = indexAtTime(tArr, start), idxHi = indexAtTime(tArr, end);
+    if(idxHi < idxLo) idxHi = idxLo;
+    let sum=0; for(let j=idxLo;j<=idxHi;j++) sum += arr[j];
+    return sum/(idxHi-idxLo+1);
+  }
+
+  // G from a single fixed tail sample using the fixed holding driving force; Q from
+  // the draggable cursor window (Clampfit-style): drag the cursors and every stored
+  // run's Q-V point is re-measured live.
+  function measureRun(entry){
+    const tailIdx = indexAtTime(entry.t, entry.t2 + TAIL_OFFSET_MS);
+    const iTail = entry.avgIK[tailIdx];
+    let G = null;
+    if(Math.abs(entry.Vhold - entry.EK) >= 1){
+      // IK is in nA and (V-EK) in mV, so IK/(V-EK) comes out in µS numerically;
+      // ×1000 converts to nS to match ḡ_K's units.
+      G = (iTail/(entry.Vhold - entry.EK)) * 1000; // nS
+    }
+    let Q = null;
+    if(cursorStart!==null && cursorEnd!==null){
+      const lo = Math.min(cursorStart, cursorEnd), hi = Math.max(cursorStart, cursorEnd);
+      Q = meanOverWindow(entry.avgQ, entry.t, lo, hi);
+    }
+    return {G, Q};
+  }
+
+  // Rebuilds the ENTIRE G-V/Q-V curves from every stored run using the current
+  // cursor window — called both when a new run is committed and whenever the
+  // cursors are dragged, so moving them re-measures every trace already on screen.
+  function recomputeAllPoints(){
+    ivPoints = []; qvPoints = [];
+    storedRuns.forEach(entry=>{
+      const m = measureRun(entry);
+      if(m.G!==null) upsertPoint(ivPoints, entry.Vtest, m.G);
+      if(m.Q!==null) upsertPoint(qvPoints, entry.Vtest, m.Q);
+    });
+  }
+
+  function commitAverages(){
+    const p = params();
+    const ikInfo = computeAvgIK(), igInfo = computeAvgIg();
+    if(!ikInfo || !igInfo || !runGrid) return;
+    if(cursorStart===null || cursorEnd===null){
+      const dw = defaultCursorWindow();
+      cursorStart = dw.start; cursorEnd = dw.end;
+    }
+    const entry = {
+      Vtest: p.Vt, Vhold: p.Vh, EK: p.EK, t: runGrid.t, t1: runGrid.t1, t2: runGrid.t2, Ttot: runGrid.Ttot,
+      avgIK: ikInfo.avg, avgIg: igInfo.avg, avgQ: igInfo.q, n: igInfo.n
+    };
+    // re-running the same test voltage re-exposes that trace rather than stacking a duplicate
+    const existingIdx = storedRuns.findIndex(r=>r.Vtest===p.Vt);
+    if(existingIdx>=0) storedRuns[existingIdx] = entry; else storedRuns.push(entry);
+    storedRuns.sort((a,b)=>a.Vtest-b.Vtest);
+    if(storedRuns.length > MAX_STORED_RUNS) storedRuns = storedRuns.slice(storedRuns.length-MAX_STORED_RUNS);
+    storedReadout.textContent = storedRuns.length+' stored: '+storedRuns.map(r=>r.Vtest).join(', ')+' mV';
+    recomputeAllPoints();
+  }
+
+  // ---------- scope drawing ----------
+  const PAD_L = 46, PAD_R = 14, PAD_T_V = 10, V_H = 60, GAP = 8, IK_H = 150, IG_H = 130, PAD_B = 26;
+
+  function layout(w,h){
+    const plotW = w - PAD_L - PAD_R;
+    const vTop = PAD_T_V, vBot = vTop + V_H;
+    const ikTop = vBot + GAP, ikBot = ikTop + IK_H;
+    const igTop = ikBot + GAP, igBot = igTop + IG_H;
+    return {plotW, vTop, vBot, ikTop, ikBot, igTop, igBot, xAxisY: igBot + 16};
+  }
+
+  function drawGridBand(ctx, x0, w, yTop, yBot, nH){
+    ctx.strokeStyle = 'rgba(15,58,34,0.9)';
+    ctx.lineWidth = 1;
+    const h = yBot - yTop;
+    for(let i=0;i<=nH;i++){
+      const y = yTop + (h*i/nH);
+      ctx.beginPath();
+      ctx.moveTo(x0, Math.round(y)+0.5); ctx.lineTo(x0+w, Math.round(y)+0.5);
+      ctx.stroke();
+    }
+  }
+
+  // sw here is always a complete, static sweep object (V/t/IK/Ig arrays) — nothing
+  // animates in progressively any more; a trace either isn't drawn yet or is fully drawn.
+  // Draws one panel's raw sweeps (gray, fading by age) plus the bold color average,
+  // once the buffer holds N. Shared by both the I_K and I_gating panels.
+  function drawSweepBand(history, avgArr, xPix, yFn, color, glow, label, nSamples){
+    const nHist = history.length;
+    history.forEach((raw, i)=>{
+      const isNewest = i === nHist-1;
+      const age = nHist-1-i;
+      const alpha = isNewest ? 0.65 : Math.max(0.15, 0.55*Math.pow(0.72, age-1));
+      drawLineGeneric(sctx, raw, xPix, yFn, {color:`rgba(184,174,149,${alpha.toFixed(3)})`, lw: isNewest?1.3:1});
+    });
+    if(avgArr) drawLineGeneric(sctx, avgArr, xPix, yFn, {color, lw:2.2, glow});
+  }
+  function drawLineGeneric(ctx, arr, xPix, yFn, opts){
+    ctx.strokeStyle = opts.color; ctx.lineWidth = opts.lw;
+    if(opts.glow){ ctx.shadowColor = opts.glow; ctx.shadowBlur = 4; }
+    ctx.beginPath();
+    for(let i=0;i<arr.length;i++){
+      const x = xPix(i), y = yFn(arr[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    if(opts.glow) ctx.shadowBlur = 0;
+  }
+
+  function redrawScope(){
+    const w = scopeC.width, h = scopeC.height;
+    sctx.clearRect(0,0,w,h);
+    const p = params();
+    const L = layout(w,h);
+    const x0 = PAD_L, plotW = L.plotW;
+
+    drawGridBand(sctx, x0, plotW, L.vTop, L.vBot, 2);
+    drawGridBand(sctx, x0, plotW, L.ikTop, L.ikBot, 4);
+    drawGridBand(sctx, x0, plotW, L.igTop, L.igBot, 4);
+
+    if(!runGrid){
+      sctx.fillStyle = 'rgba(184,174,149,0.5)';
+      sctx.font = "12px 'JetBrains Mono', monospace";
+      sctx.textAlign = 'center';
+      sctx.fillText('press "Start sweeps" to run the protocol', x0+plotW/2, (L.igBot+L.vTop)/2);
+      sctx.textAlign = 'left';
+      return;
+    }
+
+    function idxToPix(i){ return x0 + (runGrid.t[i]/runGrid.Ttot)*plotW; }
+
+    // --- V panel ---
+    const vMin = -135, vMax = 65;
+    function yPixV(v){ return L.vBot - ((v-vMin)/(vMax-vMin))*(L.vBot-L.vTop); }
+    drawLineGeneric(sctx, runGrid.V, idxToPix, yPixV, {color:'rgba(184,174,149,0.9)', lw:1.6});
+    sctx.fillStyle = 'rgba(184,174,149,0.6)';
+    sctx.font = "10px 'JetBrains Mono', monospace";
+    sctx.textAlign = 'right';
+    sctx.fillText(p.Vh+' mV', x0-6, yPixV(p.Vh)+3);
+    sctx.fillText(p.Vt+' mV', x0-6, yPixV(p.Vt)+3);
+    sctx.textAlign = 'left';
+    sctx.fillStyle = 'rgba(184,174,149,0.55)';
+    sctx.fillText('V\u2098 command', x0+4, L.vTop+10);
+
+    // --- IK panel: raw sweeps (gray) + bold average (phosphor green) ---
+    const ikMax = scaleRef.ikMax;
+    const ikMid = L.ikTop + (L.ikBot-L.ikTop)*0.85; // zero line near bottom so outward currents read upward
+    function yPixIK(v){ return ikMid - (v/ikMax)*((L.ikBot-L.ikTop)*0.75); }
+    sctx.strokeStyle = 'rgba(232,165,61,0.35)'; sctx.lineWidth=1;
+    sctx.beginPath(); sctx.moveTo(x0, ikMid+0.5); sctx.lineTo(x0+plotW, ikMid+0.5); sctx.stroke();
+    const ikAvgInfo = computeAvgIK();
+    drawSweepBand(ikHistory, ikAvgInfo && ikAvgInfo.avg, idxToPix, yPixIK, '#4dffa0', 'rgba(77,255,160,0.55)');
+    sctx.fillStyle = 'rgba(184,174,149,0.6)';
+    sctx.font = "10px 'JetBrains Mono', monospace";
+    sctx.textAlign = 'right';
+    [0, ikMax*0.5, ikMax].forEach(v=> sctx.fillText(v.toFixed(1), x0-6, yPixIK(v)+3));
+    sctx.textAlign = 'left';
+    const N = +avgCountSlider.value;
+    sctx.fillText('I_K (nA) \u2014 '+ikHistory.length+'/'+N+' sweeps', x0+4, L.ikTop+10);
+
+    // --- Igating panel (pA): raw sweeps (gray) + bold average (amber) ---
+    const igMax = scaleRef.igMax;
+    const igMid = L.igTop + (L.igBot-L.igTop)*0.5;
+    function yPixIG(v_pA){ return igMid - (v_pA/igMax)*((L.igBot-L.igTop)*0.42); }
+    sctx.strokeStyle = 'rgba(232,165,61,0.35)'; sctx.lineWidth=1;
+    sctx.beginPath(); sctx.moveTo(x0, igMid+0.5); sctx.lineTo(x0+plotW, igMid+0.5); sctx.stroke();
+    const igAvgInfo = computeAvgIg();
+    drawSweepBand(igHistory, igAvgInfo && igAvgInfo.avg, idxToPix, (v)=>yPixIG(v*1000), '#e8a53d', 'rgba(232,165,61,0.55)');
+
+    sctx.fillStyle = 'rgba(184,174,149,0.6)';
+    sctx.font = "10px 'JetBrains Mono', monospace";
+    sctx.textAlign = 'right';
+    [-igMax, 0, igMax].forEach(v=> sctx.fillText(v.toFixed(0), x0-6, yPixIG(v)+3));
+    sctx.textAlign = 'left';
+    sctx.fillText('I_gating (pA) \u2014 '+igHistory.length+'/'+N+' sweeps', x0+4, L.igTop+10);
+
+    // time axis ticks — round 5 ms steps (rather than fractions of the sweep) so the
+    // labels read as actual round numbers a person would use, not "7, 14, 22…"
+    sctx.strokeStyle = 'rgba(232,165,61,0.55)';
+    sctx.fillStyle = 'rgba(184,174,149,0.6)';
+    sctx.textAlign = 'center';
+    const tickStep = 5;
+    function timeToPixMain(t){ return x0 + (t/runGrid.Ttot)*plotW; }
+    for(let tt=0; tt<=runGrid.Ttot+1e-9; tt+=tickStep){
+      const x = timeToPixMain(tt);
+      sctx.beginPath(); sctx.moveTo(x, L.igBot+2); sctx.lineTo(x, L.igBot+6); sctx.stroke();
+      sctx.fillText(tt.toFixed(0), x, L.xAxisY);
+    }
+    sctx.fillStyle='rgba(184,174,149,0.5)';
+    sctx.fillText('time (ms)', x0+plotW/2, L.xAxisY+13);
+    sctx.textAlign='left';
+
+    // --- Clampfit-style measurement cursors: drag either dashed line to set the
+    // window G-V/Q-V are measured over ---
+    if(cursorStart!==null && cursorEnd!==null){
+      function timeToPix(t){ return x0 + (t/runGrid.Ttot)*plotW; }
+      const xA = timeToPix(cursorStart), xB = timeToPix(cursorEnd);
+      const yTop = L.vTop, yBot = L.igBot;
+      sctx.fillStyle = 'rgba(244,236,216,0.08)';
+      sctx.fillRect(Math.min(xA,xB), yTop, Math.abs(xB-xA), yBot-yTop);
+      [xA, xB].forEach(x=>{
+        sctx.strokeStyle = 'rgba(244,236,216,0.85)';
+        sctx.lineWidth = 1.4;
+        sctx.setLineDash([5,4]);
+        sctx.beginPath(); sctx.moveTo(x, yTop); sctx.lineTo(x, yBot); sctx.stroke();
+        sctx.setLineDash([]);
+        // grab handle
+        sctx.fillStyle = 'rgba(244,236,216,0.9)';
+        sctx.beginPath(); sctx.moveTo(x-5, yTop-2); sctx.lineTo(x+5, yTop-2); sctx.lineTo(x, yTop+6); sctx.fill();
+      });
+      sctx.fillStyle = 'rgba(244,236,216,0.85)';
+      sctx.font = "10px 'JetBrains Mono', monospace";
+      sctx.textAlign = 'center';
+      const mid = (xA+xB)/2;
+      sctx.fillText('charge window: '+Math.abs(cursorEnd-cursorStart).toFixed(1)+' ms', mid, yTop-8);
+      sctx.textAlign = 'left';
+    }
+
+    // --- fixed tail-current sample mark (G-V): a single fixed point, not draggable —
+    // shown as a thin dotted line so it's clear where G is actually being read from ---
+    {
+      const tailT = runGrid.t2 + TAIL_OFFSET_MS;
+      if(tailT <= runGrid.Ttot){
+        const xT = x0 + (tailT/runGrid.Ttot)*plotW;
+        sctx.strokeStyle = 'rgba(77,255,160,0.75)';
+        sctx.lineWidth = 1.2;
+        sctx.setLineDash([2,3]);
+        sctx.beginPath(); sctx.moveTo(xT, L.ikTop); sctx.lineTo(xT, L.ikBot); sctx.stroke();
+        sctx.setLineDash([]);
+        sctx.fillStyle = 'rgba(77,255,160,0.85)';
+        sctx.font = "9px 'JetBrains Mono', monospace";
+        sctx.textAlign = 'center';
+        sctx.fillText('tail (fixed)', xT, L.ikTop-2);
+        sctx.textAlign = 'left';
+      }
+    }
+  }
+
+  // ---------- stored-average panels: EVERY completed run's trace stays lit, like a
+  // storage oscilloscope's screen — nothing fades until "Reset averages" erases it. ----------
+  function drawAveragePanel(ctx, canvas, runs, key, color, glow, unitLabel, highlightV){
+    const w=canvas.width, h=canvas.height;
+    ctx.clearRect(0,0,w,h);
+    const padL=42, padR=10, padT=14, padB=20;
+    const plotW=w-padL-padR, plotH=h-padT-padB;
+    drawGridBand(ctx, padL, plotW, padT, padT+plotH, 3);
+    if(!runs.length){
+      ctx.fillStyle = 'rgba(184,174,149,0.5)';
+      ctx.font = "11px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText('no stored runs yet', padL+plotW/2, padT+plotH/2);
+      ctx.textAlign = 'left';
+      return;
+    }
+    // scale across ALL stored traces, not just one, so every trace fits on screen at once.
+    // Charge (avgQ) is physically non-negative in the usual case (holding more negative
+    // than test V), so — like G-V/Q-V — default to a 0-based axis that uses the full
+    // panel height; I_K can genuinely go negative (inward current when V < E_K), so it
+    // keeps a range that adapts to whatever the data actually spans either way.
+    let dataMin=0, dataMax=0, ttotMax=0;
+    runs.forEach(r=>{
+      const arr = r[key];
+      for(let i=0;i<arr.length;i++){ dataMax = Math.max(dataMax, arr[i]); dataMin = Math.min(dataMin, arr[i]); }
+      ttotMax = Math.max(ttotMax, r.Ttot);
+    });
+    let yLo, yHi;
+    if(dataMin>=0){ yLo = 0; yHi = Math.max(dataMax*1.15, 1e-6); }
+    else { const pad = Math.max((dataMax-dataMin)*0.15, 1e-6); yLo = dataMin-pad; yHi = dataMax+pad; }
+    function yPix(v){ return padT + (1 - (v-yLo)/(yHi-yLo))*plotH; }
+    const zeroY = yPix(0);
+    if(zeroY>=padT-1 && zeroY<=padT+plotH+1){
+      ctx.strokeStyle = 'rgba(232,165,61,0.35)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(padL, zeroY+0.5); ctx.lineTo(padL+plotW, zeroY+0.5); ctx.stroke();
+    }
+
+    // every stored trace drawn fully lit (storage-scope behaviour — no fading with age);
+    // the trace matching the current test-V slider is drawn a touch bolder as "selected"
+    runs.forEach(r=>{
+      const arr = r[key];
+      function xPix(i){ return padL + (r.t[i]/ttotMax)*plotW; }
+      const isSel = r.Vtest === highlightV;
+      ctx.strokeStyle = color; ctx.lineWidth = isSel ? 2.2 : 1.4;
+      ctx.globalAlpha = isSel ? 1 : 0.8;
+      if(isSel){ ctx.shadowColor = glow; ctx.shadowBlur = 4; }
+      ctx.beginPath();
+      for(let i=0;i<arr.length;i++){ const x=xPix(i), y=yPix(arr[i]); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+      ctx.stroke();
+      ctx.shadowBlur=0; ctx.globalAlpha=1;
+    });
+
+    // measurement-cursor positions, mirrored from the main oscilloscope (read-only
+    // here — they move only by dragging on the scope itself) so it's clear which
+    // stretch of every stored trace the G-V/Q-V points were measured over
+    if(cursorStart!==null && cursorEnd!==null && ttotMax>0){
+      [cursorStart, cursorEnd].forEach(t=>{
+        const x = padL + (t/ttotMax)*plotW;
+        ctx.strokeStyle = 'rgba(244,236,216,0.7)'; ctx.lineWidth = 1.1;
+        ctx.setLineDash([4,3]);
+        ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT+plotH); ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
+    ctx.fillStyle='rgba(184,174,149,0.6)';
+    ctx.font = "9px 'JetBrains Mono', monospace";
+    ctx.textAlign='right';
+    ctx.fillText(yHi.toFixed(1), padL-4, yPix(yHi)+3);
+    if(dataMin<0) ctx.fillText(yLo.toFixed(1), padL-4, yPix(yLo)+3);
+    if(zeroY>=padT-1 && zeroY<=padT+plotH+1) ctx.fillText('0', padL-4, zeroY+3);
+    ctx.textAlign='left';
+    ctx.fillStyle='rgba(184,174,149,0.5)';
+    ctx.fillText(unitLabel+' \u2014 '+runs.length+' stored', padL+2, padT-4);
+  }
+
+  function redrawAveragePanels(){
+    const lastV = storedRuns.length ? storedRuns[storedRuns.length-1].Vtest : null;
+    drawAveragePanel(aikctx, avgIKC, storedRuns, 'avgIK', '#4dffa0', 'rgba(77,255,160,0.55)', 'nA', lastV);
+    // charge in pA*ms == fC directly (see cumulativeCharge); avgQ already fC-scaled
+    drawAveragePanel(aqctx, avgQC, storedRuns, 'avgQ', '#6db8f2', 'rgba(109,184,242,0.5)', 'fC', lastV);
+  }
+
+  // ---------- G-V / Q-V drawing (empirical: one point per stored/committed run) ----------
+  const VMIN=-120, VMAX=60;
+
+  function drawEmpiricalPanel(ctx, canvas, points, color, label, highlightV){
+    const w=canvas.width, h=canvas.height;
+    ctx.clearRect(0,0,w,h);
+    const padL=44, padR=12, padT=10, padB=26;
+    const plotW=w-padL-padR, plotH=h-padT-padB;
+    function xPix(V){ return padL + (V-VMIN)/(VMAX-VMIN)*plotW; }
+
+    // G and Q are both physically non-negative for the usual case (holding more
+    // negative than test V), so default to a 0-based axis that uses the full panel
+    // height rather than wasting half of it on a negative range that never occurs.
+    // Falls back to a range spanning the data if a point ever does go negative
+    // (e.g. a test V more hyperpolarized than the holding potential).
+    let dataMin=0, dataMax=0;
+    points.forEach(p=>{ dataMax = Math.max(dataMax, p.val); dataMin = Math.min(dataMin, p.val); });
+    let yLo, yHi;
+    if(dataMin>=0){ yLo = 0; yHi = Math.max(dataMax*1.15, 1e-6); }
+    else { const pad = Math.max((dataMax-dataMin)*0.15, 1e-6); yLo = dataMin-pad; yHi = dataMax+pad; }
+    function yPix(v){ return padT + (1 - (v-yLo)/(yHi-yLo))*plotH; }
+    const zeroY = yPix(0);
+
+    // grid
+    ctx.strokeStyle='rgba(15,58,34,0.9)'; ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const y = padT + plotH*i/4;
+      ctx.beginPath(); ctx.moveTo(padL, Math.round(y)+0.5); ctx.lineTo(padL+plotW, Math.round(y)+0.5); ctx.stroke();
+    }
+    for(let vv=-120; vv<=60; vv+=20){
+      const x = xPix(vv);
+      ctx.beginPath(); ctx.moveTo(Math.round(x)+0.5, padT); ctx.lineTo(Math.round(x)+0.5, padT+plotH); ctx.stroke();
+    }
+    if(zeroY>=padT-1 && zeroY<=padT+plotH+1){
+      ctx.strokeStyle='rgba(232,165,61,0.4)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(padL, zeroY+0.5); ctx.lineTo(padL+plotW, zeroY+0.5); ctx.stroke();
+    }
+
+    ctx.fillStyle='rgba(184,174,149,0.6)';
+    ctx.font="10px 'JetBrains Mono', monospace";
+    ctx.textAlign='center';
+    for(let vv=-120; vv<=60; vv+=40) ctx.fillText(vv, xPix(vv), h-8);
+    ctx.textAlign='right';
+    ctx.fillText(yHi.toFixed(1), padL-4, yPix(yHi)+3);
+    if(dataMin<0) ctx.fillText(yLo.toFixed(1), padL-4, yPix(yLo)+3);
+    if(zeroY>=padT-1 && zeroY<=padT+plotH+1) ctx.fillText('0', padL-4, zeroY+3);
+    ctx.textAlign='left';
+    ctx.fillStyle='rgba(184,174,149,0.55)';
+    ctx.fillText(label, padL+4, padT+10);
+
+    if(points.length===0){
+      ctx.fillStyle = 'rgba(184,174,149,0.5)';
+      ctx.font = "11px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText('run sweeps at a few test voltages to build this curve', padL+plotW/2, padT+plotH/2);
+      ctx.textAlign = 'left';
+      return;
+    }
+
+    // connecting line (points already kept sorted by V)
+    if(points.length>1){
+      ctx.strokeStyle=color; ctx.lineWidth=1.8;
+      ctx.beginPath();
+      points.forEach((p,i)=>{ const x=xPix(p.V), y=yPix(p.val); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+      ctx.stroke();
+    }
+    // markers
+    points.forEach(p=>{
+      const x=xPix(p.V), y=yPix(p.val);
+      const isHighlight = p.V===highlightV;
+      ctx.fillStyle=color;
+      ctx.beginPath(); ctx.arc(x,y, isHighlight?5:3.5, 0, Math.PI*2); ctx.fill();
+      if(isHighlight){
+        ctx.strokeStyle='rgba(244,236,216,0.9)'; ctx.lineWidth=1.2;
+        ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.stroke();
+      }
+    });
+  }
+
+  function redrawCurves(){
+    const p = params();
+    const lastV = storedRuns.length ? storedRuns[storedRuns.length-1].Vtest : null;
+    drawEmpiricalPanel(gctx, gvC, ivPoints, '#4dffa0', 'G (nS)', lastV);
+    drawEmpiricalPanel(qctx, qvC, qvPoints, '#e8a53d', 'Q (fC)', lastV);
+  }
+
+  // ---------- stats ----------
+  function updateStats(){
+    const p = params();
+    const ninfH = nInf(p.Vh), ninfT = nInf(p.Vt);
+    statNinf.textContent = ninfH.toFixed(3)+' → '+ninfT.toFixed(3);
+    statTau.textContent = tauN(p.Vt,p.speed).toFixed(2)+' ms / '+tauN(p.Vh,p.speed).toFixed(2)+' ms';
+
+    const ikAvgInfo = computeAvgIK();
+    if(ikAvgInfo){
+      let ikMax=0;
+      for(let i=0;i<ikAvgInfo.avg.length;i++) ikMax = Math.max(ikMax, Math.abs(ikAvgInfo.avg[i]));
+      statIK.textContent = ikMax.toFixed(2)+' nA';
+    } else {
+      statIK.textContent = '— (awaiting '+avgCountSlider.value+' sweeps)';
+    }
+
+    const igAvgInfo = computeAvgIg();
+    if(igAvgInfo && runGrid){
+      let igOnMax=0, igOffMax=0;
+      for(let i=0;i<runGrid.t.length;i++){
+        if(runGrid.t[i] < runGrid.t2) igOnMax = Math.max(igOnMax, Math.abs(igAvgInfo.avg[i]));
+        else igOffMax = Math.max(igOffMax, Math.abs(igAvgInfo.avg[i]));
+      }
+      statIg.textContent = (igOnMax*1000).toFixed(0)+' / '+(igOffMax*1000).toFixed(0)+' pA';
+      let qOnMax=0; const q=igAvgInfo.q;
+      for(let i=0;i<runGrid.t.length;i++){ if(runGrid.t[i] < runGrid.t2) qOnMax = Math.max(qOnMax, Math.abs(q[i])); }
+      statQcharge.textContent = qOnMax.toFixed(1)+' / '+q[q.length-1].toFixed(1)+' fC';
+    } else {
+      statIg.textContent = '— (awaiting '+avgCountSlider.value+' sweeps)';
+      statQcharge.textContent = '—';
+    }
+
+    if(storedRuns.length){
+      const last = storedRuns[storedRuns.length-1];
+      statStoredV.textContent = last.Vtest+' mV (n='+last.n+'; '+storedRuns.length+' traces stored)';
+      const gPt = ivPoints.find(pt=>pt.V===last.Vtest);
+      const qPt = qvPoints.find(pt=>pt.V===last.Vtest);
+      statG.textContent = gPt ? gPt.val.toFixed(2)+' nS' : '— (holding V ≈ E_K)';
+      statQ.textContent = qPt ? qPt.val.toFixed(1)+' fC' : '—';
+    } else {
+      statStoredV.textContent = '—';
+      statG.textContent = '—';
+      statQ.textContent = '—';
+    }
+
+    redrawCurves();
+    redrawAveragePanels();
+  }
+
+  // ---------- run control ----------
+  // A "Start sweeps" run is FINITE: it fires exactly N (= traces-to-average slider)
+  // sweeps at 2/s for BOTH I_K and I_gating together, then stops itself automatically
+  // once N is reached — at which point the averaged pair is committed (see commitAverages).
+  function tick(){
+    const p = params();
+    const sw = computeSweep(p, 0.05);
+    if(!runGrid){
+      runGrid = sw; // first sweep of the run defines the shared time/command grid
+      if(cursorStart===null){ const dw = defaultCursorWindow(); cursorStart = dw.start; cursorEnd = dw.end; }
+    }
+    ikHistory.push(sw.IK.slice());
+    igHistory.push(sw.Ig.slice());
+    trimHistory();
+    sweepCount++;
+    sweepReadout.textContent = 'sweep '+sweepCount;
+    redrawScope();
+    updateStats();
+    const N = +avgCountSlider.value;
+    if(ikHistory.length >= N && igHistory.length >= N){
+      commitAverages();
+      stopLoop(); // run complete — stored average + G-V/Q-V point are now shown
+      redrawCurves();
+      redrawAveragePanels();
+      updateStats();
+    }
+  }
+
+  function startLoop(){
+    running = true;
+    runBtn.textContent = 'Stop sweeps';
+    runBtn.classList.add('running');
+    resetHistory();               // fresh run: clear whatever was shown before (stored averages untouched)
+    timer = setInterval(tick, TICK_MS);
+    tick();                       // fire the first sweep immediately, not after 500 ms
+  }
+  function stopLoop(){
+    running = false;
+    runBtn.textContent = 'Start sweeps';
+    runBtn.classList.remove('running');
+    if(timer){ clearInterval(timer); timer=null; }
+  }
+
+  runBtn.addEventListener('click', ()=>{
+    if(running) stopLoop(); else startLoop();
+  });
+  resetBtn.addEventListener('click', ()=>{
+    stopLoop();
+    resetHistory();
+    redrawScope();
+    updateStats();
+  });
+  resetAvgBtn.addEventListener('click', ()=>{
+    resetAverages();
+    redrawCurves();
+    redrawAveragePanels();
+    updateStats();
+  });
+
+  // slider live labels + immediate redraw of static curve panels
+  function syncLabels(){
+    if(document.activeElement !== vTestVal) vTestVal.value = vTest.value;
+    if(document.activeElement !== vHoldVal) vHoldVal.value = vHold.value;
+    if(document.activeElement !== pulseDurVal) pulseDurVal.value = pulseDur.value;
+    gKVal.textContent = gK.value+' nS';
+    eKVal.textContent = eK.value+' mV';
+    gainVal.textContent = '×'+(+gain.value).toFixed(1);
+    speedVal.textContent = '×'+(+speedSlider.value).toFixed(1);
+    noiseIKVal.textContent = (+noiseIKSlider.value).toFixed(2)+' nA';
+    noiseIgVal.textContent = noiseIgSlider.value+' pA';
+    if(document.activeElement !== avgCountVal) avgCountVal.value = avgCountSlider.value;
+  }
+
+  // Sliders that change the underlying signal (or its noise) — averaging different
+  // conditions together wouldn't mean anything, so these reset the in-progress raw
+  // run and (if running) restart it fresh. Stored averages / G-V / Q-V are untouched;
+  // ḡ_K and E_K changes also invalidate the stable scale reference and the G-V axis
+  // (since G depends on E_K), so recompute those too.
+  const signalSliders = [vTest, vHold, pulseDur, gK, eK, gain, speedSlider, noiseIKSlider, noiseIgSlider];
+  signalSliders.forEach(el=>{
+    el.addEventListener('input', ()=>{
+      syncLabels();
+      recomputeScaleRef();
+      // pulse duration moves the pulse's end time (t2), so re-anchor the cursor
+      // window to "last 5 ms of the (new) pulse" — other sliders don't move the
+      // timeline, so a manually-dragged window is left exactly where it was.
+      if(el===pulseDur){ const dw = defaultCursorWindow(); cursorStart = dw.start; cursorEnd = dw.end; recomputeAllPoints(); }
+      if(running){ startLoop(); } // restarts a fresh finite run under the new settings
+      else { resetHistory(); redrawScope(); updateStats(); }
+    });
+  });
+
+  // The averaging-count slider changes how many raw sweeps are blended/shown — it
+  // trims the existing buffer to the new N but doesn't otherwise reset anything.
+  avgCountSlider.addEventListener('input', ()=>{
+    syncLabels();
+    trimHistory();
+    redrawScope();
+    updateStats();
+  });
+
+  // Number-box entry for the four sliders shown as text boxes: typing a value and
+  // pressing Enter/Tab/blur clamps it to the slider's range and drives the slider's
+  // own 'input' handler, so it behaves exactly like dragging the slider there.
+  function wireNumberInput(numInput, slider){
+    function commit(){
+      let v = parseFloat(numInput.value);
+      if(isNaN(v)) v = +slider.value;
+      const min = +slider.min, max = +slider.max, step = +slider.step || 1;
+      v = Math.min(max, Math.max(min, v));
+      v = Math.round(v/step)*step;
+      numInput.value = v;
+      if(+slider.value !== v){ slider.value = v; slider.dispatchEvent(new Event('input')); }
+    }
+    numInput.addEventListener('change', commit);
+    numInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') numInput.blur(); });
+  }
+  wireNumberInput(vTestVal, vTest);
+  wireNumberInput(vHoldVal, vHold);
+  wireNumberInput(pulseDurVal, pulseDur);
+  wireNumberInput(avgCountVal, avgCountSlider);
+
+  // Test-pulse arrow-head steppers: each click moves the value by ±5 mV (independent
+  // of the number box's own step="1", which still governs typed/dragged values).
+  function stepNumber(numInput, slider, delta){
+    let v = (parseFloat(numInput.value) || +slider.value) + delta;
+    const min = +slider.min, max = +slider.max;
+    v = Math.min(max, Math.max(min, v));
+    numInput.value = v;
+    if(+slider.value !== v){ slider.value = v; slider.dispatchEvent(new Event('input')); }
+  }
+  document.getElementById('vTestUp').addEventListener('click', ()=> stepNumber(vTestVal, vTest, 5));
+  document.getElementById('vTestDown').addEventListener('click', ()=> stepNumber(vTestVal, vTest, -5));
+
+  // ---------- measurement cursors: drag either dashed line to set the G-V/Q-V window ----------
+  function pixelXFromClient(clientX){
+    const rect = scopeC.getBoundingClientRect();
+    const scaleX = scopeC.width/rect.width;
+    return (clientX-rect.left)*scaleX;
+  }
+  function cursorPixelX(t){
+    const L = layout(scopeC.width, scopeC.height);
+    return PAD_L + (t/runGrid.Ttot)*L.plotW;
+  }
+  function nearestCursor(xPix){
+    const xA = cursorPixelX(cursorStart), xB = cursorPixelX(cursorEnd);
+    const dA = Math.abs(xPix-xA), dB = Math.abs(xPix-xB);
+    const threshold = 10; // canvas px
+    if(dA>threshold && dB>threshold) return null;
+    return dA<=dB ? 'start' : 'end';
+  }
+  function onCursorDown(clientX){
+    if(!runGrid || cursorStart===null) return;
+    dragging = nearestCursor(pixelXFromClient(clientX));
+  }
+  function onCursorMove(clientX){
+    if(!dragging || !runGrid) return;
+    const L = layout(scopeC.width, scopeC.height);
+    let t = ((pixelXFromClient(clientX)-PAD_L)/L.plotW) * runGrid.Ttot;
+    t = Math.max(0, Math.min(runGrid.Ttot, t));
+    const minGap = 0.2; // ms
+    if(dragging==='start') cursorStart = Math.min(t, cursorEnd-minGap);
+    else cursorEnd = Math.max(t, cursorStart+minGap);
+    recomputeAllPoints();
+    redrawScope();
+    updateStats(); // also redraws G-V/Q-V and the stored-average panels
+  }
+  function onCursorUp(){ dragging = null; }
+
+  scopeC.addEventListener('mousedown', (e)=>{ onCursorDown(e.clientX); if(dragging) e.preventDefault(); });
+  window.addEventListener('mousemove', (e)=>{
+    if(dragging){ onCursorMove(e.clientX); return; }
+    // hover affordance
+    if(runGrid && cursorStart!==null){
+      const rect = scopeC.getBoundingClientRect();
+      if(e.clientX>=rect.left && e.clientX<=rect.right && e.clientY>=rect.top && e.clientY<=rect.bottom){
+        scopeC.style.cursor = nearestCursor(pixelXFromClient(e.clientX)) ? 'ew-resize' : 'default';
+      }
+    }
+  });
+  window.addEventListener('mouseup', onCursorUp);
+  scopeC.addEventListener('touchstart', (e)=>{
+    if(e.touches.length){ onCursorDown(e.touches[0].clientX); if(dragging) e.preventDefault(); }
+  }, {passive:false});
+  window.addEventListener('touchmove', (e)=>{
+    if(dragging && e.touches.length){ onCursorMove(e.touches[0].clientX); e.preventDefault(); }
+  }, {passive:false});
+  window.addEventListener('touchend', onCursorUp);
+
+  // ---------- init ----------
+  syncLabels();
+  recomputeScaleRef();
+  redrawScope();
+  redrawCurves();
+  redrawAveragePanels();
+  updateStats();
+  startLoop();
+
+})();
+</script>
+</body>
+</html>
