@@ -7,6 +7,10 @@
 <meta name="description" content="Simulaciones interactivas de electrofisiología y biofísica de membranas del Laboratorio de Neurofisiología, Universidad de Santiago de Chile — herramientas docentes de acceso libre.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="styles.css">
+<style>
+  .card h3 a { color: inherit; text-decoration: none; }
+  .card h3 a:hover { color: var(--trace-dim); text-decoration: underline; }
+</style>
 </head>
 <body>
 
@@ -45,7 +49,7 @@
 <section>
   <div class="wrap">
     <div class="section-head">
-      <p class="eyebrow">Siete simuladores, un mismo hilo conductor</p>
+      <p class="eyebrow">Nueve simuladores, un mismo hilo conductor</p>
       <h2>De la membrana excitable a la plasticidad sináptica</h2>
       <p>Las simulaciones siguen el recorrido clásico de un curso de electrofisiología: primero la generación y propagación del potencial de acción, luego el canal iónico individual que lo hace posible, y finalmente la transmisión sináptica — cuántica, central y plástica, tanto de corto como de largo plazo. Cada simulador corre directamente en el navegador.</p>
     </div>
@@ -54,49 +58,63 @@
 
       <article class="card">
         <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
-        <h3>Potencial de acción del axón gigante de calamar</h3>
+        <h3><a href="simulations/membrane_action_potential.html">Potencial de acción del axón gigante de calamar</a></h3>
         <p>Reconstrucción del modelo de Hodgkin–Huxley: voltage-clamp, potencial de acción de membrana y propagación a lo largo del axón, con gráficos interactivos y tablas de datos exportables.</p>
         <a class="read-more" href="simulations/membrane_action_potential.html">Abrir simulación</a>
       </article>
 
       <article class="card">
         <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
-        <h3>Registro de canal único (patch-clamp)</h3>
+        <h3><a href="simulations/single_channel_recording.html">Registro de canal único (patch-clamp)</a></h3>
         <p>Actividad estocástica de un canal de Na⁺ dependiente de voltaje (esquema C⇌C⇌O→I): trazo individual, barridos múltiples y promedio de ensamble, con cursores para medir el tamaño del salto de corriente.</p>
         <a class="read-more" href="simulations/single_channel_recording.html">Abrir simulación</a>
       </article>
 
       <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
+        <h3><a href="simulations/kv-gating-current-simulator.html">Corrientes de gating del canal de K⁺</a></h3>
+        <p>Simulación en voltage-clamp de las corrientes de gating del canal de K⁺: trazos tipo osciloscopio de I<sub>K</sub> e I<sub>gating</sub>, junto a las curvas G-V y Q-V. Incluye ruido de registro y una opción para promediar múltiples barridos de la corriente de gating.</p>
+        <a class="read-more" href="simulations/kv-gating-current-simulator.html">Abrir simulación</a>
+      </article>
+
+      <article class="card">
         <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
-        <h3>Transmisión cuántica en la unión neuromuscular</h3>
+        <h3><a href="simulations/kv_firing_simulator.html">Conductancias de K⁺ y disparo repetitivo</a></h3>
+        <p>Una membrana de Hodgkin–Huxley bajo un pulso de corriente sostenido, que dispara un tren de potenciales de acción. Permite activar o desactivar de forma independiente el rectificador retardado y una conductancia de K⁺ tipo A (Connor–Stevens), y observar su efecto sobre la forma del espiga, la post-hiperpolarización y la relación f–I.</p>
+        <a class="read-more" href="simulations/kv_firing_simulator.html">Abrir simulación</a>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
+        <h3><a href="simulations/quantal-transmission-simulator.html">Transmisión cuántica en la unión neuromuscular</a></h3>
         <p>Réplica de los experimentos de Katz & Miledi / del Castillo & Katz: potenciales de placa terminal evocados, histograma de amplitudes cuánticas y condición de calcio cero para observar fallos y unidades cuánticas.</p>
         <a class="read-more" href="simulations/quantal-transmission-simulator.html">Abrir simulación</a>
       </article>
 
       <article class="card">
         <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
-        <h3>Sinapsis central — EPSC en voltage-clamp</h3>
+        <h3><a href="simulations/central-synapse-simulator.html">Sinapsis central — EPSC en voltage-clamp</a></h3>
         <p>Corrientes postsinápticas de una sinapsis central con componentes AMPA y NMDA, bloqueo por Mg²⁺ y liberación binomial de bajo N, en un osciloscopio virtual con ruido de registro realista.</p>
         <a class="read-more" href="simulations/central-synapse-simulator.html">Abrir simulación</a>
       </article>
 
       <article class="card">
         <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
-        <h3>Sumación temporal — sinapsis colateral de Schaffer → CA1</h3>
+        <h3><a href="simulations/sc_ca1_temporal_summation_simulator.html">Sumación temporal — sinapsis colateral de Schaffer → CA1</a></h3>
         <p>Osciloscopio de tres canales — potencial de acción presináptico, Ca²⁺ intracelular presináptico y EPSP/fEPSP postsináptico — que muestra la facilitación de corto plazo durante trenes de pulsos. Control de número de pulsos, frecuencia y constante de tiempo postsináptica (τ).</p>
         <a class="read-more" href="simulations/sc_ca1_temporal_summation_simulator.html">Abrir simulación</a>
       </article>
 
       <article class="card">
         <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
-        <h3>Potenciación a largo plazo (LTP) — colaterales de Schaffer → CA1</h3>
+        <h3><a href="simulations/sc_ca1_ltp_simulator.html">Potenciación a largo plazo (LTP) — colaterales de Schaffer → CA1</a></h3>
         <p>Inducción de LTP en el stratum radiatum mediante tetanización, TBS o pareamiento de baja frecuencia, con lectura en pendiente de fEPSP o amplitud de EPSC y control de la coincidencia NMDA/Mg²⁺.</p>
         <a class="read-more" href="simulations/sc_ca1_ltp_simulator.html">Abrir simulación</a>
       </article>
 
       <article class="card">
         <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
-        <h3>Potenciación a largo plazo (LTP) — vía perforante → giro dentado</h3>
+        <h3><a href="simulations/pp_dg_ltp_simulator.html">Potenciación a largo plazo (LTP) — vía perforante → giro dentado</a></h3>
         <p>LTP en la sinapsis vía perforante–giro dentado, donde la fuerte inhibición GABAérgica feedforward de las células granulares dificulta la inducción. Protocolo de 4 trenes de 100 pulsos en 1 segundo, separados por 5 minutos.</p>
         <a class="read-more" href="simulations/pp_dg_ltp_simulator.html">Abrir simulación</a>
       </article>
