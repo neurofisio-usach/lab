@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perforant Path → Dentate Gyrus LTP Simulator</title>
+<style>
+  :root{
+    --bg: #14171a;
+    --panel: #1c2024;
+    --panel-border: #2a2f34;
+    --scope-bg: #0a0e0c;
+    --scope-grid: #1d2b22;
+    --text: #e8e6e1;
+    --text-dim: #9aa0a6;
+    --amber: #f0a860;
+    --amber-dim: #7a5a37;
+    --green: #52e07a;
+    --green-dim: #2f6b45;
+    --gray-trace: #6b7078;
+    --red: #e0605a;
+    --teal: #4fc3c7;
+    --teal-dim: #2e6b6e;
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  .rig{
+    max-width:1280px; margin:0 auto; padding:20px 20px 40px;
+  }
+  header{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:1px solid var(--panel-border); padding-bottom:14px; margin-bottom:18px;
+    flex-wrap:wrap; gap:8px;
+  }
+  header h1{
+    font-size:1.15rem; font-weight:600; letter-spacing:.2px; margin:0; color:var(--text);
+  }
+  header h1 span{ color:var(--amber); }
+  header .sub{
+    font-family:var(--mono); font-size:.72rem; color:var(--text-dim);
+  }
+  .layout{
+    display:grid; grid-template-columns:300px 1fr; gap:18px;
+  }
+  @media (max-width:880px){
+    .layout{ grid-template-columns:1fr; }
+  }
+  .panel{
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:6px;
+    padding:16px;
+  }
+  .panel + .panel{ margin-top:18px; }
+  .panel h2{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:1.2px; font-weight:600;
+    color:var(--text-dim); margin:0 0 12px; font-family:var(--mono);
+  }
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:.78rem; color:var(--text); margin-bottom:6px; font-weight:500;
+  }
+  .field .help{
+    font-size:.7rem; color:var(--text-dim); margin-top:5px; line-height:1.4;
+  }
+  select, .btn{
+    width:100%; padding:9px 10px; border-radius:4px; border:1px solid var(--panel-border);
+    background:#121517; color:var(--text); font-family:var(--sans); font-size:.82rem;
+    cursor:pointer;
+  }
+  select:focus, .btn:focus{ outline:2px solid var(--amber); outline-offset:1px; }
+  .btn{
+    background:#23282c; border:1px solid #333a40; font-weight:600; margin-top:8px;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .btn:hover:not(:disabled){ background:#2b3136; border-color:var(--amber-dim); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.primary{ background:var(--amber-dim); border-color:var(--amber); color:#1a140c; }
+  .btn.primary:hover:not(:disabled){ background:var(--amber); }
+  .checkrow{
+    display:flex; align-items:center; gap:9px; padding:9px 10px; background:#121517;
+    border:1px solid var(--panel-border); border-radius:4px; cursor:pointer;
+  }
+  .checkrow input{ width:16px; height:16px; accent-color:var(--red); cursor:pointer; }
+  .checkrow.active{ border-color:var(--red); background:#2a1717; }
+  .checkrow.teal input{ accent-color:var(--teal); }
+  .checkrow.teal.active{ border-color:var(--teal); background:#132625; }
+  .checkrow span{ font-size:.78rem; }
+  .slider-row{
+    display:flex; align-items:center; gap:10px;
+  }
+  input[type=range]{
+    flex:1; -webkit-appearance:none; height:4px; background:#333a40; border-radius:2px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--amber); border:2px solid #1a140c; cursor:pointer; margin-top:-1px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%; background:var(--amber); border:2px solid #1a140c; cursor:pointer;
+  }
+  input[type=range].teal-thumb::-webkit-slider-thumb{ background:var(--teal); }
+  input[type=range].teal-thumb::-moz-range-thumb{ background:var(--teal); }
+  input[type=range]:disabled{ opacity:.4; }
+  .slider-val{
+    font-family:var(--mono); font-size:.82rem; color:var(--amber); min-width:56px; text-align:right;
+  }
+  .slider-val.teal{ color:var(--teal); }
+  .slider-scale{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.62rem;
+    color:var(--text-dim); margin-top:4px;
+  }
+  .readout-toggle{
+    display:flex; border:1px solid var(--panel-border); border-radius:4px; overflow:hidden;
+  }
+  .readout-toggle button{
+    flex:1; padding:8px 6px; background:#121517; color:var(--text-dim); border:none;
+    font-family:var(--sans); font-size:.76rem; font-weight:600; cursor:pointer;
+  }
+  .readout-toggle button.sel{ background:var(--green-dim); color:#eafff0; }
+
+  /* mechanism gauges */
+  .gauges{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  @media (max-width:600px){ .gauges{ grid-template-columns:1fr; } }
+  .gauge-label{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.68rem;
+    color:var(--text-dim); margin-bottom:5px; gap:6px;
+  }
+  .gauge-label b{ color:var(--text); font-weight:600; white-space:nowrap; }
+  .gauge-track{
+    height:10px; background:var(--scope-bg); border:1px solid var(--panel-border); border-radius:5px;
+    overflow:hidden;
+  }
+  .gauge-fill{
+    height:100%; width:0%; transition:width .25s ease;
+  }
+  .gauge-fill.mg{ background:linear-gradient(90deg, #2f6b45, var(--green)); }
+  .gauge-fill.ca{ background:linear-gradient(90deg, #7a5a37, var(--amber)); }
+  .gauge-fill.gaba{ background:linear-gradient(90deg, var(--teal-dim), var(--teal)); }
+
+  /* scope canvases */
+  .scope-wrap{ position:relative; }
+  canvas{ display:block; width:100%; background:var(--scope-bg); border-radius:4px; }
+  .scope-caption{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.66rem;
+    color:var(--text-dim); margin-top:8px;
+  }
+  .trace-legend{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .trace-legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+
+  .status-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-top:14px;
+  }
+  .stat{
+    background:var(--scope-bg); border:1px solid var(--panel-border); border-radius:4px; padding:10px 12px;
+  }
+  .stat .k{ font-size:.64rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.6px; font-family:var(--mono); }
+  .stat .v{ font-family:var(--mono); font-size:1.05rem; color:var(--text); margin-top:3px; }
+  .stat .v.good{ color:var(--green); }
+  .stat .v.bad{ color:var(--red); }
+  .msg{
+    font-size:.78rem; line-height:1.5; color:var(--text-dim); margin-top:12px; padding-top:12px;
+    border-top:1px dashed var(--panel-border);
+  }
+  .msg b{ color:var(--text); }
+  footer{
+    margin-top:22px; font-size:.68rem; color:var(--text-dim); line-height:1.6; font-family:var(--sans);
+  }
+</style>
+</head>
+<body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+.rig{max-width:none;padding-left:28px;padding-right:28px}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
+<div class="rig">
+  <header>
+    <h1>Perforant path → dentate gyrus <span>LTP simulator</span></h1>
+    <div class="sub">molecular layer · extracellular / voltage-clamp teaching model</div>
+  </header>
+
+  <div class="layout">
+    <!-- CONTROLS -->
+    <div>
+      <div class="panel">
+        <h2>Readout</h2>
+        <div class="readout-toggle">
+          <button id="btnReadoutFEPSP" class="sel">fEPSP slope</button>
+          <button id="btnReadoutEPSC">EPSC amplitude</button>
+        </div>
+        <div class="field" style="margin-top:14px; margin-bottom:0;">
+          <div class="help">Both windows track the same underlying change in synaptic strength; this switches units and the sample trace shape only.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Induction protocol</h2>
+        <div class="field" style="margin-bottom:10px;">
+          <select id="protocolSelect">
+            <option value="weak">Weak tetanus (1×, 1 s)</option>
+            <option value="hfs1x">1× HFS (100 Hz, 1 s)</option>
+            <option value="tbs">Theta-burst stimulation (TBS)</option>
+            <option value="dg" selected>DG tetanus (4×100 Hz/1 s, 5 min ITI)</option>
+          </select>
+          <div class="help" id="protocolProbNote" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="field">
+          <label for="depolSlider">Postsynaptic holding potential during induction</label>
+          <div class="slider-row">
+            <input type="range" id="depolSlider" min="-70" max="0" value="-20" step="1">
+            <span class="slider-val" id="depolVal">−20 mV</span>
+          </div>
+          <div class="slider-scale"><span>−70 mV (rest)</span><span>0 mV</span></div>
+          <div class="help">Sets granule-cell depolarization directly, decoupled from the presynaptic pattern above, so you can probe NMDAR coincidence detection on its own — before feedforward inhibition is subtracted from it.</div>
+        </div>
+
+        <label class="checkrow" id="apvRow">
+          <input type="checkbox" id="apvToggle">
+          <span>Block NMDARs (D-APV)</span>
+        </label>
+
+        <label class="checkrow" id="cnqxRow" style="margin-top:8px;">
+          <input type="checkbox" id="cnqxToggle">
+          <span>Block AMPA/kainate receptors (CNQX)</span>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h2>Feedforward inhibition (GABA<sub>A</sub>)</h2>
+        <div class="field">
+          <label for="gabaSlider">Feedforward GABA<sub>A</sub> strength</label>
+          <div class="slider-row">
+            <input type="range" id="gabaSlider" class="teal-thumb" min="0" max="100" value="65" step="1">
+            <span class="slider-val teal" id="gabaVal">65%</span>
+          </div>
+          <div class="slider-scale"><span>0% (disinhibited)</span><span>100% (max shunt)</span></div>
+          <div class="help">Perforant-path pulses drive feedforward interneurons disynaptically, shunting granule-cell depolarization before it can relieve the NMDAR Mg²⁺ block. This is why LTP here is harder to obtain than at Schaffer collateral→CA1.</div>
+        </div>
+
+        <label class="checkrow teal" id="gabaBlockRow">
+          <input type="checkbox" id="gabaBlockToggle">
+          <span>Block GABA<sub>A</sub> receptors (picrotoxin / bicuculline)</span>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h2>Run</h2>
+        <button class="btn primary" id="btnBaseline">Run baseline</button>
+        <button class="btn" id="btnInduce" disabled>Induce LTP</button>
+        <button class="btn" id="btnReset">Reset experiment</button>
+      </div>
+    </div>
+
+    <!-- MAIN DISPLAY -->
+    <div>
+      <div class="panel">
+        <h2>NMDAR coincidence detection vs. feedforward shunt</h2>
+        <div class="gauges">
+          <div>
+            <div class="gauge-label"><span>Mg²⁺ block relieved</span><b id="mgVal">—</b></div>
+            <div class="gauge-track"><div class="gauge-fill mg" id="mgFill"></div></div>
+          </div>
+          <div>
+            <div class="gauge-label"><span>GABA<sub>A</sub> shunt (train 1)</span><b id="gabaShuntVal">—</b></div>
+            <div class="gauge-track"><div class="gauge-fill gaba" id="gabaShuntFill"></div></div>
+          </div>
+          <div>
+            <div class="gauge-label"><span>NMDAR Ca²⁺ influx (last induction)</span><b id="caVal">—</b></div>
+            <div class="gauge-track"><div class="gauge-fill ca" id="caFill"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Time course — % baseline response</h2>
+        <div class="scope-wrap">
+          <canvas id="stripChart" height="260"></canvas>
+        </div>
+        <div class="scope-caption">
+          <span>t = simulated recording time (min)</span>
+          <span id="stripReadoutLabel">fEPSP slope, mV/ms</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Sample trace</h2>
+        <div class="scope-wrap">
+          <canvas id="traceScope" height="170"></canvas>
+        </div>
+        <div class="scope-caption">
+          <div class="trace-legend">
+            <span><i class="dot" style="background:var(--gray-trace)"></i>baseline</span>
+            <span><i class="dot" style="background:var(--green)"></i>current</span>
+            <span><i class="dot" style="background:var(--amber)"></i>stimulus</span>
+          </div>
+          <span id="traceUnitLabel">inward current</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button class="btn" id="btnToggleTable" style="margin-top:0;">Show data table</button>
+          <button class="btn" id="btnCopyTable" style="margin-top:0;" disabled>Copy table</button>
+        </div>
+        <div id="dataTableWrap" style="display:none; margin-top:12px; max-height:280px; overflow:auto; border:1px solid var(--panel-border); border-radius:4px;">
+          <table id="dataTable" style="width:100%; border-collapse:collapse; font-family:var(--mono); font-size:.72rem;">
+            <thead>
+              <tr style="position:sticky; top:0; background:#121517;">
+                <th style="text-align:left; padding:6px 10px; border-bottom:1px solid var(--panel-border); color:var(--text-dim);">t (min)</th>
+                <th style="text-align:right; padding:6px 10px; border-bottom:1px solid var(--panel-border); color:var(--text-dim);">% baseline</th>
+                <th id="dataTableUnitHeader" style="text-align:right; padding:6px 10px; border-bottom:1px solid var(--panel-border); color:var(--text-dim);">fEPSP slope (mV/ms)</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Session status</h2>
+        <div class="status-grid">
+          <div class="stat"><div class="k">Protocol run</div><div class="v" id="statProtocol">none yet</div></div>
+          <div class="stat"><div class="k">APV present</div><div class="v" id="statAPV">no</div></div>
+          <div class="stat"><div class="k">GABA<sub>A</sub> strength</div><div class="v" id="statGABA">65% (intact)</div></div>
+          <div class="stat"><div class="k">Holding potential</div><div class="v" id="statVm">−20 mV</div></div>
+          <div class="stat"><div class="k">Current response</div><div class="v" id="statPct">100 %</div></div>
+          <div class="stat" id="statTrialsWrap" style="display:none;"><div class="k">Trials (this protocol)</div><div class="v" id="statTrials">—</div></div>
+        </div>
+        <div class="msg" id="statusMsg">Run a baseline, choose a protocol, then induce LTP.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Teaching model, not a quantitative fit to published data. Mg²⁺-block relief follows the Jahr &amp; Stevens (1990) voltage dependence; feedforward GABA<sub>A</sub> inhibition is modeled as a per-train shunt subtracted from postsynaptic depolarization before that relief is computed, with the shunt depressing across pulses within a train and a cumulative "priming" term across widely-spaced trains — a simplification standing in for the mix of presynaptic depression and postsynaptic/metaplastic mechanisms that let repeated spaced trains (e.g. 4×100 Hz/1 s, 5 min apart) overcome inhibition where a single train fails. LTP magnitude and persistence are simplified functions of the resulting accumulated NMDAR Ca²⁺ signal, gated by presynaptic drive, holding potential, GABA<sub>A</sub> strength, and NMDAR availability (APV). For TBS and 1× HFS, that deterministic signal only sets whether LTP is possible in principle; on top of it, each induction is an independent ~30% coin flip standing in for slice-to-slice variability, matching the empirical observation that only a minority of slices show lasting LTP with these single-induction protocols. The 4× spaced DG tetanus is treated as reliable, consistent with it being the standard protocol used specifically because it reliably overcomes this variability.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  const state = {
+    readout: 'fepsp',           // 'fepsp' | 'epsc'
+    protocol: 'dg',
+    apv: false,
+    cnqx: false,
+    vm: -20,                    // mV, postsynaptic holding potential during induction
+    gaba: 0.65,                 // 0..1, feedforward GABA-A strength
+    gabaBlocked: false,         // picrotoxin / bicuculline
+    phase: 'idle',              // idle | baseline | ready | stimulating | monitoring | done
+    points: [],                 // {t, pct}
+    lastMgUnblock: null,
+    lastCaSignal: null,
+    plateauPct: 100,
+    peakPct: 100,
+    decayTau: 7,                // min
+    inductionTimes: [],         // real-experiment minute of each train delivered
+    animTimer: null,
+    noiseSeed: Math.random(),
+    stimPlan: null,
+    stimTrainIdx: 0,
+    stimLocalElapsed: 0,
+    currentTrainIdx: 0,
+    stimRAF: null,
+    stimStartTs: null,
+    showTable: false,
+    viewTMax: 62,                // strip-chart right edge, extended for multi-train protocols
+    lastTrialSuccess: null,      // null | true | false — outcome of the last probabilistic induction
+    trialStats: { tbs:{intact:{n:0,s:0}, blocked:{n:0,s:0}}, hfs1x:{intact:{n:0,s:0}, blocked:{n:0,s:0}} }
+  };
+
+  const BASELINE_ABS = { fepsp: 0.27, epsc: 80 }; // mV/ms ; pA (magnitude)
+  const GABA_SHUNT_MV = 32; // max mV-equivalent shunt at 100% GABA-A strength, train 1
+
+  // ---------- DOM ----------
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    btnFEPSP: $('btnReadoutFEPSP'), btnEPSC: $('btnReadoutEPSC'),
+    protocolSelect: $('protocolSelect'),
+    depolSlider: $('depolSlider'), depolVal: $('depolVal'),
+    apvToggle: $('apvToggle'), apvRow: $('apvRow'),
+    cnqxToggle: $('cnqxToggle'), cnqxRow: $('cnqxRow'),
+    gabaSlider: $('gabaSlider'), gabaVal: $('gabaVal'),
+    gabaBlockToggle: $('gabaBlockToggle'), gabaBlockRow: $('gabaBlockRow'),
+    btnBaseline: $('btnBaseline'), btnInduce: $('btnInduce'), btnReset: $('btnReset'),
+    btnToggleTable: $('btnToggleTable'), dataTableWrap: $('dataTableWrap'),
+    btnCopyTable: $('btnCopyTable'),
+    dataTableBody: $('dataTableBody'), dataTableUnitHeader: $('dataTableUnitHeader'),
+    mgVal: $('mgVal'), mgFill: $('mgFill'),
+    gabaShuntVal: $('gabaShuntVal'), gabaShuntFill: $('gabaShuntFill'),
+    caVal: $('caVal'), caFill: $('caFill'),
+    stripChart: $('stripChart'), stripReadoutLabel: $('stripReadoutLabel'),
+    traceScope: $('traceScope'), traceUnitLabel: $('traceUnitLabel'),
+    statProtocol: $('statProtocol'), statAPV: $('statAPV'), statGABA: $('statGABA'),
+    statVm: $('statVm'), statPct: $('statPct'),
+    statTrials: $('statTrials'), statTrialsWrap: $('statTrialsWrap'),
+    protocolProbNote: $('protocolProbNote'),
+    statusMsg: $('statusMsg')
+  };
+
+  // ---------- helpers ----------
+  function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+  function rnd(seedShift){
+    return (Math.sin((state.points.length + seedShift + state.noiseSeed*1000) * 12.9898) * 43758.5453) % 1;
+  }
+  function noise(amp, shift){
+    const r = Math.abs(rnd(shift || 0));
+    return (r - 0.5) * 2 * amp;
+  }
+
+  // Jahr & Stevens (1990)-style Mg2+ block relief, [Mg2+]o = 1 mM assumed
+  function mgUnblockFraction(vmMv){
+    const mg = 1.0;
+    const denom = 1 + (mg/3.57) * Math.exp(-0.062 * vmMv);
+    return 1/denom;
+  }
+
+  // Feedforward GABA-A shunt depresses across trains: train 1 near-full
+  // strength, later trains progressively weaker (short-term depression of
+  // the interneuron synapse plus postsynaptic/metaplastic priming) — the
+  // mechanism that lets repeated spaced trains win where one fails.
+  function gabaDepressionFactor(trainIdx){
+    return Math.max(0.30, 1 - 0.22*trainIdx);
+  }
+  function gabaPrimingBoost(trainIdx){
+    return 1 + 0.15*trainIdx;
+  }
+  function effectiveGaba(){
+    return state.gabaBlocked ? 0 : state.gaba;
+  }
+  // Picrotoxin/bicuculline doesn't just change the deterministic Ca signal —
+  // it also raises how often a single-induction protocol "takes" at all,
+  // matching the empirical jump in success rate with GABA-A blocked.
+  function currentSuccessRate(def){
+    if(!def.probabilistic) return null;
+    return state.gabaBlocked ? def.successRateGabaBlocked : def.successRate;
+  }
+
+  function protocolDef(protocol){
+    switch(protocol){
+      case 'weak':  return { drive:0.45, efficiency:1.0,  nTrains:1, persistence:'early', trainOffsetsMin:[0] };
+      case 'hfs1x': return { drive:1.0,  efficiency:1.0,  nTrains:1, persistence:'late',  trainOffsetsMin:[0], probabilistic:true, successRate:0.30, successRateGabaBlocked:0.80 };
+      case 'tbs':   return { drive:0.85, efficiency:1.35, nTrains:1, persistence:'late',  trainOffsetsMin:[0], probabilistic:true, successRate:0.30, successRateGabaBlocked:0.80 };
+      case 'dg':    return { drive:1.0,  efficiency:1.0,  nTrains:4, persistence:'late',  trainOffsetsMin:[0,5,10,15] };
+      default:      return { drive:1.0,  efficiency:1.0,  nTrains:1, persistence:'early', trainOffsetsMin:[0] };
+    }
+  }
+
+  function protocolLabel(p){
+    return {
+      weak:'Weak tetanus (1×, 1 s)',
+      hfs1x:'1× HFS (100 Hz, 1 s)',
+      tbs:'Theta-burst stimulation',
+      dg:'DG tetanus (4×100 Hz/1 s, 5 min ITI)'
+    }[p];
+  }
+
+  // fEPSP slope / EPSC amplitude are themselves AMPAR-mediated fast currents,
+  // so CNQX collapses what's visible — except in EPSC mode it unmasks the
+  // NMDAR current, which scales with the same Mg2+-unblock/APV state.
+  function cnqxFactor(){
+    if(!state.cnqx) return 1;
+    if(state.readout === 'fepsp') return 0.04;
+    const unblock = mgUnblockFraction(state.vm) * (state.apv ? 0.04 : 1);
+    return Math.max(0.02, 0.55 * unblock);
+  }
+  function displayPct(rawPct){
+    return rawPct * cnqxFactor();
+  }
+
+  // ---------- rendering: strip chart ----------
+  function drawGrid(ctx, w, h, rows, cols){
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--scope-grid');
+    ctx.lineWidth = 1;
+    for(let i=1;i<cols;i++){
+      const x = Math.round(i*w/cols)+0.5;
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+    }
+    for(let j=1;j<rows;j++){
+      const y = Math.round(j*h/rows)+0.5;
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+    }
+  }
+
+  function niceStep(span){
+    const candidates = [5,10,20,25,50,100,200,250,500];
+    for(const c of candidates){ if(span/c <= 7) return c; }
+    return 500;
+  }
+
+  function computeYRange(){
+    let minV = 100, maxV = 100;
+    state.points.forEach(p=>{
+      const d = displayPct(p.pct);
+      minV = Math.min(minV, d);
+      maxV = Math.max(maxV, d);
+    });
+    const span0 = Math.max(maxV - minV, 20);
+    const step = niceStep(span0 * 1.25);
+    let yMin = Math.floor((minV - span0*0.15) / step) * step;
+    let yMax = Math.ceil((maxV + span0*0.15) / step) * step;
+    yMin = Math.max(yMin, 0);
+    if(yMax - yMin < step*3) yMax = yMin + step*3;
+    return { yMin, yMax, step };
+  }
+
+  function drawStripChart(){
+    const canvas = el.stripChart;
+    const w = canvas.clientWidth || 600;
+    const h = canvas.height;
+    canvas.width = w * (window.devicePixelRatio||1);
+    canvas.style.height = h+'px';
+    const dpr = window.devicePixelRatio||1;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+
+    drawGrid(ctx, w, h, 6, 10);
+
+    const padL = 46, padR = 14, padT = 14, padB = 22;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+
+    const { yMin, yMax, step } = computeYRange();
+    const tMin = -12, tMax = state.viewTMax;
+
+    function xOf(t){ return padL + ( (t - tMin) / (tMax - tMin) ) * plotW; }
+    function yOf(pct){ return padT + (1 - (pct - yMin)/(yMax - yMin)) * plotH; }
+
+    ctx.fillStyle = '#9aa0a6';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for(let v=yMin; v<=yMax+0.001; v+=step){
+      const y = yOf(v);
+      ctx.fillText(Math.round(v)+'%', padL-6, y+3);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+    }
+    ctx.textAlign = 'center';
+    const tickStep = (tMax - tMin) > 75 ? 15 : 10;
+    for(let v=Math.ceil(tMin/tickStep)*tickStep; v<=tMax; v+=tickStep){
+      ctx.fillText(String(v), xOf(v), h-6);
+    }
+
+    if(yOf(100) >= padT && yOf(100) <= h-padB){
+      ctx.strokeStyle = '#3a4148';
+      ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(padL, yOf(100)); ctx.lineTo(w-padR, yOf(100)); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // induction marker(s) — one per train delivered so far
+    state.inductionTimes.forEach((it, idx)=>{
+      const ix = xOf(it);
+      ctx.strokeStyle = '#e0605a';
+      ctx.beginPath(); ctx.moveTo(ix, padT); ctx.lineTo(ix, h-padB); ctx.stroke();
+      ctx.fillStyle = '#e0605a';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'left';
+      const label = state.inductionTimes.length > 1 ? 'train '+(idx+1) : 'induction';
+      ctx.fillText(label, ix+3, padT+10+((idx%2)*10));
+    });
+
+    if(state.points.length){
+      ctx.strokeStyle = '#52e07a';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      state.points.forEach((p,i)=>{
+        const x = xOf(p.t), y = yOf(clamp(displayPct(p.pct),yMin,yMax));
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+
+      const lastInductionT = state.inductionTimes.length ? state.inductionTimes[state.inductionTimes.length-1] : 9999;
+      state.points.forEach(p=>{
+        const x = xOf(p.t), y = yOf(clamp(displayPct(p.pct),yMin,yMax));
+        ctx.fillStyle = p.t < lastInductionT ? '#6b7078' : '#52e07a';
+        ctx.beginPath(); ctx.arc(x,y,2.4,0,Math.PI*2); ctx.fill();
+      });
+    }
+  }
+
+  // ---------- rendering: sample trace ----------
+  const TRACE_N = 180;
+  let traceDrawCount = 0;
+
+  function tracePRNG(seed){
+    const x = Math.sin(seed*12.9898 + 78.233 + traceDrawCount*37.719 + state.noiseSeed*911) * 43758.5453;
+    return x - Math.floor(x);
+  }
+  function traceNoise(seed, amp){
+    return (tracePRNG(seed) - 0.5) * 2 * amp;
+  }
+  function gaussianBump(u, mu, sigma){
+    return Math.exp(-((u-mu)*(u-mu)) / (2*sigma*sigma));
+  }
+  function alphaShape(t, tauRise, tauDecay){
+    if(t <= 0) return 0;
+    const raw = Math.exp(-t/tauDecay) - Math.exp(-t/tauRise);
+    const tPeak = (tauRise*tauDecay/(tauDecay-tauRise)) * Math.log(tauDecay/tauRise);
+    const peakVal = Math.exp(-tPeak/tauDecay) - Math.exp(-tPeak/tauRise);
+    return raw / peakVal;
+  }
+
+  function fepspShape(u){
+    const fv = gaussianBump(u, 0.30, 0.010) * 0.16;
+    const riseStart = 0.335;
+    const main = u > riseStart ? alphaShape(u - riseStart, 0.030, 0.11) : 0;
+    return fv + main;
+  }
+  function epscShape(u){
+    const riseStart = 0.28;
+    return u > riseStart ? alphaShape(u - riseStart, 0.012, 0.085) : 0;
+  }
+  function nmdaShape(u){
+    const riseStart = 0.28;
+    return u > riseStart ? alphaShape(u - riseStart, 0.05, 0.85) : 0;
+  }
+  const FEPSP_SHAPE_MAX = (()=>{ let m=0; for(let i=0;i<=400;i++) m=Math.max(m, fepspShape(i/400)); return m; })();
+  const EPSC_SHAPE_MAX  = (()=>{ let m=0; for(let i=0;i<=400;i++) m=Math.max(m, epscShape(i/400));  return m; })();
+  const NMDA_SHAPE_MAX  = (()=>{ let m=0; for(let i=0;i<=400;i++) m=Math.max(m, nmdaShape(i/400));  return m; })();
+
+  function drawSampledTrace(ctx, xToPx, w, h, baseY, scale, color, lw, shapeFn, ampFrac, noisePx, seedOffset, revealFrac){
+    const ampPx = h * ampFrac * scale;
+    const reveal = revealFrac===undefined ? 1 : revealFrac;
+    ctx.strokeStyle = color; ctx.lineWidth = lw;
+    ctx.beginPath();
+    const nMax = Math.max(2, Math.round(TRACE_N * reveal));
+    for(let i=0; i<=nMax; i++){
+      const u = i/TRACE_N;
+      const x = xToPx(u);
+      let y = baseY + shapeFn(u)*ampPx;
+      y += traceNoise(i+seedOffset, noisePx);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  function sweepMs(){ return state.readout === 'fepsp' ? 24 : 60; }
+  const STIM_U = 0.26;
+
+  function drawTimeAxis(ctx, w, h, padL, padR, padB, totalMs, nLabels){
+    const plotW = w - padL - padR;
+    ctx.font = '9px monospace';
+    ctx.fillStyle = '#8a9096';
+    ctx.textAlign = 'center';
+    const n = nLabels || 6;
+    for(let i=0;i<=n;i++){
+      const frac = i/n;
+      const x = padL + frac*plotW;
+      const ms = frac*totalMs;
+      ctx.strokeStyle = '#3a4148';
+      ctx.beginPath(); ctx.moveTo(x, h-padB); ctx.lineTo(x, h-padB+4); ctx.stroke();
+      ctx.fillText(ms<10 ? ms.toFixed(1) : Math.round(ms), x, h-padB+14);
+    }
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#6b7078';
+    ctx.fillText('ms', w-padR-2, h-padB+14);
+  }
+
+  function drawStimMarker(ctx, x, padTop, plotBottom, label){
+    ctx.strokeStyle = '#f0a860';
+    ctx.setLineDash([2,2]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, padTop); ctx.lineTo(x, plotBottom); ctx.stroke();
+    ctx.setLineDash([]);
+    if(label !== false){
+      ctx.fillStyle = '#f0a860';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('stim', x+3, padTop+9);
+    }
+  }
+
+  function drawTrace(){
+    const canvas = el.traceScope;
+    const w = canvas.clientWidth || 600;
+    const h = canvas.height;
+    canvas.width = w * (window.devicePixelRatio||1);
+    const dpr = window.devicePixelRatio||1;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    drawGrid(ctx, w, h, 4, 12);
+    traceDrawCount++;
+
+    const padL = 8, padR = 8, padB = 20, padTop = 8;
+    const baseY = padTop + (h-padTop-padB)*0.18;
+
+    if(state.phase === 'stimulating' && state.stimPlan){
+      renderStimFrame(ctx, w, h, padL, padR, padB, padTop, baseY, state.stimPlan, state.stimTrainIdx, state.stimLocalElapsed);
+      return;
+    }
+
+    const xToPx = (u) => padL + u*(w-padL-padR);
+    const currentPct = state.points.length ? state.points[state.points.length-1].pct : 100;
+    const scale = displayPct(currentPct)/100;
+    const sms = sweepMs();
+
+    const baselineShapeFn = state.readout === 'fepsp' ? fepspShape : epscShape;
+    const baselineShapeMax = state.readout === 'fepsp' ? FEPSP_SHAPE_MAX : EPSC_SHAPE_MAX;
+    const isolatingNmda = state.cnqx && state.readout === 'epsc';
+    const currentShapeFn = isolatingNmda ? nmdaShape : baselineShapeFn;
+    const currentShapeMax = isolatingNmda ? NMDA_SHAPE_MAX : baselineShapeMax;
+    const ampFrac = state.readout === 'fepsp' ? 0.34 : 0.36;
+    const noisePx = state.readout === 'fepsp' ? 2.2 : 2.4;
+
+    const showBaselineRef = !state.cnqx;
+
+    const availableDownPx = (h-padB) - baseY;
+    const neededPx = Math.max(
+      showBaselineRef ? baselineShapeMax * ampFrac * h * 1.0 : 0,
+      currentShapeMax * ampFrac * h * Math.max(scale, 0.001)
+    );
+    const gain = neededPx > availableDownPx*0.94 ? (availableDownPx*0.94)/neededPx : 1;
+
+    if(showBaselineRef){
+      drawSampledTrace(ctx, xToPx, w, h, baseY, 1.0*gain, '#6b7078', 1.1, baselineShapeFn, ampFrac, noisePx, 0);
+    }
+    drawSampledTrace(ctx, xToPx, w, h, baseY, scale*gain, '#52e07a', 1.7, currentShapeFn, ampFrac, noisePx, 500);
+
+    drawStimMarker(ctx, xToPx(STIM_U), padTop, h-padB);
+    drawTimeAxis(ctx, w, h, padL, padR, padB, sms, 6);
+
+    ctx.fillStyle = '#6b7078';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(gain < 0.98 ? 'gain ×'+gain.toFixed(2)+' (auto-ranged)' : '', w-8, padTop+9);
+
+    if(isolatingNmda){
+      el.traceUnitLabel.textContent = 'isolated slow NMDAR current';
+    } else if(state.cnqx){
+      el.traceUnitLabel.textContent = 'AMPA blocked — no resolvable fEPSP';
+    } else {
+      el.traceUnitLabel.textContent = state.readout === 'fepsp' ? 'descending slope shown' : 'inward current';
+    }
+  }
+
+  // ---------- raw stimulation-train rendering (during induction) ----------
+  const STIM_GAP_MS = 90;
+
+  function stimPlan(protocol){
+    switch(protocol){
+      case 'weak':  return { mode:'continuous', totalMs:500, freqHz:50 };
+      case 'hfs1x': return { mode:'continuous', totalMs:1000, freqHz:100 };
+      case 'tbs':   return { mode:'multi', trainMs:500, nTrains:6, burstFreqHz:100, pulsesPerBurst:4, burstPeriodMs:200 };
+      case 'dg':    return { mode:'continuous', totalMs:1000, freqHz:100 }; // ONE HFS train; the 4 trains + real 5-min gaps are orchestrated outside
+      default:      return { mode:'continuous', totalMs:1000, freqHz:100 };
+    }
+  }
+
+  function getPulseTimes(plan){
+    const times = [];
+    if(plan.mode === 'continuous'){
+      const period = 1000/plan.freqHz;
+      for(let t=0; t<plan.totalMs; t+=period) times.push(t);
+    } else if(plan.burstPeriodMs){
+      for(let b=0; b*plan.burstPeriodMs < plan.trainMs; b++){
+        const burstStart = b*plan.burstPeriodMs;
+        for(let p=0;p<plan.pulsesPerBurst;p++){
+          const t = burstStart + p*(1000/plan.burstFreqHz);
+          if(t < plan.trainMs) times.push(t);
+        }
+      }
+    } else {
+      const period = 1000/(plan.freqHz||100);
+      for(let t=0; t<plan.trainMs; t+=period) times.push(t);
+    }
+    return times;
+  }
+
+  function renderStimFrame(ctx, w, h, padL, padR, padB, padTop, baseY, plan, trainIdx, localElapsed){
+    const windowMs = plan.mode === 'continuous' ? plan.totalMs : plan.trainMs;
+    const xToPx = (ms) => padL + (ms/windowMs)*(w-padL-padR);
+    const inGap = plan.mode !== 'continuous' && localElapsed > plan.trainMs;
+
+    drawTimeAxis(ctx, w, h, padL, padR, padB, windowMs, 5);
+
+    const gaba = effectiveGaba();
+    const depression = gabaDepressionFactor(trainIdx);
+    const shuntFrac = gaba * depression; // 0..1, how much this train is being shunted
+
+    if(inGap){
+      ctx.fillStyle = '#9aa0a6';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('· · ·  advancing  · · ·', w/2, baseY+4);
+    } else {
+      const pulses = getPulseTimes(plan);
+      const elapsed = Math.min(localElapsed, windowMs);
+
+      const shapeFn = state.readout === 'fepsp' ? fepspShape : epscShape;
+      const shapeMax = state.readout === 'fepsp' ? FEPSP_SHAPE_MAX : EPSC_SHAPE_MAX;
+      const kernelMs = sweepMs();
+      const ampFrac = state.readout === 'fepsp' ? 0.34 : 0.36;
+      const ampaFactor = cnqxFactor();
+      const satMax = 2.4;
+
+      const availableDownPx = (h-padB) - baseY;
+      const neededPx = shapeMax * ampFrac * h * satMax * ampaFactor;
+      const gain = neededPx > availableDownPx*0.94 ? (availableDownPx*0.94)/neededPx : 1;
+      const gabaAttenuation = 1 - shuntFrac*0.82; // GABA-A knocks the visible summation down, less so on later trains
+      const ampPx = h * ampFrac * ampaFactor * gain * gabaAttenuation;
+
+      ctx.strokeStyle = '#52e07a';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      const steps = 240;
+      for(let i=0;i<=steps;i++){
+        const ms = (i/steps)*elapsed;
+        let rawSum = 0;
+        for(const pt of pulses){
+          if(pt > ms) break;
+          const u = (ms - pt) / kernelMs;
+          if(u <= 1) rawSum += shapeFn(u);
+        }
+        const y = baseY + ampPx*satMax*Math.tanh(rawSum/satMax) + traceNoise(i+trainIdx*1000, 1.6);
+        const x = xToPx(ms);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = '#f0a860';
+      ctx.lineWidth = 1;
+      pulses.forEach(pt=>{
+        if(pt > elapsed) return;
+        const x = xToPx(pt);
+        ctx.beginPath(); ctx.moveTo(x, h-padB); ctx.lineTo(x, h-padB-6); ctx.stroke();
+      });
+
+      if(gaba > 0.02 && state.protocol === 'dg'){
+        ctx.fillStyle = '#4fc3c7';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('GABA-A shunt this train: '+(shuntFrac*100).toFixed(0)+'%', w-8, padTop+9+ (gain<0.98?10:0));
+      }
+      if(gain < 0.98){
+        ctx.fillStyle = '#6b7078';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('gain ×'+gain.toFixed(2)+' (auto-ranged)', w-8, padTop+9);
+      }
+    }
+
+    ctx.fillStyle = '#e8e6e1';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    let trainLabel;
+    if(state.protocol === 'dg'){
+      trainLabel = 'HFS train '+(trainIdx+1)+' of 4 — summating '+(state.readout==='fepsp'?'fEPSPs':'EPSCs');
+    } else if(plan.mode==='continuous'){
+      trainLabel = 'delivering stimulus — each deflection is one '+(state.readout==='fepsp'?'fEPSP':'EPSC')+', stacking as they summate';
+    } else {
+      trainLabel = 'train '+(trainIdx+1)+' of '+plan.nTrains+' — summating '+(state.readout==='fepsp'?'fEPSPs':'EPSCs');
+    }
+    ctx.fillText(trainLabel, padL+2, padTop+10);
+    el.traceUnitLabel.textContent = 'raw stimulation trace';
+  }
+
+  // ---------- mechanism gauges ----------
+  function updateGauges(){
+    const unblock = mgUnblockFraction(state.vm) * (state.apv ? 0.04 : 1);
+    el.mgFill.style.width = (unblock*100).toFixed(0)+'%';
+    el.mgVal.textContent = (unblock*100).toFixed(0)+'%' + (state.apv ? ' (APV present)' : '');
+    el.mgFill.style.opacity = state.apv ? 0.4 : 1;
+
+    const gaba = effectiveGaba();
+    const shuntFrac = gaba * gabaDepressionFactor(0);
+    el.gabaShuntFill.style.width = (shuntFrac*100).toFixed(0)+'%';
+    el.gabaShuntVal.textContent = state.gabaBlocked ? '0% (blocked)' : (shuntFrac*100).toFixed(0)+'% of Vm';
+
+    const ca = state.lastCaSignal;
+    if(ca === null){
+      el.caFill.style.width = '0%';
+      el.caVal.textContent = '—';
+    } else {
+      el.caFill.style.width = clamp(ca*100,0,100).toFixed(0)+'%';
+      el.caVal.textContent = clamp(ca*100,0,100).toFixed(0)+'% of max';
+    }
+  }
+
+  // ---------- status readouts ----------
+  function updateStripLabel(){
+    el.stripReadoutLabel.textContent = state.readout === 'fepsp' ? 'fEPSP slope, mV/ms' : 'EPSC amplitude, pA';
+  }
+
+  function currentAbsValue(pct){
+    const base = BASELINE_ABS[state.readout];
+    const v = base * (pct/100);
+    return state.readout === 'fepsp' ? v.toFixed(2)+' mV/ms' : '−'+v.toFixed(0)+' pA';
+  }
+
+  function updateDataTable(){
+    el.dataTableUnitHeader.textContent = state.readout === 'fepsp' ? 'fEPSP slope (mV/ms)' : 'EPSC amplitude (pA)';
+    const rows = state.points.map(p=>{
+      const shown = displayPct(p.pct);
+      return '<tr>'
+        + '<td style="padding:4px 10px; border-bottom:1px solid var(--panel-border);">'+p.t+'</td>'
+        + '<td style="padding:4px 10px; text-align:right; border-bottom:1px solid var(--panel-border);">'+shown.toFixed(1)+'%</td>'
+        + '<td style="padding:4px 10px; text-align:right; border-bottom:1px solid var(--panel-border);">'+currentAbsValue(shown)+'</td>'
+        + '</tr>';
+    }).join('');
+    el.dataTableBody.innerHTML = rows || '<tr><td colspan="3" style="padding:8px 10px; color:var(--text-dim);">No data yet — run a baseline.</td></tr>';
+    el.btnCopyTable.disabled = state.points.length === 0;
+  }
+
+  function absNumeric(shownPct){
+    const base = BASELINE_ABS[state.readout];
+    const v = base * (shownPct/100);
+    return state.readout === 'fepsp' ? v.toFixed(3) : (-v).toFixed(1);
+  }
+
+  function buildTableTSV(){
+    const header = ['t (min)', '% baseline', el.dataTableUnitHeader.textContent].join('\t');
+    const rows = state.points.map(p=>{
+      const shown = displayPct(p.pct);
+      return [p.t, shown.toFixed(2), absNumeric(shown)].join('\t');
+    });
+    return [header].concat(rows).join('\n');
+  }
+
+  async function copyTableToClipboard(){
+    const tsv = buildTableTSV();
+    const restoreLabel = 'Copy table';
+    try{
+      await navigator.clipboard.writeText(tsv);
+      el.btnCopyTable.textContent = 'Copied!';
+    } catch(err){
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = tsv;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        el.btnCopyTable.textContent = 'Copied!';
+      } catch(err2){
+        el.btnCopyTable.textContent = 'Copy failed';
+      }
+    }
+    setTimeout(()=>{ el.btnCopyTable.textContent = restoreLabel; }, 1500);
+  }
+
+  function updateStatusPanel(){
+    el.statAPV.textContent = state.apv ? 'yes' : 'no';
+    el.statAPV.className = 'v' + (state.apv ? ' bad' : '');
+    el.statGABA.textContent = state.gabaBlocked ? '0% (blocked)' : Math.round(state.gaba*100)+'% (intact)';
+    el.statGABA.className = 'v' + (state.gabaBlocked ? ' good' : '');
+    el.statVm.textContent = state.vm + ' mV';
+    const rawPct = state.points.length ? state.points[state.points.length-1].pct : 100;
+    const shownPct = displayPct(rawPct);
+    el.statPct.textContent = shownPct.toFixed(0)+'% ('+currentAbsValue(shownPct)+')' + (state.cnqx ? ' — CNQX' : '');
+    el.statPct.className = 'v' + (!state.cnqx && shownPct > 115 ? ' good' : (state.cnqx || shownPct < 90 ? ' bad':''));
+
+    const def = protocolDef(state.protocol);
+    if(def.probabilistic){
+      const bucket = state.gabaBlocked ? state.trialStats[state.protocol].blocked : state.trialStats[state.protocol].intact;
+      const label = state.gabaBlocked ? 'GABA-A blocked' : 'GABA-A intact';
+      el.statTrialsWrap.style.display = '';
+      if(bucket.n === 0){
+        el.statTrials.textContent = '0 runs yet ('+label+')';
+        el.statTrials.className = 'v';
+      } else {
+        const rate = Math.round(100*bucket.s/bucket.n);
+        el.statTrials.textContent = bucket.n+' runs · '+bucket.s+' LTP ('+rate+'%) — '+label;
+        el.statTrials.className = 'v';
+      }
+      el.protocolProbNote.textContent = 'Stochastic, like real slices: only ~'+Math.round(def.successRate*100)+'% of inductions with this protocol produce lasting LTP (~'+Math.round(def.successRateGabaBlocked*100)+'% with GABA<sub>A</sub> blocked) — run it repeatedly to see the split.';
+    } else {
+      el.statTrialsWrap.style.display = 'none';
+      el.protocolProbNote.textContent = '';
+    }
+  }
+
+  function recordTrial(protocol, success){
+    const stats = state.trialStats[protocol];
+    if(!stats) return;
+    const bucket = state.gabaBlocked ? stats.blocked : stats.intact;
+    bucket.n += 1;
+    if(success) bucket.s += 1;
+  }
+
+  function setMsg(text){ el.statusMsg.innerHTML = text; }
+
+  // ---------- experiment flow ----------
+  function resetExperiment(){
+    if(state.animTimer){ clearInterval(state.animTimer); state.animTimer = null; }
+    if(state.stimRAF){ cancelAnimationFrame(state.stimRAF); state.stimRAF = null; }
+    state.phase = 'idle';
+    state.points = [];
+    state.inductionTimes = [];
+    state.lastCaSignal = null;
+    state.lastMgUnblock = null;
+    state.plateauPct = 100;
+    state.peakPct = 100;
+    state.stimPlan = null;
+    state.stimTrainIdx = 0;
+    state.stimLocalElapsed = 0;
+    state.noiseSeed = Math.random();
+    state.viewTMax = 62;
+    el.statProtocol.textContent = 'none yet';
+    el.btnInduce.disabled = true;
+    el.btnBaseline.disabled = false;
+    setMsg('Run a baseline, choose a protocol, then induce LTP.');
+    render();
+  }
+
+  function runBaseline(){
+    if(state.animTimer) clearInterval(state.animTimer);
+    state.phase = 'baseline';
+    state.points = [];
+    state.inductionTimes = [];
+    el.btnBaseline.disabled = true;
+    el.btnInduce.disabled = true;
+    setMsg('Collecting baseline test-pulse responses (0.05 Hz, molecular layer)…');
+
+    const baselineTimes = [-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0];
+    let i = 0;
+    state.animTimer = setInterval(()=>{
+      if(i >= baselineTimes.length){
+        clearInterval(state.animTimer); state.animTimer = null;
+        state.phase = 'ready';
+        el.btnInduce.disabled = false;
+        setMsg('Baseline stable. Choose an induction protocol, set GABA<sub>A</sub> strength and holding potential, then click <b>Induce LTP</b>.');
+        render();
+        return;
+      }
+      const t = baselineTimes[i];
+      const pct = 100 + noise(4, i);
+      state.points.push({t, pct});
+      i++;
+      render();
+    }, 140);
+  }
+
+  // Cumulative Ca signal / LTP magnitude using only trains 0..uptoTrainIdx.
+  // Called after each train for 'dg' (progressive) and once for single-train
+  // protocols — same formula, so the final value always matches what the
+  // old one-shot computeInduction() would have produced.
+  function computeCumulativeState(def, uptoTrainIdx){
+    const gaba = effectiveGaba();
+    let sumCa = 0;
+    for(let tr=0; tr<=uptoTrainIdx; tr++){
+      const depression = gabaDepressionFactor(tr);
+      const shuntMv = GABA_SHUNT_MV * gaba * depression;
+      const effVm = state.vm - shuntMv;
+      const unblock = mgUnblockFraction(effVm) * (state.apv ? 0.04 : 1);
+      const boost = gabaPrimingBoost(tr);
+      sumCa += def.drive * def.efficiency * unblock * boost;
+      if(tr === 0) state.lastMgUnblock = unblock;
+    }
+    const nSoFar = uptoTrainIdx + 1;
+    const avgCaRaw = sumCa / nSoFar;
+    // Cumulative "priming" credit for repeated, widely-spaced trains — kept
+    // multiplicative (not additive) so it scales the real NMDAR-gated signal
+    // rather than adding a flat bonus that could manufacture LTP on its own;
+    // with APV (avgCaRaw ≈ 0) this correctly stays ≈0 regardless of nSoFar.
+    const trainBonusFactor = (nSoFar - 1) * 0.26;
+    const ca = clamp(avgCaRaw * (1 + trainBonusFactor), 0, 1.4);
+
+    const thresholdLo = 0.16;
+    let plateauGain, peakGain, decays;
+    if(ca < thresholdLo){
+      plateauGain = 0;
+      peakGain = ca > thresholdLo*0.45 ? 0.35 : 0.08;
+      decays = true;
+    } else {
+      const norm = (ca - thresholdLo) / (1 - thresholdLo);
+      const maxLTP = 1.3;
+      const g = maxLTP * Math.tanh(2.4 * norm);
+      plateauGain = def.persistence === 'late' ? g : g * 0.55;
+      peakGain = g * 1.25;
+      decays = def.persistence !== 'late';
+    }
+    return {
+      ca: clamp(ca,0,1),
+      peakPct: 100 + peakGain*100,
+      plateauPct: 100 + plateauGain*100,
+      decayDown: decays
+    };
+  }
+
+  function runInduction(){
+    if(state.phase !== 'ready') return;
+    if(state.animTimer) clearInterval(state.animTimer);
+    if(state.stimRAF) cancelAnimationFrame(state.stimRAF);
+
+    const def = protocolDef(state.protocol);
+    state.inductionTimes = [];
+    state.viewTMax = def.trainOffsetsMin[def.trainOffsetsMin.length-1] + 65;
+    el.btnInduce.disabled = true;
+    el.btnBaseline.disabled = true;
+
+    el.statProtocol.textContent = protocolLabel(state.protocol);
+
+    const label = protocolLabel(state.protocol);
+    const apvNote = state.apv ? ' NMDARs are blocked by APV, so no Ca²⁺ signal reaches threshold.' : '';
+    const gabaNote = state.gabaBlocked ? ' GABA<sub>A</sub> receptors are blocked — feedforward inhibition is off.' : '';
+    setMsg('Delivering <b>'+label+'</b> at V<sub>m</sub> = '+state.vm+' mV.'+gabaNote+apvNote);
+
+    runInductionSequence(def);
+  }
+
+  // Delivers each train in def.trainOffsetsMin in turn. For multi-train
+  // protocols (currently just 'dg'), a real gap-monitoring segment — test
+  // pulses on the time course, and a normal sample sweep on the scope —
+  // runs between trains before the next one fires.
+  function runInductionSequence(def){
+    let trainIdx = 0;
+
+    function deliverNext(){
+      if(trainIdx >= def.nTrains){
+        startMonitoring(def);
+        return;
+      }
+      state.inductionTimes.push(def.trainOffsetsMin[trainIdx]);
+      state.currentTrainIdx = trainIdx;
+      runStimulusAnimation(()=>{
+        const result = computeCumulativeState(def, trainIdx);
+        const isLastTrain = trainIdx === def.nTrains-1;
+
+        if(def.probabilistic && isLastTrain){
+          const success = Math.random() < currentSuccessRate(def);
+          state.lastTrialSuccess = success;
+          recordTrial(state.protocol, success);
+          if(!success){
+            // This slice's induction didn't "take" — a real but transient PTP
+            // that fully decays, rather than the graded plateau the
+            // deterministic Ca signal alone would predict.
+            result.peakPct = 100 + (result.peakPct - 100) * 0.5;
+            result.plateauPct = 100;
+            result.decayDown = true;
+          }
+        } else if(!def.probabilistic){
+          state.lastTrialSuccess = null;
+        }
+
+        state.lastCaSignal = result.ca;
+        state.peakPct = result.peakPct;
+        state.plateauPct = result.plateauPct;
+        state.decayDown = result.decayDown;
+        updateGauges();
+        updateStatusPanel();
+
+        if(trainIdx < def.nTrains-1){
+          runGapMonitoring(def, trainIdx, result, ()=>{ trainIdx++; deliverNext(); });
+        } else {
+          trainIdx++;
+          deliverNext();
+        }
+      });
+    }
+    deliverNext();
+  }
+
+  function runStimulusAnimation(onDone){
+    state.phase = 'stimulating';
+    const plan = stimPlan(state.protocol);
+    state.stimPlan = plan;
+    state.stimStartTs = null;
+    state.stimTrainIdx = 0;
+    state.stimLocalElapsed = 0;
+
+    const cycle = plan.mode === 'multi' ? (plan.trainMs + STIM_GAP_MS) : plan.totalMs;
+
+    function step(ts){
+      if(state.stimStartTs === null) state.stimStartTs = ts;
+      const elapsed = ts - state.stimStartTs;
+
+      if(plan.mode === 'continuous'){
+        state.stimTrainIdx = state.currentTrainIdx || 0;
+        state.stimLocalElapsed = Math.min(elapsed, plan.totalMs);
+        drawTrace();
+        if(elapsed >= plan.totalMs){
+          state.stimRAF = null;
+          onDone();
+          return;
+        }
+      } else {
+        const trainIdx = Math.floor(elapsed / cycle);
+        if(trainIdx >= plan.nTrains){
+          state.stimRAF = null;
+          onDone();
+          return;
+        }
+        state.stimTrainIdx = trainIdx;
+        state.stimLocalElapsed = elapsed - trainIdx*cycle;
+        drawTrace();
+      }
+      state.stimRAF = requestAnimationFrame(step);
+    }
+    state.stimRAF = requestAnimationFrame(step);
+  }
+
+  // Real test-pulse monitoring between two HFS trains: shows this train's
+  // own PTP partially decaying toward its (still-growing) plateau before
+  // the next train fires. The scope shows a normal sample sweep throughout
+  // (phase !== 'stimulating'), exactly like the post-induction monitoring.
+  function runGapMonitoring(def, trainIdx, trainResult, after){
+    state.phase = 'monitoring';
+    const t0 = def.trainOffsetsMin[trainIdx];
+    const t1 = def.trainOffsetsMin[trainIdx+1];
+    const times = [];
+    for(let t=t0+1; t<t1; t+=1) times.push(t);
+    let i = 0;
+    const { peakPct, plateauPct, decayDown } = trainResult;
+
+    state.animTimer = setInterval(()=>{
+      if(i >= times.length){
+        clearInterval(state.animTimer); state.animTimer = null;
+        after();
+        return;
+      }
+      const t = times[i];
+      let pct;
+      if(decayDown){
+        pct = plateauPct + (peakPct - plateauPct) * Math.exp(-(t-t0)/state.decayTau);
+      } else {
+        const rise = 1 - Math.exp(-(t-t0)/1.5);
+        const overshoot = (peakPct - plateauPct) * Math.exp(-(t-t0)/state.decayTau);
+        pct = plateauPct*rise + 100*(1-rise) + overshoot;
+      }
+      pct += noise(3.5, i + 200 + trainIdx*50);
+      state.points.push({t, pct});
+      i++;
+      render();
+    }, 95);
+  }
+
+  function startMonitoring(def){
+    state.phase = 'monitoring';
+    const lastTrainT = def.trainOffsetsMin[def.trainOffsetsMin.length-1];
+
+    const postTimes = [];
+    for(let t=lastTrainT+1; t<=lastTrainT+60; t+=1) postTimes.push(t);
+    let i = 0;
+
+    state.animTimer = setInterval(()=>{
+      if(i >= postTimes.length){
+        clearInterval(state.animTimer); state.animTimer = null;
+        state.phase = 'done';
+        el.btnBaseline.disabled = false;
+        el.btnInduce.disabled = false;
+        const finalPct = state.points[state.points.length-1].pct;
+        if(def.probabilistic){
+          const stats = state.gabaBlocked ? state.trialStats[state.protocol].blocked : state.trialStats[state.protocol].intact;
+          const rate = Math.round(100*stats.s/stats.n);
+          if(state.lastTrialSuccess){
+            setMsg('This trial produced lasting LTP (~'+finalPct.toFixed(0)+'% of baseline) — one of the ~'+Math.round(currentSuccessRate(def)*100)+'% of slices that show it with this protocol'+(state.gabaBlocked?' with GABA<sub>A</sub> blocked':'')+'. Running tally: '+stats.s+'/'+stats.n+' ('+rate+'%). Run it again to sample another slice.');
+          } else {
+            setMsg('This trial did not produce lasting LTP — a transient PTP (peaked ~'+state.peakPct.toFixed(0)+'%) decayed back to baseline, consistent with the ~'+Math.round((1-currentSuccessRate(def))*100)+'% of slices that fail with this protocol'+(state.gabaBlocked?' even with GABA<sub>A</sub> blocked':'')+'. Running tally: '+stats.s+'/'+stats.n+' ('+rate+'%). Run it again to sample another slice.');
+          }
+        } else if(finalPct > 130){
+          setMsg('LTP established: response stabilized at ~'+finalPct.toFixed(0)+'% of baseline despite feedforward inhibition. Try weakening the protocol, or raising GABA<sub>A</sub> strength further, to see induction fail again.');
+        } else if(finalPct > 108){
+          setMsg('Modest, only partly persistent potentiation (~'+finalPct.toFixed(0)+'%) — the Ca²⁺ signal is right around threshold. A stronger/spaced protocol or lower GABA<sub>A</sub> strength should stabilize it.');
+        } else {
+          setMsg('No lasting LTP (~'+finalPct.toFixed(0)+'% of baseline). The GABA<sub>A</sub> shunt kept the NMDAR Ca²⁺ signal below threshold — try blocking GABA<sub>A</sub>, or switching to the DG tetanus protocol.');
+        }
+        render();
+        return;
+      }
+      const t = postTimes[i];
+      let pct;
+      if(state.decayDown){
+        pct = state.plateauPct + (state.peakPct - state.plateauPct) * Math.exp(-(t-lastTrainT)/state.decayTau);
+      } else {
+        const rise = 1 - Math.exp(-(t-lastTrainT)/1.5);
+        const overshoot = (state.peakPct - state.plateauPct) * Math.exp(-(t-lastTrainT)/state.decayTau);
+        pct = state.plateauPct*rise + 100*(1-rise) + overshoot;
+      }
+      pct += noise(3.5, i+100);
+      state.points.push({t, pct});
+      i++;
+      render();
+    }, 85);
+  }
+
+  // ---------- render ----------
+  function render(){
+    drawStripChart();
+    drawTrace();
+    updateGauges();
+    updateStatusPanel();
+    el.btnCopyTable.disabled = state.points.length === 0;
+    if(state.showTable) updateDataTable();
+  }
+
+  // ---------- events ----------
+  el.btnFEPSP.addEventListener('click', ()=>{
+    state.readout = 'fepsp';
+    el.btnFEPSP.classList.add('sel'); el.btnEPSC.classList.remove('sel');
+    updateStripLabel(); render();
+  });
+  el.btnEPSC.addEventListener('click', ()=>{
+    state.readout = 'epsc';
+    el.btnEPSC.classList.add('sel'); el.btnFEPSP.classList.remove('sel');
+    updateStripLabel(); render();
+  });
+
+  el.protocolSelect.addEventListener('change', (e)=>{
+    state.protocol = e.target.value;
+    updateStatusPanel();
+  });
+
+  el.depolSlider.addEventListener('input', (e)=>{
+    state.vm = parseInt(e.target.value,10);
+    el.depolVal.textContent = state.vm + ' mV';
+    render();
+  });
+
+  el.apvToggle.addEventListener('change', (e)=>{
+    state.apv = e.target.checked;
+    el.apvRow.classList.toggle('active', state.apv);
+    render();
+  });
+
+  el.cnqxToggle.addEventListener('change', (e)=>{
+    state.cnqx = e.target.checked;
+    el.cnqxRow.classList.toggle('active', state.cnqx);
+    render();
+  });
+
+  el.gabaSlider.addEventListener('input', (e)=>{
+    state.gaba = parseInt(e.target.value,10)/100;
+    el.gabaVal.textContent = e.target.value + '%';
+    render();
+  });
+
+  el.gabaBlockToggle.addEventListener('change', (e)=>{
+    state.gabaBlocked = e.target.checked;
+    el.gabaBlockRow.classList.toggle('active', state.gabaBlocked);
+    el.gabaSlider.disabled = state.gabaBlocked;
+    render();
+  });
+
+  el.btnBaseline.addEventListener('click', runBaseline);
+  el.btnInduce.addEventListener('click', runInduction);
+  el.btnReset.addEventListener('click', resetExperiment);
+
+  el.btnToggleTable.addEventListener('click', ()=>{
+    state.showTable = !state.showTable;
+    el.dataTableWrap.style.display = state.showTable ? 'block' : 'none';
+    el.btnToggleTable.textContent = state.showTable ? 'Hide data table' : 'Show data table';
+    if(state.showTable) updateDataTable();
+  });
+
+  el.btnCopyTable.addEventListener('click', copyTableToClipboard);
+
+  window.addEventListener('resize', render);
+
+  // ---------- init ----------
+  updateStripLabel();
+  render();
+})();
+</script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
+</body>
+</html>

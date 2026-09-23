@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schaffer Collateral → CA1 Temporal Summation Simulator</title>
+<style>
+  :root{
+    --bg: #14171a;
+    --panel: #1c2024;
+    --panel-border: #2a2f34;
+    --scope-bg: #0a0e0c;
+    --scope-grid: #1d2b22;
+    --text: #e8e6e1;
+    --text-dim: #9aa0a6;
+    --amber: #f0a860;
+    --amber-dim: #7a5a37;
+    --green: #52e07a;
+    --green-dim: #2f6b45;
+    --cyan: #5ec3e0;
+    --cyan-dim: #2c5866;
+    --gray-trace: #6b7078;
+    --red: #e0605a;
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Courier New', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  .rig{ max-width:1280px; margin:0 auto; padding:20px 20px 40px; }
+  header{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:1px solid var(--panel-border); padding-bottom:14px; margin-bottom:18px;
+    flex-wrap:wrap; gap:8px;
+  }
+  header h1{ font-size:1.15rem; font-weight:600; letter-spacing:.2px; margin:0; color:var(--text); }
+  header h1 span{ color:var(--amber); }
+  header .sub{ font-family:var(--mono); font-size:.72rem; color:var(--text-dim); }
+  .layout{ display:grid; grid-template-columns:300px 1fr; gap:18px; }
+  @media (max-width:880px){ .layout{ grid-template-columns:1fr; } }
+  .panel{
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:6px; padding:16px;
+  }
+  .panel + .panel{ margin-top:18px; }
+  .panel h2{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:1.2px; font-weight:600;
+    color:var(--text-dim); margin:0 0 12px; font-family:var(--mono);
+  }
+  .field{ margin-bottom:16px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size:.78rem; color:var(--text); margin-bottom:6px; font-weight:500; }
+  .field .help{ font-size:.7rem; color:var(--text-dim); margin-top:5px; line-height:1.4; }
+  select, .btn{
+    width:100%; padding:9px 10px; border-radius:4px; border:1px solid var(--panel-border);
+    background:#121517; color:var(--text); font-family:var(--sans); font-size:.82rem; cursor:pointer;
+  }
+  select:focus, .btn:focus{ outline:2px solid var(--amber); outline-offset:1px; }
+  .btn{
+    background:#23282c; border:1px solid #333a40; font-weight:600; margin-top:8px;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .btn:hover:not(:disabled){ background:#2b3136; border-color:var(--amber-dim); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn.primary{ background:var(--amber-dim); border-color:var(--amber); color:#1a140c; }
+  .btn.primary:hover:not(:disabled){ background:var(--amber); }
+  .checkrow{
+    display:flex; align-items:center; gap:9px; padding:9px 10px; background:#121517;
+    border:1px solid var(--panel-border); border-radius:4px; cursor:pointer;
+  }
+  .checkrow input{ width:16px; height:16px; accent-color:var(--green); cursor:pointer; }
+  .checkrow.active{ border-color:var(--green); background:#152219; }
+  .checkrow.disabled{ opacity:.4; cursor:not-allowed; pointer-events:none; }
+  .checkrow span{ font-size:.78rem; }
+  .slider-row{ display:flex; align-items:center; gap:10px; }
+  input[type=range]{ flex:1; -webkit-appearance:none; height:4px; background:#333a40; border-radius:2px; }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--amber); border:2px solid #1a140c; cursor:pointer; margin-top:-1px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%; background:var(--amber); border:2px solid #1a140c; cursor:pointer;
+  }
+  .slider-val{ font-family:var(--mono); font-size:.82rem; color:var(--amber); min-width:64px; text-align:right; }
+  .slider-scale{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.62rem;
+    color:var(--text-dim); margin-top:4px;
+  }
+  .readout-toggle{ display:flex; border:1px solid var(--panel-border); border-radius:4px; overflow:hidden; }
+  .readout-toggle button{
+    flex:1; padding:8px 6px; background:#121517; color:var(--text-dim); border:none;
+    font-family:var(--sans); font-size:.76rem; font-weight:600; cursor:pointer;
+  }
+  .readout-toggle button.sel{ background:var(--green-dim); color:#eafff0; }
+  .scope-wrap{ position:relative; }
+  canvas{ display:block; width:100%; background:var(--scope-bg); border-radius:4px; }
+  .scope-caption{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:.66rem;
+    color:var(--text-dim); margin-top:8px; flex-wrap:wrap; gap:6px;
+  }
+  .trace-legend{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .trace-legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+  .status-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-top:14px;
+  }
+  .stat{ background:var(--scope-bg); border:1px solid var(--panel-border); border-radius:4px; padding:10px 12px; }
+  .stat .k{ font-size:.64rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.6px; font-family:var(--mono); }
+  .stat .v{ font-family:var(--mono); font-size:1.05rem; color:var(--text); margin-top:3px; }
+  .stat .v.good{ color:var(--green); }
+  .stat .v.warn{ color:var(--amber); }
+  .msg{
+    font-size:.78rem; line-height:1.5; color:var(--text-dim); margin-top:12px; padding-top:12px;
+    border-top:1px dashed var(--panel-border);
+  }
+  .msg b{ color:var(--text); }
+  footer{ margin-top:22px; font-size:.68rem; color:var(--text-dim); line-height:1.6; font-family:var(--sans); }
+</style>
+</head>
+<body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+.rig{max-width:none;padding-left:28px;padding-right:28px}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
+<div class="rig">
+  <header>
+    <h1>Schaffer collateral → CA1 <span>temporal summation</span></h1>
+    <div class="sub">stratum radiatum · frequency-dependent EPSP summation &amp; short-term facilitation</div>
+  </header>
+
+  <div class="layout">
+    <!-- CONTROLS -->
+    <div>
+      <div class="panel">
+        <h2>Stimulus train</h2>
+        <div class="field">
+          <label for="nPulsesSlider">Number of pulses</label>
+          <div class="slider-row">
+            <input type="range" id="nPulsesSlider" min="1" max="15" value="6" step="1">
+            <span class="slider-val" id="nPulsesVal">6</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="freqSlider">Stimulation frequency</label>
+          <div class="slider-row">
+            <input type="range" id="freqSlider" min="2" max="100" value="25" step="1">
+            <span class="slider-val" id="freqVal">25 Hz</span>
+          </div>
+          <div class="slider-scale"><span>2 Hz</span><span>100 Hz</span></div>
+          <div class="help">Inter-spike interval: <b id="isiVal">40.0 ms</b>. Summation only matters when this is short compared to the decay below.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Postsynaptic integration</h2>
+        <div class="field">
+          <label for="tauSlider">EPSP decay time constant (τ)</label>
+          <div class="slider-row">
+            <input type="range" id="tauSlider" min="5" max="60" value="20" step="1">
+            <span class="slider-val" id="tauVal">20 ms</span>
+          </div>
+          <div class="slider-scale"><span>5 ms (fast)</span><span>60 ms (slow)</span></div>
+          <div class="help">Stands in for the postsynaptic membrane time constant. Longer τ lets each EPSP linger, so more of it is still there when the next one arrives.</div>
+        </div>
+        <div class="field" style="margin-bottom:10px;">
+          <label>Readout</label>
+          <div class="readout-toggle">
+            <button id="btnReadoutEPSP" class="sel">EPSP (intracellular)</button>
+            <button id="btnReadoutFEPSP">fEPSP (extracellular)</button>
+          </div>
+        </div>
+        <label class="checkrow" id="threshRow">
+          <input type="checkbox" id="threshToggle" checked>
+          <span>Enable spike threshold (fire a postsynaptic AP)</span>
+        </label>
+        <div class="field" style="margin-top:8px; margin-bottom:0;">
+          <div class="help" id="threshHelp">If summed depolarization reaches −55 mV, a somatic action potential is triggered. Only shown in EPSP mode — field potentials here don't spike.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Presynaptic facilitation (residual Ca²⁺)</h2>
+        <div class="field">
+          <label for="facilSlider">Facilitation strength</label>
+          <div class="slider-row">
+            <input type="range" id="facilSlider" min="0" max="100" value="35" step="5">
+            <span class="slider-val" id="facilVal">35%</span>
+          </div>
+          <div class="help">How much leftover Ca²⁺ from prior pulses boosts release on the next one. Zero = every EPSP is the same size; only passive summation is left.</div>
+        </div>
+        <div class="field">
+          <label for="caTauSlider">Residual Ca²⁺ decay (τ<sub>Ca</sub>)</label>
+          <div class="slider-row">
+            <input type="range" id="caTauSlider" min="20" max="200" value="70" step="5">
+            <span class="slider-val" id="caTauVal">70 ms</span>
+          </div>
+          <div class="slider-scale"><span>20 ms</span><span>200 ms</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Presynaptic depression (vesicle depletion)</h2>
+        <div class="field">
+          <label for="depressSlider">Depression strength</label>
+          <div class="slider-row">
+            <input type="range" id="depressSlider" min="0" max="90" value="30" step="5">
+            <span class="slider-val" id="depressVal">30%</span>
+          </div>
+          <div class="help">Fraction of the currently-available vesicle pool released per spike (scaled by facilitation, so a more facilitated spike also depletes more). Zero = an inexhaustible pool, facilitation only.</div>
+        </div>
+        <div class="field">
+          <label for="tauRecSlider">Pool recovery (τ<sub>rec</sub>)</label>
+          <div class="slider-row">
+            <input type="range" id="tauRecSlider" min="50" max="1500" value="400" step="25">
+            <span class="slider-val" id="tauRecVal">400 ms</span>
+          </div>
+          <div class="slider-scale"><span>50 ms (fast)</span><span>1500 ms (slow)</span></div>
+          <div class="help">How quickly depleted resources refill between spikes. Facilitation and depression now compete for each EPSP's amplitude.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Run</h2>
+        <button class="btn primary" id="btnSweep">Run sweep</button>
+        <button class="btn" id="btnReset">Reset defaults</button>
+      </div>
+    </div>
+
+    <!-- MAIN DISPLAY -->
+    <div>
+      <div class="panel">
+        <h2>Oscilloscope — 3 channel</h2>
+        <div class="scope-wrap">
+          <canvas id="scope" height="480"></canvas>
+        </div>
+        <div class="scope-caption">
+          <div class="trace-legend">
+            <span><i class="dot" style="background:var(--amber)"></i>presynaptic AP</span>
+            <span><i class="dot" style="background:var(--cyan)"></i>presynaptic [Ca²⁺]</span>
+            <span><i class="dot" style="background:var(--green)"></i><span id="legendPost">EPSP</span></span>
+            <span><i class="dot" style="background:var(--red)"></i>spike / threshold</span>
+          </div>
+          <span>t = 0 at first pulse (ms)</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Session readout</h2>
+        <div class="status-grid">
+          <div class="stat"><div class="k">Inter-spike interval</div><div class="v" id="statISI">—</div></div>
+          <div class="stat"><div class="k">Train duration</div><div class="v" id="statDur">—</div></div>
+          <div class="stat"><div class="k">Peak residual [Ca²⁺]</div><div class="v" id="statCa">—</div></div>
+          <div class="stat"><div class="k">Peak postsynaptic response</div><div class="v" id="statPeak">—</div></div>
+          <div class="stat"><div class="k">STP ratio (last / 1st EPSP)</div><div class="v" id="statFacil">—</div></div>
+          <div class="stat"><div class="k">Min vesicle pool</div><div class="v" id="statPool">—</div></div>
+          <div class="stat"><div class="k">Postsynaptic spike</div><div class="v" id="statSpike">—</div></div>
+        </div>
+        <div class="msg" id="statusMsg">Adjust the controls, then click <b>Run Sweep</b> to trigger the oscilloscope.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Teaching model, not a quantitative fit to published data. Each presynaptic spike delivers a brief Ca²⁺ transient into the terminal (rise ≈1 ms, decay = τ<sub>Ca</sub>); leftover Ca²⁺ from earlier spikes adds to the next one and scales release, the residual-calcium account of short-term facilitation (Katz &amp; Miledi, 1968; reviewed by Zucker &amp; Regehr, 2002). Release also draws down a shared vesicle pool that refills exponentially with time constant τ<sub>rec</sub>, giving depression that competes with facilitation for each EPSP's amplitude — the same facilitation/depression framework as the Tsodyks–Markram model (Tsodyks &amp; Markram, 1997; Dittman, Kreitzer &amp; Regehr, 2000). The postsynaptic response begins ~1 ms after each presynaptic spike, the same synaptic-delay figure (Sabatini &amp; Regehr, 1996) used for EPSC onset in the companion central-synapse simulator — the interval covers vesicle fusion, cleft diffusion and receptor binding downstream of the (essentially delay-free) presynaptic Ca²⁺ influx. Individual EPSPs are modeled as biexponential waveforms and summed linearly at the soma; τ sets how long each one lingers before the next arrives. fEPSP mode rescales and inverts the same underlying summed response to resemble an extracellular field recording — it does not model a population spike.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- constants ----------
+  const V_REST = -70;            // mV
+  const THRESHOLD_MV = -55;      // mV
+  const EPSP_RISE = 1.2;         // ms
+  const CA_RISE = 1.0;           // ms
+  const CA_PULSE_AMP = 1.0;      // a.u., single-spike Ca2+ transient
+  const BASE_EPSP_MV = 3.5;      // mV, un-facilitated single EPSP peak
+  const MAX_FACIL_MULT = 4.0;
+  const AP_WIDTH_MS = 1.4;
+  const AP_HEIGHT = 100;         // mV above V_REST for the presynaptic AP trace
+  const SPIKE_WIDTH_MS = 1.6;
+  const SPIKE_PEAK_ABOVE_REST = 105; // mV
+  const AHP_AMP_MV = 14;
+  const AHP_TAU_MS = 18;
+  const FEPSP_SCALE = 0.16;      // scales+inverts the intracellular summed signal for fEPSP display
+  const POST_DELAY_MS = 1.0;     // AP -> postsynaptic response onset (Sabatini & Regehr, 1996)
+
+  // ---------- state ----------
+  const state = {
+    nPulses: 6,
+    freq: 25,        // Hz
+    tau: 20,         // ms
+    facilStrength: 0.35,
+    caTau: 70,        // ms
+    depressStrength: 0.30,
+    tauRec: 400,      // ms
+    readout: 'epsp',  // 'epsp' | 'fepsp'
+    threshOn: true,
+    sweepRAF: null,
+    sweepStartTs: null,
+    sweeping: false
+  };
+
+  let peakShapeCache = { tau: null, val: null };
+
+  // ---------- DOM ----------
+  const $ = (id) => document.getElementById(id);
+  const SCOPE_LOGICAL_H = parseInt(document.getElementById('scope').getAttribute('height'), 10) || 480;
+  const el = {
+    nPulsesSlider: $('nPulsesSlider'), nPulsesVal: $('nPulsesVal'),
+    freqSlider: $('freqSlider'), freqVal: $('freqVal'), isiVal: $('isiVal'),
+    tauSlider: $('tauSlider'), tauVal: $('tauVal'),
+    btnEPSP: $('btnReadoutEPSP'), btnFEPSP: $('btnReadoutFEPSP'),
+    threshToggle: $('threshToggle'), threshRow: $('threshRow'), threshHelp: $('threshHelp'),
+    facilSlider: $('facilSlider'), facilVal: $('facilVal'),
+    caTauSlider: $('caTauSlider'), caTauVal: $('caTauVal'),
+    depressSlider: $('depressSlider'), depressVal: $('depressVal'),
+    tauRecSlider: $('tauRecSlider'), tauRecVal: $('tauRecVal'),
+    btnSweep: $('btnSweep'), btnReset: $('btnReset'),
+    scope: $('scope'), legendPost: $('legendPost'),
+    statISI: $('statISI'), statDur: $('statDur'), statCa: $('statCa'),
+    statPeak: $('statPeak'), statFacil: $('statFacil'), statPool: $('statPool'), statSpike: $('statSpike'),
+    statusMsg: $('statusMsg')
+  };
+
+  // ---------- math helpers ----------
+  function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+
+  function caPulseValue(x, caTau){
+    if(x < 0) return 0;
+    const rise = 1 - Math.exp(-x/CA_RISE);
+    const decay = Math.exp(-x/caTau);
+    return CA_PULSE_AMP * rise * decay;
+  }
+
+  function epspShape(x, tr, td){
+    if(x < 0) return 0;
+    return (1 - Math.exp(-x/tr)) * Math.exp(-x/td);
+  }
+
+  function peakShapeValue(tr, td){
+    if(peakShapeCache.tau === td) return peakShapeCache.val;
+    let best = 0;
+    const span = Math.max(30, 8*td);
+    for(let x=0; x<=span; x+=0.25){
+      const v = epspShape(x, tr, td);
+      if(v > best) best = v;
+    }
+    peakShapeCache = { tau: td, val: best || 1 };
+    return peakShapeCache.val;
+  }
+
+  function apShape(x, width){
+    if(x < 0 || x > width) return 0;
+    return Math.sin(Math.PI * x / width);
+  }
+
+  function spikeShapeFn(u){
+    if(u < 0 || u > 1) return 0;
+    return Math.sin(Math.PI * u);
+  }
+
+  function niceStep(span){
+    const candidates = [1,2,5,10,20,25,50,100,200,250,500,1000];
+    for(const c of candidates){ if(span/c <= 6) return c; }
+    return 1000;
+  }
+
+  // ---------- model ----------
+  function computeModel(){
+    const ISI = 1000/state.freq;
+    const spikes = [];
+    for(let i=0;i<state.nPulses;i++) spikes.push(i*ISI);
+
+    const tail = Math.max(200, 4*state.tau, 2.5*state.caTau);
+    const tStart = -20;
+    const tEnd = spikes[spikes.length-1] + tail;
+
+    // per-pulse facilitation (residual Ca2+ boosts release) and depression
+    // (each release consumes a shared, slowly-recovering vesicle pool) —
+    // they compete for the final EPSP amplitude, as in a real synapse.
+    const amps = [], residuals = [], mults = [], poolBefore = [];
+    let pool = 1.0; // fraction of vesicle pool available, recovers toward 1
+    for(let i=0;i<spikes.length;i++){
+      let residual = 0;
+      for(let j=0;j<i;j++) residual += caPulseValue(spikes[i]-spikes[j], state.caTau);
+      residuals.push(residual);
+      let mult = 1 + state.facilStrength * (residual / CA_PULSE_AMP);
+      mult = Math.min(mult, MAX_FACIL_MULT);
+      mults.push(mult);
+
+      poolBefore.push(pool);
+      amps.push(BASE_EPSP_MV * mult * pool);
+
+      const released = clamp(state.depressStrength * mult, 0, 1) * pool;
+      pool -= released;
+      if(i < spikes.length-1){
+        const gap = spikes[i+1] - spikes[i];
+        pool = 1 - (1-pool) * Math.exp(-gap/state.tauRec);
+      }
+    }
+
+    const peakShape = peakShapeValue(EPSP_RISE, state.tau);
+    // Fixed fine step, independent of total duration: it must stay well under
+    // the narrowest feature we render (the 1.4 ms presynaptic AP / 1.6 ms
+    // postsynaptic spike), or long low-frequency trains can sample right past
+    // a spike and render it as a flat line. Worst case (~19k points) is still
+    // trivial for canvas.
+    const dt = 0.35;
+
+    // Synaptic delay: presynaptic Ca2+ influx (below) starts essentially with
+    // the AP, but the postsynaptic response only begins after vesicle fusion,
+    // cleft diffusion and receptor binding — the same ~1 ms figure (Sabatini &
+    // Regehr, 1996) used for EPSC onset in the central-synapse simulator.
+    const postTimes = spikes.map(ti => ti + POST_DELAY_MS);
+
+    const times = [], vsubArr = [];
+    for(let t=tStart; t<=tEnd; t+=dt){
+      let v = V_REST;
+      for(let i=0;i<spikes.length;i++){
+        const x = t - postTimes[i];
+        if(x >= 0) v += amps[i] * epspShape(x, EPSP_RISE, state.tau) / peakShape;
+      }
+      times.push(t);
+      vsubArr.push(v);
+    }
+
+    let tSpike = null;
+    if(state.threshOn && state.readout === 'epsp'){
+      for(let k=0;k<vsubArr.length;k++){
+        if(vsubArr[k] >= THRESHOLD_MV){ tSpike = times[k]; break; }
+      }
+    }
+
+    const apVals = [], caVals = [], vVals = [], fepspVals = [];
+    for(let k=0;k<times.length;k++){
+      const t = times[k];
+
+      let ap = V_REST;
+      for(const ti of spikes){
+        const x = t - ti;
+        if(x >= 0 && x <= AP_WIDTH_MS) ap = V_REST + AP_HEIGHT*apShape(x, AP_WIDTH_MS);
+      }
+      apVals.push(ap);
+
+      let ca = 0;
+      for(const ti of spikes){ const x = t-ti; if(x >= 0) ca += caPulseValue(x, state.caTau); }
+      caVals.push(ca);
+
+      let v;
+      if(tSpike !== null && t >= tSpike){
+        const xs = t - tSpike;
+        if(xs <= SPIKE_WIDTH_MS){
+          v = V_REST + SPIKE_PEAK_ABOVE_REST * spikeShapeFn(xs/SPIKE_WIDTH_MS);
+        } else {
+          const xa = xs - SPIKE_WIDTH_MS;
+          v = vsubArr[k] - AHP_AMP_MV*Math.exp(-xa/AHP_TAU_MS);
+        }
+      } else {
+        v = vsubArr[k];
+      }
+      vVals.push(v);
+      fepspVals.push(-(vsubArr[k]-V_REST) * FEPSP_SCALE);
+    }
+
+    return { times, apVals, caVals, vVals, fepspVals, vsubArr, spikes, amps, residuals, mults, poolBefore, tSpike, tStart, tEnd, ISI };
+  }
+
+  // ---------- drawing ----------
+  function drawScope(model, revealUpTo, showTraces){
+    if(showTraces === undefined) showTraces = true;
+    const canvas = el.scope;
+    const w = canvas.clientWidth || 900;
+    const h = SCOPE_LOGICAL_H;         // fixed logical size — never read back from
+    const dpr = window.devicePixelRatio || 1;  // canvas.height, which we're about to overwrite
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;           // buffer must scale in BOTH dimensions with dpr,
+    canvas.style.height = h+'px';      // or high-DPI screens clip/squish the bottom of the scope
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 56, padR = 14, padT = 8, padB = 24, bandGap = 14;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const bandH = (plotH - 2*bandGap) / 3;
+    const bandTop = [padT, padT+bandH+bandGap, padT+2*(bandH+bandGap)];
+
+    const tMin = model.tStart, tMax = model.tEnd;
+    const revealT = (revealUpTo === undefined) ? tMax : revealUpTo;
+    function xOf(t){ return padL + ((t-tMin)/(tMax-tMin)) * plotW; }
+
+    // shared time gridlines across full height
+    const tStep = niceStep((tMax-tMin) * 1.1);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--scope-grid');
+    ctx.lineWidth = 1;
+    for(let t = Math.ceil(tMin/tStep)*tStep; t <= tMax; t += tStep){
+      const x = Math.round(xOf(t))+0.5;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h-padB); ctx.stroke();
+    }
+    // x-axis labels (bottom only)
+    ctx.fillStyle = '#9aa0a6'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    for(let t = Math.ceil(tMin/tStep)*tStep; t <= tMax; t += tStep){
+      ctx.fillText(String(Math.round(t)), xOf(t), h-7);
+    }
+
+    // stimulus markers through full height
+    ctx.setLineDash([2,3]);
+    ctx.strokeStyle = 'rgba(240,168,96,0.55)';
+    model.spikes.forEach(ti=>{
+      if(ti > revealT) return;
+      const x = xOf(ti);
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h-padB); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    function band(idx, label, color, values, yMinFixed, yMaxFixed, refLines, unit){
+      const top = bandTop[idx];
+      let mn = Infinity, mx = -Infinity;
+      values.forEach(v=>{ mn = Math.min(mn,v); mx = Math.max(mx,v); });
+      if(!isFinite(mn)){ mn = 0; mx = 1; }
+      const span = Math.max(mx-mn, 0.5);
+      let yMin = (yMinFixed !== null && yMinFixed !== undefined) ? yMinFixed : mn - span*0.15;
+      let yMax = (yMaxFixed !== null && yMaxFixed !== undefined) ? yMaxFixed : mx + span*0.15;
+      if(yMax - yMin < 0.5) yMax = yMin + 0.5;
+      function yOf(v){ return top + (1 - (v-yMin)/(yMax-yMin)) * bandH; }
+
+      // band divider
+      if(idx > 0){
+        ctx.strokeStyle = '#2a2f34';
+        ctx.beginPath(); ctx.moveTo(padL-8, top-bandGap/2); ctx.lineTo(w-padR, top-bandGap/2); ctx.stroke();
+      }
+
+      // reference lines
+      (refLines||[]).forEach(r=>{
+        const y = yOf(r.v);
+        if(y < top || y > top+bandH) return;
+        ctx.strokeStyle = r.color || '#3a4148';
+        ctx.setLineDash(r.dash || [3,3]);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke();
+        ctx.setLineDash([]);
+        if(r.label){
+          ctx.fillStyle = r.color || '#9aa0a6';
+          ctx.font = '9px monospace'; ctx.textAlign = 'left';
+          ctx.fillText(r.label, padL+4, y-3);
+        }
+      });
+
+      // y labels (min/max)
+      ctx.fillStyle = '#9aa0a6'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(yMax.toFixed(1), padL-6, top+9);
+      ctx.fillText(yMin.toFixed(1), padL-6, top+bandH-2);
+
+      // channel label
+      ctx.fillStyle = color; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(label + (unit? '  ('+unit+')' : ''), padL+4, top+11);
+
+      // trace
+      if(showTraces){
+        ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.beginPath();
+        let started = false;
+        for(let k=0;k<model.times.length;k++){
+          const t = model.times[k];
+          if(t > revealT) break;
+          const x = xOf(t), y = clamp(yOf(values[k]), top, top+bandH);
+          if(!started){ ctx.moveTo(x,y); started = true; } else { ctx.lineTo(x,y); }
+        }
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(154,160,166,0.35)'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+        ctx.fillText('no trace — run sweep', w-padR, top+11);
+      }
+    }
+
+    const postVals = state.readout === 'epsp' ? model.vVals : model.fepspVals;
+    const postLabel = state.readout === 'epsp' ? 'POSTSYNAPTIC EPSP' : 'POSTSYNAPTIC fEPSP';
+    const postUnit = 'mV';
+    const postRef = state.readout === 'epsp'
+      ? [ { v: V_REST, color:'#6b7078', dash:[2,2], label:'Vrest' },
+          ...(state.threshOn ? [{ v: THRESHOLD_MV, color:'#e0605a', dash:[4,2], label:'threshold' }] : []) ]
+      : [ { v: 0, color:'#6b7078', dash:[2,2], label:'baseline' } ];
+
+    band(0, 'PRESYNAPTIC AP', getVar('--amber'), model.apVals, V_REST-10, V_REST+AP_HEIGHT+10,
+      [{ v: V_REST, color:'#6b7078', dash:[2,2] }], 'mV');
+    band(1, 'PRESYNAPTIC [Ca²⁺]', getVar('--cyan'), model.caVals, 0, null, [{ v:0, color:'#6b7078', dash:[2,2] }], 'a.u.');
+    band(2, postLabel, state.readout==='epsp' ? getVar('--green') : getVar('--green'), postVals, null, null, postRef, postUnit);
+
+    // mark the fired spike distinctly in red on band 2 if within reveal
+    if(showTraces && state.readout === 'epsp' && model.tSpike !== null && model.tSpike <= revealT){
+      const top = bandTop[2];
+      let mn = Infinity, mx = -Infinity;
+      model.vVals.forEach(v=>{ mn=Math.min(mn,v); mx=Math.max(mx,v); });
+      const span = Math.max(mx-mn,0.5);
+      const yMin = mn-span*0.15, yMax = mx+span*0.15;
+      function yOf(v){ return top + (1-(v-yMin)/(yMax-yMin))*bandH; }
+      ctx.strokeStyle = getVar('--red'); ctx.lineWidth = 1.8; ctx.beginPath();
+      let started = false;
+      for(let k=0;k<model.times.length;k++){
+        const t = model.times[k];
+        if(t < model.tSpike || t > model.tSpike+SPIKE_WIDTH_MS+2*AHP_TAU_MS) continue;
+        if(t > revealT) break;
+        const x = xOf(t), y = clamp(yOf(model.vVals[k]), top, top+bandH);
+        if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
+      }
+      if(started) ctx.stroke();
+    }
+  }
+
+  function getVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // ---------- stats / message ----------
+  function updateStats(model){
+    el.statISI.textContent = model.ISI.toFixed(1) + ' ms';
+    el.statDur.textContent = Math.round(model.spikes[model.spikes.length-1]) + ' ms';
+    el.statCa.textContent = Math.max(...model.caVals).toFixed(2) + ' a.u.';
+
+    if(state.readout === 'epsp'){
+      const peak = Math.max(...model.vVals) - V_REST;
+      el.statPeak.textContent = peak.toFixed(1) + ' mV';
+    } else {
+      const peak = Math.max(...model.fepspVals.map(v=>Math.abs(v)));
+      el.statPeak.textContent = '−' + peak.toFixed(2) + ' mV';
+    }
+
+    if(model.amps.length > 1){
+      const ratio = (model.amps[model.amps.length-1] / model.amps[0]) * 100;
+      el.statFacil.textContent = ratio.toFixed(0) + '%';
+      el.statFacil.className = 'v ' + (ratio > 105 ? 'good' : (ratio < 95 ? 'warn' : ''));
+    } else {
+      el.statFacil.textContent = 'n/a (1 pulse)';
+      el.statFacil.className = 'v';
+    }
+
+    const minPool = Math.min(...model.poolBefore) * 100;
+    el.statPool.textContent = minPool.toFixed(0) + '%';
+    el.statPool.className = 'v ' + (minPool < 60 ? 'warn' : '');
+
+    if(state.readout === 'epsp' && state.threshOn){
+      if(model.tSpike !== null){
+        const idx = model.spikes.findIndex(s => s > model.tSpike);
+        const pulseNum = idx === -1 ? model.spikes.length : idx;
+        el.statSpike.textContent = 'fired (pulse ' + pulseNum + ')';
+        el.statSpike.className = 'v warn';
+      } else {
+        el.statSpike.textContent = 'no';
+        el.statSpike.className = 'v';
+      }
+    } else {
+      el.statSpike.textContent = state.readout === 'epsp' ? 'threshold off' : 'n/a (fEPSP)';
+      el.statSpike.className = 'v';
+    }
+
+    const lastRatio = model.amps.length > 1 ? model.amps[model.amps.length-1] / model.amps[0] : 1;
+    if(state.readout === 'epsp' && state.threshOn && model.tSpike !== null){
+      setMsg('Summation reached threshold at t ≈ '+model.tSpike.toFixed(0)+' ms, firing a postsynaptic spike. Lower the frequency or shorten τ to see summation fail to reach threshold.');
+    } else if(model.amps.length > 1 && lastRatio > 1.05){
+      setMsg('Successive EPSPs are growing — residual Ca²⁺ facilitation is outpacing vesicle depletion.');
+    } else if(model.amps.length > 1 && lastRatio < 0.95){
+      setMsg('Successive EPSPs are shrinking — vesicle depletion is outpacing facilitation (pool down to '+minPool.toFixed(0)+'% of baseline).');
+    } else if(model.ISI > 3*state.tau){
+      setMsg('At this frequency, each EPSP has mostly decayed before the next pulse arrives — little to no summation.');
+    } else {
+      setMsg('Change any control, then click <b>Run sweep</b> again to see the new trace — the scope holds the last sweep until you re-trigger it.');
+    }
+  }
+
+  // ---------- render ----------
+  // The scope only ever changes when Run Sweep is triggered. Changing a
+  // control just updates its label and state.* for the *next* sweep — it
+  // never touches the canvas, so whatever was last swept stays on screen
+  // (stale) until re-triggered. lastModel/lastShowTraces/lastRevealT let a
+  // window resize redraw exactly that same frozen state.
+  let lastModel = null, lastShowTraces = false, lastRevealT = null;
+  const statEls = [el.statISI, el.statDur, el.statCa, el.statPeak, el.statFacil, el.statPool, el.statSpike];
+
+  function resetStatsDisplay(){
+    statEls.forEach(e=>{ e.textContent = '—'; e.className = 'v'; });
+  }
+
+  function drawIdle(){
+    const model = computeModel();
+    lastModel = model; lastShowTraces = false; lastRevealT = model.tEnd;
+    drawScope(model, model.tEnd, false);
+    resetStatsDisplay();
+    setMsg('Adjust the controls, then click <b>Run Sweep</b> to trigger the oscilloscope.');
+  }
+
+  function runSweep(){
+    if(state.sweeping) return;
+    if(state.sweepRAF) cancelAnimationFrame(state.sweepRAF);
+    state.sweeping = true;
+    el.btnSweep.disabled = true;
+    const model = computeModel();
+    const simSpan = model.tEnd - model.tStart;
+    const playMs = clamp(simSpan*4, 1000, 3200);
+    state.sweepStartTs = null;
+
+    function step(ts){
+      if(state.sweepStartTs === null) state.sweepStartTs = ts;
+      const elapsed = ts - state.sweepStartTs;
+      const frac = clamp(elapsed/playMs, 0, 1);
+      const revealT = model.tStart + frac*simSpan;
+      lastModel = model; lastShowTraces = true; lastRevealT = revealT;
+      drawScope(model, revealT, true);
+      if(frac < 1){
+        state.sweepRAF = requestAnimationFrame(step);
+      } else {
+        state.sweepRAF = null;
+        state.sweeping = false;
+        el.btnSweep.disabled = false;
+        lastRevealT = model.tEnd;
+        drawScope(model, model.tEnd, true);
+        updateStats(model);
+      }
+    }
+    state.sweepRAF = requestAnimationFrame(step);
+  }
+
+  function setMsg(html){ el.statusMsg.innerHTML = html; }
+
+  // ---------- events ----------
+  // Slider/toggle handlers below ONLY update state + their own label. They
+  // deliberately do not redraw the scope or stats — see the note above.
+  el.nPulsesSlider.addEventListener('input', e=>{
+    state.nPulses = parseInt(e.target.value,10);
+    el.nPulsesVal.textContent = state.nPulses;
+  });
+  el.freqSlider.addEventListener('input', e=>{
+    state.freq = parseInt(e.target.value,10);
+    el.freqVal.textContent = state.freq + ' Hz';
+    el.isiVal.textContent = (1000/state.freq).toFixed(1) + ' ms';
+  });
+  el.tauSlider.addEventListener('input', e=>{
+    state.tau = parseInt(e.target.value,10);
+    el.tauVal.textContent = state.tau + ' ms';
+  });
+  el.facilSlider.addEventListener('input', e=>{
+    state.facilStrength = parseInt(e.target.value,10)/100;
+    el.facilVal.textContent = e.target.value + '%';
+  });
+  el.caTauSlider.addEventListener('input', e=>{
+    state.caTau = parseInt(e.target.value,10);
+    el.caTauVal.textContent = state.caTau + ' ms';
+  });
+  el.depressSlider.addEventListener('input', e=>{
+    state.depressStrength = parseInt(e.target.value,10)/100;
+    el.depressVal.textContent = e.target.value + '%';
+  });
+  el.tauRecSlider.addEventListener('input', e=>{
+    state.tauRec = parseInt(e.target.value,10);
+    el.tauRecVal.textContent = state.tauRec + ' ms';
+  });
+  el.btnEPSP.addEventListener('click', ()=>{
+    state.readout = 'epsp';
+    el.btnEPSP.classList.add('sel'); el.btnFEPSP.classList.remove('sel');
+    el.legendPost.textContent = 'EPSP';
+    el.threshRow.classList.remove('disabled');
+    el.threshHelp.textContent = 'If summed depolarization reaches −55 mV, a somatic action potential is triggered. Only shown in EPSP mode — field potentials here don\u2019t spike.';
+  });
+  el.btnFEPSP.addEventListener('click', ()=>{
+    state.readout = 'fepsp';
+    el.btnFEPSP.classList.add('sel'); el.btnEPSP.classList.remove('sel');
+    el.legendPost.textContent = 'fEPSP';
+    el.threshRow.classList.add('disabled');
+    el.threshHelp.textContent = 'fEPSP mode shows the same underlying summed response as a rescaled, inverted field potential — no spike is drawn here.';
+  });
+  el.threshToggle.addEventListener('change', e=>{
+    state.threshOn = e.target.checked;
+    el.threshRow.classList.toggle('active', state.threshOn);
+  });
+  el.btnSweep.addEventListener('click', runSweep);
+  el.btnReset.addEventListener('click', ()=>{
+    if(state.sweepRAF) cancelAnimationFrame(state.sweepRAF);
+    state.sweeping = false; el.btnSweep.disabled = false;
+    state.nPulses = 6; state.freq = 25; state.tau = 20;
+    state.facilStrength = 0.35; state.caTau = 70;
+    state.depressStrength = 0.30; state.tauRec = 400;
+    state.readout = 'epsp'; state.threshOn = true;
+    el.nPulsesSlider.value = 6; el.nPulsesVal.textContent = '6';
+    el.freqSlider.value = 25; el.freqVal.textContent = '25 Hz'; el.isiVal.textContent = '40.0 ms';
+    el.tauSlider.value = 20; el.tauVal.textContent = '20 ms';
+    el.facilSlider.value = 35; el.facilVal.textContent = '35%';
+    el.caTauSlider.value = 70; el.caTauVal.textContent = '70 ms';
+    el.depressSlider.value = 30; el.depressVal.textContent = '30%';
+    el.tauRecSlider.value = 400; el.tauRecVal.textContent = '400 ms';
+    el.btnEPSP.classList.add('sel'); el.btnFEPSP.classList.remove('sel'); el.legendPost.textContent = 'EPSP';
+    el.threshToggle.checked = true; el.threshRow.classList.remove('disabled'); el.threshRow.classList.add('active');
+    // Resetting the controls doesn't touch the scope either — it stays
+    // frozen on whatever was last swept until Run Sweep is pressed again.
+  });
+  window.addEventListener('resize', ()=>{
+    if(state.sweeping || !lastModel) return;
+    drawScope(lastModel, lastRevealT, lastShowTraces);
+  });
+
+  // ---------- init ----------
+  el.threshRow.classList.add('active');
+  el.isiVal.textContent = (1000/state.freq).toFixed(1) + ' ms';
+  drawIdle();
+})();
+</script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
+</body>
+</html>

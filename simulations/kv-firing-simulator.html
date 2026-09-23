@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Potassium Conductances &amp; Repetitive Firing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --scope-grid: #0f3a22;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --nmda: #6fb8ff;
+    --teal: #45c4b0;
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --a-orange: #ff7a30;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --ink: #2a2318;
+    --danger: #d9694f;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1220px; }
+
+  header{ margin-bottom: 20px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.85rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p{
+    max-width: 760px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+  header sup{ font-size: 0.7em; }
+
+  nav.tabs{
+    display:flex; gap:0;
+    border: 1px solid var(--panel-edge);
+    border-radius: 8px;
+    overflow:hidden;
+    width: fit-content;
+    margin: 18px 0 18px;
+  }
+  nav.tabs button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    letter-spacing: 0.02em;
+    background: var(--panel);
+    color: var(--paper-dim);
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  nav.tabs button + button{ border-left: 1px solid var(--panel-edge); }
+  nav.tabs button.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  nav.tabs button:hover:not(.active){ color: var(--paper); }
+
+  .deck{
+    display:grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px){
+    .deck{ grid-template-columns: 1fr; }
+  }
+
+  .stageArea{ display:grid; grid-template-columns: 1fr; gap: 18px; }
+  .dualScope{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .dualScope.single{ grid-template-columns: 1fr; }
+  @media (max-width: 720px){ .dualScope{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--paper-dim);
+    white-space: nowrap;
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; background: var(--scope-bg); }
+
+  /* ---- rail / controls panel ---- */
+  .rail h2.sec{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    color: var(--paper-dim);
+    margin: 0 0 12px;
+    text-transform: uppercase;
+  }
+  .ctrl{ margin-bottom: 15px; }
+  .ctrl:last-child{ margin-bottom:0; }
+  .ctrl label{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    margin-bottom: 6px;
+  }
+  .ctrl label .val{ color: var(--phosphor); font-weight:500; }
+  input[type="range"]{ width:100%; accent-color: var(--amber); }
+  input[type="range"]:disabled{ opacity: 0.35; }
+  input[type="number"]{
+    width:100%;
+    background: var(--scope-bg);
+    border: 1px solid var(--panel-edge);
+    color: var(--phosphor);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    padding: 7px 9px;
+    border-radius: 6px;
+    outline: none;
+  }
+  input[type="number"]:focus{ border-color: var(--amber-dim); }
+
+  .cond-group{ display:flex; border:1px solid var(--panel-edge); border-radius:6px; overflow:hidden; }
+  .cond-btn{
+    flex:1;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: none;
+    padding: 7px 0;
+    cursor:pointer;
+  }
+  .cond-btn + .cond-btn{ border-left: 1px solid var(--panel-edge); }
+  .cond-btn.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  .cond-btn:hover{ color: var(--amber); }
+
+  .toggle{
+    display:flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle input{ accent-color: var(--amber); width:14px; height:14px; }
+
+  .channel-block{
+    border: 1px solid var(--panel-edge);
+    border-radius: 8px;
+    padding: 10px 12px 12px;
+    margin-bottom: 12px;
+  }
+  .channel-block:last-child{ margin-bottom: 0; }
+  .channel-block .toggle{ font-size: 0.76rem; color: var(--paper); margin-bottom: 10px; }
+  .channel-block .swatch-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:2px; }
+
+  .divider{ border-top: 1px solid var(--panel-edge); margin: 14px 0; }
+
+  button.primary{
+    width:100%;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--amber);
+    border: 1px solid var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+    padding: 10px 0;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: background .15s ease;
+  }
+  button.primary:hover{ background:#f0b455; }
+  button.primary:disabled{ background: var(--panel-edge); border-color: var(--panel-edge); color: var(--paper-dim); cursor: default; }
+  button.secondary{
+    width:100%;
+    margin-top: 8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 0;
+    border-radius: 6px;
+    cursor:pointer;
+  }
+  button.secondary:hover{ border-color: var(--amber-dim); color: var(--amber); }
+
+  .readouts{
+    display:flex; flex-wrap:wrap; gap: 14px 22px;
+    margin-top: 12px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+  }
+  .readouts .r{ color: var(--paper-dim); }
+  .readouts .r b{ color: var(--phosphor); font-weight:600; }
+  .readouts .r b.warn{ color: var(--danger); }
+
+  .legend-row{ display:flex; gap:16px; margin-top:10px; font-size:0.72rem; color:var(--paper-dim); flex-wrap:wrap; }
+
+  .table-toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:14px; }
+  .table-toolbar button.secondary{ width:auto; margin-top:0; padding:8px 16px; }
+  .copy-status{ font-family:'JetBrains Mono', monospace; font-size:0.72rem; color: var(--phosphor); }
+  #fiTableWrap{ margin-top:10px; max-height:220px; overflow:auto; border-radius:6px; }
+  #fiTableWrap table{ width:100%; border-collapse:collapse; font-family:'JetBrains Mono', monospace; font-size:0.74rem; }
+  #fiTableWrap thead th{ text-align:left; color:var(--paper-dim); border-bottom:1px solid var(--panel-edge); padding:5px 12px 5px 0; position:sticky; top:0; background:var(--panel); }
+  #fiTableWrap td{ padding:4px 12px 4px 0; border-bottom:1px dotted var(--panel-edge); color:var(--paper); }
+  .legend-row span{ display:inline-flex; align-items:center; gap:5px; }
+  .swatch{ width:10px; height:3px; border-radius:1px; display:inline-block; }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+  }
+  .stats .row{
+    display:flex; justify-content:space-between;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); }
+
+  .notice{
+    margin-top: 10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--danger);
+    line-height: 1.5;
+  }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+    margin: 10px 0 0;
+  }
+  details p code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  footer{ margin-top: 20px; font-size: 0.72rem; color: var(--paper-dim); text-align:center; }
+</style>
+</head>
+<body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+body{align-items:stretch;padding-left:28px;padding-right:28px;padding-top:0}
+.wrap{max-width:none;padding-top:14px}
+.lab-nav{padding-left:0;padding-right:0}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · MEMBRANE EXCITABILITY</p>
+    <h1>Potassium Conductances &amp; Repetitive Firing</h1>
+    <p>
+      A Hodgkin&ndash;Huxley membrane driven by a sustained current step, so it fires a train of action
+      potentials rather than just one. Toggle the delayed-rectifier K<sup>+</sup> conductance (the classic
+      repolarizer) and a fast, inactivating A-type K<sup>+</sup> conductance on or off independently, and
+      watch what each one actually does to the shape of the spike, the afterhyperpolarization, and the
+      firing rate.
+    </p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="train">Spike Train</button>
+    <button class="tab-btn" data-tab="fi">f&ndash;I Curve</button>
+  </nav>
+
+  <div class="deck" id="deck">
+    <div class="panel rail" id="rail"></div>
+    <div class="stageArea" id="stageArea"></div>
+  </div>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      The membrane follows the standard Hodgkin &amp; Huxley (1952) equations
+      <code>C dV/dt = I_inj &minus; I_Na &minus; I_KDR &minus; I_A &minus; I_leak</code>, with the classic
+      fast Na<sup>+</sup> current (<code>g&#772;<sub>Na</sub> m&sup3;h</code>) and delayed-rectifier
+      K<sup>+</sup> current (<code>g&#772;<sub>KDR</sub> n&#8308;</code>) using their original squid-axon
+      rate constants. A second, optional K<sup>+</sup> current uses the fast-activating, fast-inactivating
+      A-type kinetics of Connor &amp; Stevens (1971) (<code>g&#772;<sub>A</sub> a&sup3;b</code>) &mdash; both
+      K<sup>+</sup> currents share the same reversal potential. Before each run, the model is first let
+      settle for 200&nbsp;ms with no injected current, at whatever K<sup>+</sup> conductances are currently
+      toggled on, so the trace always starts from that configuration's own true resting state rather than
+      from an artificial fixed value &mdash; this is also why removing enough K<sup>+</sup> conductance can
+      leave the cell already depolarized, or already firing, before the stimulus even begins.
+    </p>
+    <p>
+      The <b>delayed rectifier</b> is what repolarizes the spike: switch it off and the membrane has nothing
+      to pull it back down after Na<sup>+</sup> channels open, so spikes broaden into a plateau and the
+      afterhyperpolarization disappears &mdash; with it fully off here, the cell settles into a sustained
+      depolarized "up" state instead of a resting potential.
+      The <b>A-type current</b> activates quickly but also inactivates quickly at depolarized potentials; net,
+      it acts as a brake on the first spike and on firing rate, because it turns on as the membrane approaches
+      threshold. That's why enabling it delays the first spike and lowers firing rate for a given current
+      &mdash; the mechanism behind "type I" excitability differences between neurons that fire fast from
+      rheobase and ones that fire slowly and stay slow.
+    </p>
+    <p>
+      Spike <b>width</b> is measured as the time the trace spends above &minus;20&nbsp;mV around each peak;
+      <b>afterhyperpolarization (AHP)</b> is how far the trough after a spike falls below that configuration's
+      own resting potential (a negative value means the trace never gets below rest at all &mdash; e.g. when
+      the delayed rectifier is off). The <b>f&ndash;I curve</b> tab repeats this at a range of current
+      amplitudes and plots the number of action potentials fired against injected current, using the same K<sup>+</sup> channel
+      toggles as the Spike Train tab.
+    </p>
+  </details>
+
+  <footer>Teaching simulation &mdash; conductances and kinetics are the classic squid-axon (Hodgkin &amp; Huxley, 1952) and Connor&ndash;Stevens (1971) parameter sets, not measurements from a specific preparation.</footer>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ================= Biophysics =================
+  const ENa = 50, EK = -77, EL = -54.387;
+  const GNA = 120, GL = 0.3, CM = 1;
+  const V_REST_INIT = -65;
+  const STIM_START = 20; // ms
+  const TAIL = 30; // ms after stimulus ends, kept in the recorded window
+  const SETTLE_MS = 200;
+  const DT_TRAIN = 0.01;
+  const DT_FI = 0.02;
+  const FI_DUR = 300; // ms, fixed stimulus duration used for the f-I sweep
+
+  function vtrap(x) { return Math.abs(x) < 1e-6 ? 1 - x / 2 : x / (1 - Math.exp(-x)); }
+  function alphaM(V) { return vtrap((V + 40) / 10); }
+  function betaM(V)  { return 4 * Math.exp(-(V + 65) / 18); }
+  function alphaH(V) { return 0.07 * Math.exp(-(V + 65) / 20); }
+  function betaH(V)  { return 1 / (1 + Math.exp(-(V + 35) / 10)); }
+  function alphaN(V) { return 0.1 * vtrap((V + 55) / 10); }
+  function betaN(V)  { return 0.125 * Math.exp(-(V + 65) / 80); }
+  // Connor & Stevens (1971) A-type K+ current kinetics (Dayan & Abbott parameterization)
+  function aInf(V) { return Math.pow(0.0761 * Math.exp((V + 94.22) / 31.84) / (1 + Math.exp((V + 1.17) / 28.93)), 1 / 3); }
+  function tauA(V) { return 0.3632 + 1.158 / (1 + Math.exp((V + 55.96) / 20.12)); }
+  function bInf(V) { return Math.pow(1 / (1 + Math.exp((V + 53.3) / 14.54)), 4); }
+  function tauB(V) { return 1.24 + 2.678 / (1 + Math.exp((V + 50) / 16.027)); }
+
+  function derivs(y, Iinj, gKDR, gA) {
+    const V = y[0], m = y[1], h = y[2], n = y[3], a = y[4], b = y[5];
+    const INa = GNA * m * m * m * h * (V - ENa);
+    const IKDR = gKDR * n * n * n * n * (V - EK);
+    const IA = gA * a * a * a * b * (V - EK);
+    const IL = GL * (V - EL);
+    const dV = (Iinj - INa - IKDR - IA - IL) / CM;
+    const dm = alphaM(V) * (1 - m) - betaM(V) * m;
+    const dh = alphaH(V) * (1 - h) - betaH(V) * h;
+    const dn = alphaN(V) * (1 - n) - betaN(V) * n;
+    const da = (aInf(V) - a) / tauA(V);
+    const db = (bInf(V) - b) / tauB(V);
+    return [dV, dm, dh, dn, da, db];
+  }
+  function addScaled(y, k, s) {
+    const r = new Array(6);
+    for (let i = 0; i < 6; i++) r[i] = y[i] + k[i] * s;
+    return r;
+  }
+  function rk4Step(y, dt, Iinj, gKDR, gA) {
+    const k1 = derivs(y, Iinj, gKDR, gA);
+    const k2 = derivs(addScaled(y, k1, dt / 2), Iinj, gKDR, gA);
+    const k3 = derivs(addScaled(y, k2, dt / 2), Iinj, gKDR, gA);
+    const k4 = derivs(addScaled(y, k3, dt), Iinj, gKDR, gA);
+    const r = new Array(6);
+    for (let i = 0; i < 6; i++) r[i] = y[i] + (dt / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+    return r;
+  }
+  function steadyState(V0) {
+    return [V0,
+      alphaM(V0) / (alphaM(V0) + betaM(V0)),
+      alphaH(V0) / (alphaH(V0) + betaH(V0)),
+      alphaN(V0) / (alphaN(V0) + betaN(V0)),
+      aInf(V0), bInf(V0)];
+  }
+  // Runs with no injected current from a generic starting point so the model reaches (or settles
+  // into a limit cycle around) the true resting state for whatever K+ conductances are active.
+  function settle(gKDR, gA, dt) {
+    let y = steadyState(V_REST_INIT);
+    const n = Math.round(SETTLE_MS / dt);
+    for (let i = 0; i < n; i++) y = rk4Step(y, dt, 0, gKDR, gA);
+    return y;
+  }
+
+  function runTrace(stimAmp, stimDur, gKDR, gA, dt, aOn) {
+    const y0 = settle(gKDR, gA, dt);
+    const restV = y0[0];
+    const tEnd = STIM_START + stimDur + TAIL;
+    const n = Math.round(tEnd / dt);
+    const t = new Float64Array(n + 1), V = new Float64Array(n + 1);
+    let y = y0.slice();
+    for (let i = 0; i <= n; i++) {
+      const tt = i * dt;
+      t[i] = tt; V[i] = y[0];
+      const Iinj = (tt >= STIM_START && tt <= STIM_START + stimDur) ? stimAmp : 0;
+      y = rk4Step(y, dt, Iinj, gKDR, gA);
+    }
+    return { t, V, restV, dt, stimStart: STIM_START, stimDur, aOn: !!aOn };
+  }
+
+  function detectSpikes(t, V, dt) {
+    const spikes = [];
+    const refractoryIdx = Math.round(2 / dt);
+    let lastIdx = -1e9;
+    for (let i = 1; i < V.length - 1; i++) {
+      if (V[i] > 0 && V[i] >= V[i - 1] && V[i] > V[i + 1]) {
+        if (i - lastIdx > refractoryIdx) { spikes.push(i); lastIdx = i; }
+      }
+    }
+    return spikes; // array of sample indices
+  }
+  function analyzeTrace(trace) {
+    const { t, V, dt, restV } = trace;
+    const spikeIdx = detectSpikes(t, V, dt);
+    const widths = [], ahps = [], incomplete = [];
+    for (const i of spikeIdx) {
+      let lo = i; while (lo > 0 && V[lo] > -20) lo--;
+      let hi = i; while (hi < V.length - 1 && V[hi] > -20) hi++;
+      const inc = (hi === V.length - 1 && V[hi] > -20);
+      incomplete.push(inc);
+      widths.push((hi - lo) * dt);
+      const winEnd = Math.min(V.length - 1, i + Math.round(15 / dt));
+      let m = Infinity;
+      for (let k = i; k <= winEnd; k++) if (V[k] < m) m = V[k];
+      ahps.push(restV - m);
+    }
+    const nSpikes = spikeIdx.length;
+    const firstT = nSpikes ? t[spikeIdx[0]] : null;
+    const lastT = nSpikes ? t[spikeIdx[nSpikes - 1]] : null;
+    const rate = nSpikes >= 2 ? (nSpikes - 1) / ((lastT - firstT) / 1000) : 0;
+    const latency = nSpikes ? firstT - trace.stimStart : null;
+    // depolarization block: fired at least once but never returns below -20mV again before the stimulus ends
+    let block = false;
+    if (nSpikes >= 1) {
+      const lastIdx = spikeIdx[nSpikes - 1];
+      const endWinIdx = Math.min(V.length - 1, Math.round((trace.stimStart + trace.stimDur) / dt));
+      let repolarized = false;
+      for (let k = lastIdx; k <= endWinIdx; k++) if (V[k] < -20) { repolarized = true; break; }
+      if (!repolarized && endWinIdx > lastIdx + Math.round(5 / dt)) block = true;
+    }
+    return { spikeIdx, nSpikes, rate, latency, widths, ahps, incomplete, restV, block };
+  }
+
+  // ================= State =================
+  const state = {
+    tab: "train",
+    stimAmp: 12, stimDur: 80,
+    kdrOn: true, gKDR: 36,
+    aOn: false, gA: 8,
+    lastControlTrace: null, lastControlAnalysis: null, lastATrace: null, lastAAnalysis: null,
+    fiMin: 0, fiMax: 40, fiStep: 2,
+    fiAmps: [], fiStepIdx: 0, fiApsControl: [], fiApsA: [], fiRheobaseControl: null, fiRheobaseA: null,
+    lastFiControlTrace: null, lastFiATrace: null
+  };
+
+  const rail = document.getElementById("rail");
+  const stageArea = document.getElementById("stageArea");
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function effGKDR() { return state.kdrOn ? state.gKDR : 0; }
+  function effGA() { return state.aOn ? state.gA : 0; }
+
+  // Colors used consistently across both tabs: the DR-only / control configuration is always
+  // blue (--nmda); anything with the A-type conductance engaged is always orange (--amber),
+  // for maximum contrast against the control trace.
+  const CONTROL_COLOR = "--nmda";
+  const A_COLOR = "--a-orange";
+
+  // ================= Rail =================
+  function channelControlsHTML() {
+    return `
+      <h2 class="sec">K<sup>+</sup> conductances</h2>
+      <div class="channel-block">
+        <label class="toggle">
+          <input type="checkbox" id="kdrToggle" ${state.kdrOn ? "checked" : ""}>
+          <span class="swatch-dot" style="background:${css(CONTROL_COLOR)}"></span> Delayed rectifier (I<sub>KDR</sub>)
+        </label>
+        <div class="ctrl" style="margin-bottom:0;">
+          <label>g&#772;<sub>KDR</sub> <span class="val" id="gKdrVal">${state.gKDR} mS/cm&sup2;</span></label>
+          <input type="range" id="gKdr" min="0" max="50" step="1" value="${state.gKDR}" ${state.kdrOn ? "" : "disabled"}>
+        </div>
+      </div>
+      <div class="channel-block">
+        <label class="toggle">
+          <input type="checkbox" id="aToggle" ${state.aOn ? "checked" : ""}>
+          <span class="swatch-dot" style="background:${css(A_COLOR)}"></span> A-type (I<sub>A</sub>)
+        </label>
+        <div class="ctrl" style="margin-bottom:0;">
+          <label>g&#772;<sub>A</sub> <span class="val" id="gAVal">${state.gA} mS/cm&sup2;</span></label>
+          <input type="range" id="gA" min="0" max="20" step="0.5" value="${state.gA}" ${state.aOn ? "" : "disabled"}>
+        </div>
+      </div>
+    `;
+  }
+  // onSettleChange (optional): called after a checkbox flips, or after a conductance slider is
+  // released (its 'change' event) — not on every 'input' tick while dragging. Used by the f-I
+  // tab to reset an in-progress stepped sweep whenever the underlying conductances change.
+  function bindChannelControls(onSettleChange) {
+    document.getElementById("kdrToggle").addEventListener("change", e => {
+      state.kdrOn = e.target.checked;
+      document.getElementById("gKdr").disabled = !state.kdrOn;
+      if (onSettleChange) onSettleChange();
+    });
+    document.getElementById("gKdr").addEventListener("input", e => {
+      state.gKDR = parseFloat(e.target.value);
+      document.getElementById("gKdrVal").textContent = state.gKDR + " mS/cm\u00B2";
+    });
+    document.getElementById("gKdr").addEventListener("change", () => { if (onSettleChange) onSettleChange(); });
+    document.getElementById("aToggle").addEventListener("change", e => {
+      state.aOn = e.target.checked;
+      document.getElementById("gA").disabled = !state.aOn;
+      if (onSettleChange) onSettleChange();
+    });
+    document.getElementById("gA").addEventListener("input", e => {
+      state.gA = parseFloat(e.target.value);
+      document.getElementById("gAVal").textContent = state.gA + " mS/cm\u00B2";
+    });
+    document.getElementById("gA").addEventListener("change", () => { if (onSettleChange) onSettleChange(); });
+  }
+
+  function renderRailTrain() {
+    rail.innerHTML = `
+      <h2 class="sec">Stimulus</h2>
+      <div class="ctrl">
+        <label>Injected current <span class="val" id="stimAmpVal">${state.stimAmp} &micro;A/cm&sup2;</span></label>
+        <input type="range" id="stimAmp" min="0" max="40" step="1" value="${state.stimAmp}">
+      </div>
+      <div class="ctrl">
+        <label>Duration (ms)</label>
+        <input type="number" id="stimDur" min="1" max="2000" step="1" value="${state.stimDur}">
+      </div>
+      <div class="divider"></div>
+      ${channelControlsHTML()}
+      <div class="divider"></div>
+      <button class="primary" id="runBtn">Run stimulus</button>
+    `;
+    bindChannelControls();
+    document.getElementById("stimAmp").addEventListener("input", e => {
+      state.stimAmp = parseFloat(e.target.value);
+      document.getElementById("stimAmpVal").textContent = state.stimAmp + " \u00B5A/cm\u00B2";
+    });
+    document.getElementById("stimDur").addEventListener("change", e => {
+      let v = parseFloat(e.target.value);
+      if (isNaN(v)) v = state.stimDur;
+      v = Math.max(1, Math.min(2000, v));
+      state.stimDur = v;
+      e.target.value = v;
+    });
+    document.getElementById("runBtn").addEventListener("click", runTrainTab);
+  }
+
+  function renderRailFI() {
+    rail.innerHTML = `
+      <h2 class="sec">Sweep range</h2>
+      <div class="ctrl">
+        <label>Max current <span class="val" id="fiMaxVal">${state.fiMax} &micro;A/cm&sup2;</span></label>
+        <input type="range" id="fiMax" min="10" max="80" step="2" value="${state.fiMax}">
+      </div>
+      <div class="ctrl">
+        <label>Step <span class="val" id="fiStepVal">${state.fiStep} &micro;A/cm&sup2;</span></label>
+        <input type="range" id="fiStep" min="1" max="5" step="1" value="${state.fiStep}">
+      </div>
+      <div class="divider"></div>
+      ${channelControlsHTML()}
+      <div class="divider"></div>
+      <button class="primary" id="applyPulseBtn">Apply next pulse</button>
+      <button class="secondary" id="resetSweepBtn">Reset sweep</button>
+      <p id="fiProgressText" style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--paper-dim);line-height:1.5;margin-top:10px;"></p>
+    `;
+    bindChannelControls(() => resetFiSweep());
+    document.getElementById("fiMax").addEventListener("input", e => {
+      state.fiMax = parseFloat(e.target.value);
+      document.getElementById("fiMaxVal").textContent = state.fiMax + " \u00B5A/cm\u00B2";
+    });
+    document.getElementById("fiMax").addEventListener("change", () => resetFiSweep());
+    document.getElementById("fiStep").addEventListener("input", e => {
+      state.fiStep = parseFloat(e.target.value);
+      document.getElementById("fiStepVal").textContent = state.fiStep + " \u00B5A/cm\u00B2";
+    });
+    document.getElementById("fiStep").addEventListener("change", () => resetFiSweep());
+    document.getElementById("applyPulseBtn").addEventListener("click", applyFiPulse);
+    document.getElementById("resetSweepBtn").addEventListener("click", () => resetFiSweep());
+    updateFiProgressUI();
+  }
+
+  // ================= Stage scaffolding =================
+  function scopePanelHTML(id, titleText, rightText, w, h) {
+    return `
+      <div class="panel">
+        <div class="panel-title"><h2>${titleText}</h2><span>${rightText}</span></div>
+        <canvas id="${id}" width="${w}" height="${h}"></canvas>
+        <div class="readouts" id="${id}Readouts"></div>
+        <div class="legend-row" id="${id}Legend"></div>
+      </div>
+    `;
+  }
+  function buildStage() {
+    if (state.tab === "train") {
+      stageArea.innerHTML = scopePanelHTML("vScope", "OSCILLOSCOPE — MEMBRANE VOLTAGE", "current clamp", 1100, 420);
+    } else {
+      buildFiStage();
+    }
+  }
+  // Oscilloscope(s) on top, f-I curve panel below. Two side-by-side scopes (control | A-type)
+  // when the A-type conductance is enabled; a single full-width scope otherwise.
+  function buildFiStage() {
+    const dual = state.aOn;
+    const scopesHTML = dual
+      ? `<div class="dualScope">` +
+          scopePanelHTML("fiScopeControl", "OSCILLOSCOPE — WITHOUT A-TYPE", "control", 540, 320) +
+          scopePanelHTML("fiScopeA", "OSCILLOSCOPE — WITH A-TYPE", "I\u2090 on", 540, 320) +
+        `</div>`
+      : `<div class="dualScope single">` +
+          scopePanelHTML("fiScopeControl", "OSCILLOSCOPE — MEMBRANE VOLTAGE", "control", 1100, 320) +
+        `</div>`;
+    const curveHTML = `
+      <div class="panel">
+        <div class="panel-title"><h2>f–I CURVE</h2><span>action potentials vs injected current</span></div>
+        <canvas id="fiScope" width="1100" height="380"></canvas>
+        <div class="readouts" id="fiScopeReadouts"></div>
+        <div class="legend-row" id="fiScopeLegend"></div>
+        <div class="table-toolbar">
+          <button class="secondary" id="copyFiTableBtn">Copy table for spreadsheet</button>
+          <span id="copyFiStatus" class="copy-status"></span>
+        </div>
+        <div id="fiTableWrap"></div>
+      </div>
+    `;
+    stageArea.innerHTML = scopesHTML + curveHTML;
+    const copyBtn = document.getElementById("copyFiTableBtn");
+    if (copyBtn) copyBtn.addEventListener("click", copyFiTable);
+  }
+
+  // ================= Canvas drawing =================
+  function drawGrid(ctx, w, h) {
+    ctx.strokeStyle = css("--scope-grid");
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= w; x += w / 14) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y <= h; y += h / 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+  }
+
+  // layers: array of { trace, color }. All layers share the same stimulus window and time axis.
+  function drawVoltagePanel(canvasId, layers) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = css("--scope-bg"); ctx.fillRect(0, 0, w, h);
+    drawGrid(ctx, w, h);
+
+    const ref = layers[0].trace;
+    const fontPx = Math.round(w * 0.02);
+    const padL = Math.round(w * 0.075), padR = Math.round(w * 0.025);
+    const padT = Math.round(h * 0.08), padB = Math.round(h * 0.16);
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const tMin = ref.t[0], tMax = ref.t[ref.t.length - 1];
+
+    let vMin = Infinity, vMax = -Infinity;
+    for (const { trace } of layers) {
+      const V = trace.V;
+      for (let i = 0; i < V.length; i++) { if (V[i] < vMin) vMin = V[i]; if (V[i] > vMax) vMax = V[i]; }
+    }
+    vMin = Math.min(vMin, -85); vMax = Math.max(vMax, 20);
+    const pad = (vMax - vMin) * 0.1;
+    vMin -= pad; vMax += pad;
+
+    function xOf(tt) { return padL + ((tt - tMin) / (tMax - tMin)) * plotW; }
+    function yOf(vv) { return padT + plotH - ((vv - vMin) / (vMax - vMin)) * plotH; }
+
+    // stimulus shading
+    ctx.fillStyle = "rgba(232,165,61,0.08)";
+    const sx0 = xOf(ref.stimStart), sx1 = xOf(ref.stimStart + ref.stimDur);
+    ctx.fillRect(sx0, padT, sx1 - sx0, plotH);
+    ctx.strokeStyle = css("--amber"); ctx.lineWidth = Math.max(1.2, w * 0.001);
+    ctx.setLineDash([w * 0.004, w * 0.003]);
+    ctx.beginPath(); ctx.moveTo(sx0, padT); ctx.lineTo(sx0, padT + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx1, padT); ctx.lineTo(sx1, padT + plotH); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 0 mV threshold reference
+    ctx.strokeStyle = "rgba(232,165,61,0.3)";
+    ctx.beginPath(); ctx.moveTo(padL, yOf(0)); ctx.lineTo(padL + plotW, yOf(0)); ctx.stroke();
+
+    // traces — downsample the draw (not the data) for very fine dt without losing shape.
+    // Drawn in order so a later layer (e.g. the A-current trace) is not hidden behind an earlier one.
+    for (const { trace, color } of layers) {
+      const { t, V } = trace;
+      const stride = Math.max(1, Math.floor(V.length / 4000));
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1.6, w * 0.0014);
+      ctx.beginPath();
+      let first = true;
+      for (let i = 0; i < V.length; i += stride) {
+        const x = xOf(t[i]), y = yOf(V[i]);
+        if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "rgba(184,174,149,0.8)";
+    ctx.font = fontPx + "px 'JetBrains Mono', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(vMax.toFixed(0) + " mV", 6, padT + fontPx);
+    ctx.fillText(vMin.toFixed(0) + " mV", 6, padT + plotH);
+    ctx.textAlign = "center";
+    ctx.fillText("time (ms)", padL + plotW / 2, h - padB * 0.25);
+    ctx.fillStyle = css("--amber");
+    ctx.fillText("stim", (sx0 + sx1) / 2, padT + fontPx);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(184,174,149,0.8)";
+    ctx.fillText(tMax.toFixed(0) + " ms", padL + plotW, padT + plotH + fontPx + 10);
+  }
+
+  function statLine(an, label, colorVar) {
+    let widthTxt = "—", ahpTxt = "—";
+    if (an.nSpikes > 0) {
+      const w0 = an.widths[0], inc0 = an.incomplete[0];
+      widthTxt = inc0 ? "&gt;" + w0.toFixed(0) + " ms (no repolarization)" : w0.toFixed(2) + " ms";
+      ahpTxt = an.ahps[0].toFixed(1) + " mV";
+    }
+    const blockTxt = an.block ? ` &nbsp;<b class="warn">possible depolarization block</b>` : "";
+    return `
+      <div style="flex-basis:100%;font-weight:600;color:${css(colorVar)};margin-top:2px;">${label}</div>
+      <span class="r">resting V <b>${an.restV.toFixed(1)} mV</b></span>
+      <span class="r">spikes <b>${an.nSpikes}</b></span>
+      <span class="r">rate <b>${an.nSpikes >= 2 ? an.rate.toFixed(1) + " Hz" : "—"}</b></span>
+      <span class="r">latency <b>${an.latency !== null ? an.latency.toFixed(2) + " ms" : "—"}</b></span>
+      <span class="r">1st spike width <b>${widthTxt}</b></span>
+      <span class="r">1st spike AHP <b>${ahpTxt}</b>${blockTxt}</span>
+    `;
+  }
+
+  function updateTrainReadouts() {
+    const ro = document.getElementById("vScopeReadouts");
+    const lg = document.getElementById("vScopeLegend");
+    if (ro) {
+      let html = statLine(state.lastControlAnalysis, "DR only (control)", CONTROL_COLOR);
+      if (state.lastAAnalysis) html += statLine(state.lastAAnalysis, "with I\u2090 (A-type) on", A_COLOR);
+      ro.innerHTML = html;
+    }
+    if (lg) {
+      let html = `<span><span class="swatch" style="background:${css(CONTROL_COLOR)}"></span>V<sub>m</sub> — DR only</span>`;
+      if (state.lastAAnalysis) html += `<span><span class="swatch" style="background:${css(A_COLOR)}"></span>V<sub>m</sub> — I<sub>A</sub> on</span>`;
+      html += `<span><span class="swatch" style="background:${css("--amber")}"></span>stimulus window</span>`;
+      lg.innerHTML = html;
+    }
+  }
+
+  function runTrainTab() {
+    const gKDR = effGKDR();
+    // Control trace: current KDR settings, A-type always off — the fixed comparison baseline.
+    const controlTrace = runTrace(state.stimAmp, state.stimDur, gKDR, 0, DT_TRAIN, false);
+    state.lastControlTrace = controlTrace;
+    state.lastControlAnalysis = analyzeTrace(controlTrace);
+
+    if (state.aOn) {
+      // Overlay the A-current trace on top of the control trace so both are visible together.
+      const aTrace = runTrace(state.stimAmp, state.stimDur, gKDR, state.gA, DT_TRAIN, true);
+      state.lastATrace = aTrace;
+      state.lastAAnalysis = analyzeTrace(aTrace);
+      drawVoltagePanel("vScope", [
+        { trace: controlTrace, color: css(CONTROL_COLOR) },
+        { trace: aTrace, color: css(A_COLOR) }
+      ]);
+    } else {
+      state.lastATrace = null;
+      state.lastAAnalysis = null;
+      drawVoltagePanel("vScope", [{ trace: controlTrace, color: css(CONTROL_COLOR) }]);
+    }
+    updateTrainReadouts();
+  }
+
+  // ================= f-I curve (stepped, one pulse at a time) =================
+  // Recomputes the planned amplitude list and clears all accumulated sweep progress. Called
+  // whenever the sweep range or any K+ conductance setting changes, and by the Reset button.
+  function resetFiSweep() {
+    const amps = [];
+    // Start at one step above zero — a 0 uA/cm2 pulse is a trivial no-op (no spikes, flat trace).
+    for (let a = state.fiStep; a <= state.fiMax + 1e-9; a += state.fiStep) amps.push(a);
+    state.fiAmps = amps;
+    state.fiStepIdx = 0;
+    state.fiApsControl = [];
+    state.fiApsA = [];
+    state.fiRheobaseControl = null;
+    state.fiRheobaseA = null;
+    state.lastFiControlTrace = null;
+    state.lastFiATrace = null;
+    if (state.tab === "fi") {
+      buildFiStage();
+      clearScopePlaceholder("fiScopeControl", "click \u201CApply next pulse\u201D to begin");
+      if (state.aOn) clearScopePlaceholder("fiScopeA", "click \u201CApply next pulse\u201D to begin");
+      drawFiPanel();
+      updateFiProgressUI();
+    }
+  }
+
+  function clearScopePlaceholder(canvasId, msg) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = css("--scope-bg"); ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGrid(ctx, canvas.width, canvas.height);
+    const ro = document.getElementById(canvasId + "Readouts");
+    if (ro) ro.innerHTML = `<span class="r">${msg}</span>`;
+    const lg = document.getElementById(canvasId + "Legend");
+    if (lg) lg.innerHTML = "";
+  }
+
+  function updateFiProgressUI() {
+    const el = document.getElementById("fiProgressText");
+    const btn = document.getElementById("applyPulseBtn");
+    const total = state.fiAmps.length;
+    const done = state.fiStepIdx;
+    if (el) {
+      el.textContent = (done >= total)
+        ? `Sweep complete — ${total} pulses applied.`
+        : `Next pulse: ${state.fiAmps[done].toFixed(0)} \u00B5A/cm\u00B2  (${done} of ${total} applied)`;
+    }
+    if (btn) {
+      btn.disabled = done >= total;
+      btn.textContent = (done >= total) ? "Sweep complete" : "Apply next pulse";
+    }
+  }
+
+  // Runs one current step (the next amplitude in state.fiAmps), updates the oscilloscope(s)
+  // with that pulse's voltage trace, and appends its action-potential count to the f-I curve.
+  function applyFiPulse() {
+    if (state.fiStepIdx >= state.fiAmps.length) return;
+    const amp = state.fiAmps[state.fiStepIdx];
+    const gKDR = effGKDR();
+
+    const controlTrace = runTrace(amp, FI_DUR, gKDR, 0, DT_FI, false);
+    const anControl = analyzeTrace(controlTrace);
+    state.fiApsControl.push(anControl.nSpikes);
+    if (state.fiRheobaseControl === null && anControl.nSpikes >= 1) state.fiRheobaseControl = amp;
+    state.lastFiControlTrace = controlTrace;
+
+    if (state.aOn) {
+      const aTrace = runTrace(amp, FI_DUR, gKDR, state.gA, DT_FI, true);
+      const anA = analyzeTrace(aTrace);
+      state.fiApsA.push(anA.nSpikes);
+      if (state.fiRheobaseA === null && anA.nSpikes >= 1) state.fiRheobaseA = amp;
+      state.lastFiATrace = aTrace;
+    }
+
+    state.fiStepIdx++;
+    drawFiScopes();
+    drawFiPanel();
+    updateFiProgressUI();
+  }
+
+  function drawFiScopes() {
+    if (!state.lastFiControlTrace) return;
+    drawVoltagePanel("fiScopeControl", [{ trace: state.lastFiControlTrace, color: css(CONTROL_COLOR) }]);
+    updateSingleScopeReadouts("fiScopeControl", analyzeTrace(state.lastFiControlTrace), "DR only (control)", CONTROL_COLOR);
+    if (state.aOn && state.lastFiATrace) {
+      drawVoltagePanel("fiScopeA", [{ trace: state.lastFiATrace, color: css(A_COLOR) }]);
+      updateSingleScopeReadouts("fiScopeA", analyzeTrace(state.lastFiATrace), "with I\u2090 (A-type) on", A_COLOR);
+    }
+  }
+  function updateSingleScopeReadouts(canvasId, an, label, colorVar) {
+    const ro = document.getElementById(canvasId + "Readouts");
+    const lg = document.getElementById(canvasId + "Legend");
+    if (ro) ro.innerHTML = statLine(an, label, colorVar);
+    if (lg) lg.innerHTML = `<span><span class="swatch" style="background:${css(colorVar)}"></span>V<sub>m</sub></span><span><span class="swatch" style="background:${css("--amber")}"></span>stimulus window</span>`;
+  }
+
+  // ---- copy-to-spreadsheet table ----
+  function fiTableTSV() {
+    const amps = state.fiAmps.slice(0, state.fiStepIdx);
+    const header = state.aOn
+      ? ["Current (uA/cm2)", "APs (control, DR only)", "APs (I_A on)"]
+      : ["Current (uA/cm2)", "APs (control, DR only)"];
+    const lines = [header.join("\t")];
+    amps.forEach((a, i) => {
+      const row = state.aOn
+        ? [a, state.fiApsControl[i], state.fiApsA[i]]
+        : [a, state.fiApsControl[i]];
+      lines.push(row.join("\t"));
+    });
+    return lines.join("\n");
+  }
+  function renderFiTable() {
+    const wrap = document.getElementById("fiTableWrap");
+    if (!wrap) return;
+    const amps = state.fiAmps.slice(0, state.fiStepIdx);
+    if (amps.length === 0) { wrap.innerHTML = ""; return; }
+    let html = "<table><thead><tr>";
+    html += "<th>Current (\u00B5A/cm\u00B2)</th><th>APs (control)</th>";
+    if (state.aOn) html += "<th>APs (I\u2090 on)</th>";
+    html += "</tr></thead><tbody>";
+    amps.forEach((a, i) => {
+      html += `<tr><td>${a.toFixed(0)}</td><td>${state.fiApsControl[i]}</td>`;
+      if (state.aOn) html += `<td>${state.fiApsA[i]}</td>`;
+      html += `</tr>`;
+    });
+    html += "</tbody></table>";
+    wrap.innerHTML = html;
+  }
+  function fallbackCopy(text, onSuccess, onFail) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (ok) onSuccess(); else onFail();
+    } catch (e) { onFail(); }
+  }
+  function copyFiTable() {
+    const status = document.getElementById("copyFiStatus");
+    if (state.fiStepIdx === 0) {
+      if (status) status.textContent = "No data yet — apply at least one pulse first.";
+      return;
+    }
+    const text = fiTableTSV();
+    const onSuccess = () => {
+      if (!status) return;
+      status.textContent = "Copied — paste into your spreadsheet.";
+      setTimeout(() => { if (status) status.textContent = ""; }, 3000);
+    };
+    const onFail = () => { if (status) status.textContent = "Couldn't copy automatically — select the table below and copy manually."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy(text, onSuccess, onFail));
+    } else {
+      fallbackCopy(text, onSuccess, onFail);
+    }
+  }
+
+  function drawFiPanel() {
+    const canvas = document.getElementById("fiScope");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = css("--scope-bg"); ctx.fillRect(0, 0, w, h);
+    drawGrid(ctx, w, h);
+    renderFiTable();
+
+    const fontPx = Math.round(w * 0.018);
+    const padL = Math.round(w * 0.09), padR = Math.round(w * 0.03);
+    const padT = Math.round(h * 0.06), padB = Math.round(h * 0.11);
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+
+    const ro = document.getElementById("fiScopeReadouts");
+    const lg = document.getElementById("fiScopeLegend");
+    const amps = state.fiAmps.slice(0, state.fiStepIdx);
+    const apsControl = state.fiApsControl;
+    const apsA = state.aOn ? state.fiApsA : null;
+    const rheobaseControl = state.fiRheobaseControl;
+    const rheobaseA = state.fiRheobaseA;
+    if (amps.length === 0) {
+      if (ro) ro.innerHTML = `<span class="r">click "Apply next pulse" to start building the curve</span>`;
+      if (lg) lg.innerHTML = "";
+      return;
+    }
+    const allAps = apsA ? apsControl.concat(apsA) : apsControl;
+    const xMax = Math.max(state.fiMax, 1) * 1.05;
+    const yMax = Math.max(5, Math.max(...allAps) * 1.15);
+    function xOf(a) { return padL + (a / xMax) * plotW; }
+    function yOf(n) { return padT + plotH - (n / yMax) * plotH; }
+
+    ctx.strokeStyle = "rgba(232,165,61,0.4)";
+    ctx.beginPath();
+    ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH);
+    ctx.stroke();
+
+    function drawCurve(counts, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1.8, w * 0.0016);
+      ctx.beginPath();
+      amps.forEach((a, i) => {
+        const x = xOf(a), y = yOf(counts[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = color;
+      amps.forEach((a, i) => {
+        ctx.beginPath(); ctx.arc(xOf(a), yOf(counts[i]), Math.max(2, w * 0.0022), 0, 2 * Math.PI); ctx.fill();
+      });
+    }
+    drawCurve(apsControl, css("--phosphor"));
+    if (apsA) drawCurve(apsA, css(A_COLOR));
+
+    function drawRheobase(rheobase, color, labelY) {
+      if (rheobase === null) return;
+      ctx.strokeStyle = color;
+      ctx.setLineDash([w * 0.004, w * 0.003]);
+      const rx = xOf(rheobase);
+      ctx.beginPath(); ctx.moveTo(rx, padT); ctx.lineTo(rx, padT + plotH); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.font = fontPx + "px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("rheobase", rx, labelY);
+    }
+    drawRheobase(rheobaseControl, css("--phosphor"), padT + fontPx);
+    if (apsA) drawRheobase(rheobaseA, css(A_COLOR), padT + fontPx * 2.3);
+
+    ctx.fillStyle = "rgba(184,174,149,0.8)";
+    ctx.font = fontPx + "px 'JetBrains Mono', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(yMax.toFixed(0), padL - 8, padT + fontPx);
+    ctx.fillText("0", padL - 8, padT + plotH);
+    ctx.textAlign = "center";
+    ctx.fillText("injected current (\u00B5A/cm\u00B2)", padL + plotW / 2, h - padB * 0.25);
+    ctx.textAlign = "right";
+    ctx.fillText(xMax.toFixed(0), padL + plotW, padT + plotH + fontPx + 10);
+
+    ctx.save();
+    ctx.translate(Math.round(fontPx * 0.9), padT + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(184,174,149,0.8)";
+    ctx.font = fontPx + "px 'JetBrains Mono', monospace";
+    ctx.fillText("Number of action potentials", 0, 0);
+    ctx.restore();
+
+    if (ro) {
+      const maxApsControl = Math.max(...apsControl);
+      let extra = "";
+      if (apsA) {
+        const maxApsA = Math.max(...apsA);
+        extra = `
+          <span class="r">rheobase (I<sub>A</sub> on) <b>${rheobaseA !== null ? rheobaseA.toFixed(0) + " \u00B5A/cm\u00B2" : "not reached in range"}</b></span>
+          <span class="r">max APs (I<sub>A</sub> on) <b>${maxApsA}</b></span>
+        `;
+      }
+      ro.innerHTML = `
+        <span class="r">rheobase (control) <b>${rheobaseControl !== null ? rheobaseControl.toFixed(0) + " \u00B5A/cm\u00B2" : "not reached in range"}</b></span>
+        <span class="r">max APs (control) <b>${maxApsControl}</b></span>
+        ${extra}
+        <span class="r">points <b>${amps.length}</b></span>
+      `;
+    }
+    if (lg) {
+      let html = `<span><span class="swatch" style="background:${css("--phosphor")}"></span>AP count — DR only</span>`;
+      if (apsA) html += `<span><span class="swatch" style="background:${css(A_COLOR)}"></span>AP count — I<sub>A</sub> on</span>`;
+      lg.innerHTML = html;
+    }
+  }
+
+  // ================= Tab orchestration =================
+  function renderStage() {
+    buildStage();
+    if (state.tab === "train") {
+      if (state.lastControlTrace) {
+        const layers = [{ trace: state.lastControlTrace, color: css(CONTROL_COLOR) }];
+        if (state.lastATrace) layers.push({ trace: state.lastATrace, color: css(A_COLOR) });
+        drawVoltagePanel("vScope", layers);
+        updateTrainReadouts();
+      } else {
+        const ro = document.getElementById("vScopeReadouts");
+        if (ro) ro.innerHTML = `<span class="r">set the stimulus and K<sup>+</sup> conductances, then run</span>`;
+      }
+    } else {
+      if (state.lastFiControlTrace) {
+        drawFiScopes();
+      } else {
+        clearScopePlaceholder("fiScopeControl", "click \u201CApply next pulse\u201D to begin");
+        if (state.aOn) clearScopePlaceholder("fiScopeA", "click \u201CApply next pulse\u201D to begin");
+      }
+      drawFiPanel();
+      updateFiProgressUI();
+    }
+  }
+  function switchTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    if (tab === "train") {
+      renderRailTrain();
+    } else {
+      if (state.fiAmps.length === 0) resetFiSweep(); // first visit: compute the planned amplitude list
+      renderRailFI();
+    }
+    renderStage();
+  }
+  document.querySelectorAll(".tab-btn").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+  switchTab("train");
+  runTrainTab();
+})();
+</script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
+</body>
+</html>

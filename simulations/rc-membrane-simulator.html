@@ -100,6 +100,15 @@ td:first-child,th:first-child{text-align:left}
 </style>
 </head>
 <body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
 <header>
   <h1>The membrane as an RC circuit</h1>
   <p>The lipid bilayer is a capacitor and the ion channels are its resistor. These simulations show how the membrane charges and discharges, why capacitance tracks cell size, and how little charge it takes to change the membrane potential.</p>
@@ -846,5 +855,8 @@ upd1Labels(); draw1();
 draw2(); upd2();
 upd3();
 </script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
 </body>
 </html>

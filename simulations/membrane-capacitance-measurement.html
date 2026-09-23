@@ -114,6 +114,15 @@ td:first-child,th:first-child{text-align:left}
 </style>
 </head>
 <body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
 <header>
   <h1>Measuring membrane capacitance</h1>
   <p>Two ways of measuring the membrane capacitor: an RC circuit on the lab bench, and the whole-cell membrane test of a patch-clamp amplifier.</p>
@@ -616,5 +625,8 @@ charts.bI=lineChart($("bI"),{xTitle:"time (ms)"});
 charts.bV=lineChart($("bV"),{tooltip:false});
 updA(); updBlabels(); drawB(null);
 </script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
 </body>
 </html>
