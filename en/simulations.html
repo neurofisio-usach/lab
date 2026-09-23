@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulations — Neurophysiology Lab, USACH</title>
+<meta name="description" content="Interactive electrophysiology and membrane biophysics simulations from the Neurophysiology Lab, Universidad de Santiago de Chile — free teaching tools.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <img class="logo-mark" src="../assets/logo-lab.png" alt="Neurophysiology Lab">
+      <span><strong>Neurophysiology Lab</strong> · USACH</span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="epilepsy.html">Epilepsy</a>
+      <a href="autism.html">Autism</a>
+      <a href="publications.html">Publications</a>
+      <a href="team.html">Team</a>
+      <a href="resources.html">Resources</a>
+      <a href="simulations.html" aria-current="page">Simulations</a>
+      <a href="contact.html">Contact</a>
+      <a href="../simulaciones.html" class="lang-switch">ES</a>
+    </div>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <p class="eyebrow">Teaching · Interactive tools</p>
+    <h1>Simulations</h1>
+    <p class="lede">A set of self-contained simulators built for our Biophysics and Neurophysiology courses. Each one recreates a classic electrophysiology experiment interactively — from the squid giant axon to long-term potentiation in the hippocampus — so that students can explore the mechanisms hands-on, with no software to install.</p>
+  </div>
+</section>
+<svg class="divider on-ink" viewBox="0 0 1200 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 20 L1200 20"/></svg>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Eleven simulators, one common thread</p>
+      <h2>From the excitable membrane to synaptic plasticity</h2>
+      <p>The simulations follow the classic path of an electrophysiology course: first the generation and propagation of the action potential, then the single ion channel that makes it possible, and finally synaptic transmission — quantal, central and plastic, both short- and long-term. Each simulator runs directly in the browser.</p>
+    </div>
+
+    <div class="grid-3" style="grid-template-columns: 1fr; max-width: 760px;">
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
+        <h3><a href="../simulations/rc-membrane-simulator.html">The membrane as an RC circuit</a></h3>
+        <p>Three tabs on the membrane as an RC circuit: charging and discharging under a current pulse, how capacitance scales with cell size, and how much charge (Q = CV) it takes to change the membrane potential.</p>
+      </article>
+      
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
+        <h3><a href="../simulations/membrane-capacitance-measurement.html">Measuring membrane capacitance</a></h3>
+        <p>Two ways of measuring a membrane capacitor: a classic RC circuit on the lab bench, and the whole-cell membrane test of a patch-clamp amplifier. Compare the time constant τ and the nominal capacitance with the values measured from real components.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
+        <h3><a href="../simulations/membrane-action-potential.html">Action potential of the squid giant axon</a></h3>
+        <p>A reconstruction of the Hodgkin–Huxley model: voltage clamp, the membrane action potential and propagation along the axon, with interactive plots and exportable data tables.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
+        <h3><a href="../simulations/single-channel-recording.html">Single-channel recording (patch clamp)</a></h3>
+        <p>Stochastic activity of a voltage-gated Na⁺ channel (C⇌C⇌O→I scheme): single trace, multiple sweeps and ensemble average, with cursors to measure the size of the current step.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
+        <h3><a href="../simulations/kv-gating-current-simulator.html">Gating currents of the K⁺ channel</a></h3>
+        <p>A voltage-clamp simulation of K⁺ channel gating currents: oscilloscope-style traces of I<sub>K</sub> and I<sub>gating</sub>, alongside the G-V and Q-V curves. Includes recording noise and an option to average multiple sweeps of the gating current.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
+        <h3><a href="../simulations/kv-firing-simulator.html">K⁺ conductances and repetitive firing</a></h3>
+        <p>A Hodgkin–Huxley membrane under a sustained current pulse, firing a train of action potentials. Switch the delayed rectifier and an A-type K⁺ conductance (Connor–Stevens) on or off independently, and see their effect on spike shape, the afterhyperpolarization and the f–I relationship.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
+        <h3><a href="../simulations/quantal-transmission-simulator.html">Quantal transmission at the neuromuscular junction</a></h3>
+        <p>A replica of the Katz &amp; Miledi / del Castillo &amp; Katz experiments: evoked end-plate potentials, a histogram of quantal amplitudes, and a zero-calcium condition to observe failures and quantal units.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
+        <h3><a href="../simulations/central-synapse-simulator.html">Central synapse — EPSC in voltage clamp</a></h3>
+        <p>Postsynaptic currents at a central synapse with AMPA and NMDA components, Mg²⁺ block and low-N binomial release, on a virtual oscilloscope with realistic recording noise.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
+        <h3><a href="../simulations/sc-ca1-temporal-summation-simulator.html">Temporal summation — Schaffer collateral → CA1 synapse</a></h3>
+        <p>A three-channel oscilloscope — presynaptic action potential, presynaptic intracellular Ca²⁺ and postsynaptic EPSP/fEPSP — showing short-term facilitation during pulse trains. Control the number of pulses, the frequency and the postsynaptic time constant (τ).</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L24 11 L28 3 L32 19 L36 11 L40 11 L64 11 L68 3 L72 19 L76 11 L80 11 L120 11 L124 3 L128 19 L132 11 L200 11"/></svg>
+        <h3><a href="../simulations/sc-ca1-ltp-simulator.html">Long-term potentiation (LTP) — Schaffer collaterals → CA1</a></h3>
+        <p>LTP induction in stratum radiatum by tetanization, TBS or low-frequency pairing, read out as fEPSP slope or EPSC amplitude, with control over NMDA/Mg²⁺ coincidence detection.</p>
+      </article>
+
+      <article class="card">
+        <svg class="card-trace" viewBox="0 0 200 22" preserveAspectRatio="none" aria-hidden="true"><path d="M0 11 L30 11 L34 2 L38 20 L42 11 L80 11 L84 2 L88 20 L92 11 L130 11 L134 2 L138 20 L142 11 L200 11"/></svg>
+        <h3><a href="../simulations/pp-dg-ltp-simulator.html">Long-term potentiation (LTP) — perforant path → dentate gyrus</a></h3>
+        <p>LTP at the perforant path–dentate gyrus synapse, where strong feedforward GABAergic inhibition of granule cells makes induction harder. Protocol: 4 trains of 100 pulses in 1 second, 5 minutes apart.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <div class="wrap">
+    <p class="eyebrow">Use</p>
+    <h2>How to use these simulations</h2>
+    <p style="color:var(--ink-text-soft); max-width:68ch;">Each simulation is a self-contained HTML file: it needs no installation or server connection, and can run directly in the browser or be downloaded for offline use. They are designed as support material for Biophysics and Neurophysiology classes, and can be used live in class or assigned as preparation or review.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-text">
+      <div class="footer-mono">Neurophysiology Lab — Universidad de Santiago de Chile</div>
+      <div><a href="contact.html">patricio.rojas.m@usach.cl</a></div>
+    </div>
+    <div class="footer-logos">
+      <a href="https://www.quimicaybiologia.usach.cl/" target="_blank" rel="noopener" aria-label="Faculty of Chemistry and Biology, USACH">
+        <img src="../assets/logo-facultad.png" alt="Faculty of Chemistry and Biology, USACH">
+      </a>
+      <a href="https://www.usach.cl" target="_blank" rel="noopener" aria-label="Universidad de Santiago de Chile">
+        <img src="../assets/logo-usach-1.png" alt="Universidad de Santiago de Chile">
+      </a>
+    </div>
+  </div>
+</footer>
+<script src="../script.js"></script>
+</body>
+</html>
