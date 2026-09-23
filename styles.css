@@ -503,3 +503,31 @@ section + section { border-top: 1px solid var(--line); }
   align-items: start;
 }
 @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ---------------- Plain-language articles (resources/) ---------------- */
+.article { max-width: 72ch; }
+.article h2 { margin-top: 2.2em; }
+.article h2:first-child { margin-top: 0; }
+.article p, .article li { font-size: 1.04rem; line-height: 1.7; }
+.article ul, .article ol { padding-left: 1.3em; }
+.article li { margin-bottom: 0.4em; }
+.article .ref { font-family: var(--font-mono); font-size: 0.78em; vertical-align: super; line-height: 0; }
+.article .ref a { text-decoration: none; }
+.article .callout {
+  background: var(--paper-2);
+  border-left: 3px solid var(--trace);
+  padding: 18px 22px;
+  margin: 1.6em 0;
+}
+.article .callout h3 { margin-top: 0; font-size: 1.1rem; }
+.article .callout p:last-child, .article .callout ul:last-child { margin-bottom: 0; }
+.article .disclaimer {
+  font-size: 0.9rem;
+  color: var(--ink-text-soft);
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin-top: 2.4em;
+}
+.article .refs { font-size: 0.9rem; padding-left: 1.4em; }
+.article .refs li { font-size: 0.9rem; line-height: 1.55; color: var(--ink-text-soft); }
+.article .refs em { color: var(--ink-text); }
