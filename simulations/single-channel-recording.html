@@ -328,12 +328,19 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="stage-head">
         <div>
           <h2>Multiple sweeps</h2>
-          <p>The same channel, repeated trials at the same test potential — trial-to-trial variability in latency, opening count and duration. Right-click any trace to drop a marker and log its (voltage, current) into the table.</p>
+          <p>The same channel, repeated trials at the same test potential — trial-to-trial variability in latency, opening count and duration. As on a real rig, one sweep is acquired every 500 ms and each new sweep is drawn below the previous one. Right-click any trace to drop a marker and log its (voltage, current) into the table.</p>
         </div>
         <div class="field" style="width:160px;">
           <label for="nSweeps">Number of sweeps</label>
           <input type="number" id="nSweeps" value="20" step="1">
         </div>
+      </div>
+      <div class="note" style="margin:0 0 4px;">The settings in the side panel are captured when a run starts; changes apply to the next run. The number of sweeps locks while a run is in progress — press <b>Reset</b> to change it.</div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="run-btn" id="startSweepsBtn" style="max-width:140px;">Start</button>
+        <button class="ghost-btn" id="stopSweepsBtn" style="max-width:140px;">Stop</button>
+        <button class="ghost-btn" id="resetSweepsBtn" style="max-width:140px;">Reset</button>
+        <span class="v" id="sweepsProgress" style="font-family:var(--font-mono); font-size:12.5px;">Sweep 0 / 20</span>
       </div>
       <div class="scope"><div class="chart-box chart-box-tall"><canvas id="chartSweeps"></canvas></div></div>
       <div class="table-controls">
@@ -368,15 +375,22 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="stage-head">
         <div>
           <h2>Ensemble average</h2>
-          <p>Average many independent channels (or repeated sweeps) and the noisy single-channel flickers become the smooth macroscopic current students recognize from whole-cell recordings. Right-click the bold average trace to log its (voltage, current) into the table.</p>
+          <p>Average many independent channels (or repeated sweeps) and the noisy single-channel flickers become the smooth macroscopic current students recognize from whole-cell recordings. Sweeps are acquired one every 500 ms and overlaid; when the last one arrives the average is computed and drawn on top. Right-click the bold average trace to log its (voltage, current) into the table.</p>
         </div>
         <div class="field" style="width:160px;">
           <label for="nEnsemble">Channels / sweeps (N)</label>
           <input type="number" id="nEnsemble" value="150" step="10">
         </div>
       </div>
+      <div class="note" style="margin:0 0 4px;">The settings in the side panel are captured when a run starts; changes apply to the next run. N locks while a run is in progress — press <b>Reset</b> to change it.</div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="run-btn" id="startEnsembleBtn" style="max-width:140px;">Start</button>
+        <button class="ghost-btn" id="stopEnsembleBtn" style="max-width:140px;">Stop</button>
+        <button class="ghost-btn" id="resetEnsembleBtn" style="max-width:140px;">Reset</button>
+        <span class="v" id="ensembleProgress" style="font-family:var(--font-mono); font-size:12.5px;">Sweep 0 / 150</span>
+      </div>
       <div class="scope"><div class="chart-box"><canvas id="chartEnsemble"></canvas></div></div>
-      <div class="note" style="margin:12px 0;">Thin traces show a sample of 12 individual sweeps; the bold line is the average across all N — this is i × N × Po(t), the same quantity the whole-cell macroscopic current represents.</div>
+      <div class="note" style="margin:12px 0;">The bright trace is the sweep just recorded; earlier sweeps fade into the background. The bold line, drawn after the last sweep, is the average of all N sweeps — i × Po(t), which scaled by the number of channels in a cell is exactly what the whole-cell macroscopic current represents.</div>
       <div style="margin-top:10px;"><button class="ghost-btn" id="clearPointsTab3Btn" style="max-width:160px;">Clear table</button></div>
       <div class="two-col" style="margin-top:16px; align-items:start;">
         <div>
@@ -686,8 +700,8 @@ function applyChannelDefaults(type){
 
   const active = document.querySelector('.tab-btn.active').dataset.tab;
   if (active==='single') runSingle();
-  else if (active==='sweeps') runSweeps();
-  else if (active==='ensemble') runEnsemble();
+  resetSweepsRun();
+  resetEnsembleRun();
   resetCursorsToDefaults();
 }
 document.getElementById('channelBtnNa').addEventListener('click', ()=>applyChannelDefaults('Na'));
@@ -707,6 +721,8 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     // keep ticking invisibly in the background (mutating a hidden chart) — stop it,
     // same as switching conditions elsewhere invalidates a stale run.
     if (btn.dataset.tab!=='histograms') stopHistRun();
+    if (btn.dataset.tab!=='sweeps') stopSweepsRun();
+    if (btn.dataset.tab!=='ensemble') stopEnsembleRun();
   });
 });
 
@@ -785,6 +801,12 @@ function resetCursorsToDefaults(){
   updateCursorReadout();
 }
 
+// Real-time acquisition state for the Multiple Sweeps and Ensemble tabs.
+// Declared before the charts because the sweeps y-axis tick callbacks read it.
+const SWEEP_INTERVAL_MS = 500; // inter-sweep interval, as on a real rig
+let sweepsRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, step:1, plannedOffsets:[] };
+let ensRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, sumI:null, timeRef:null, stride:3 };
+
 const chartSweeps = new Chart(document.getElementById('chartSweeps'), {
   type:'line',
   data:{ datasets:[] },
@@ -792,7 +814,9 @@ const chartSweeps = new Chart(document.getElementById('chartSweeps'), {
     plugins:{ legend:{display:false}, tooltip:{enabled:false} },
     scales:{
       x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
-      y:{ display:false }
+      y:{ title:{display:true,text:'Sweep',color:'#b8ae95'}, grid:{color:'#0f3a22'},
+          afterBuildTicks:(axis)=>{ if (sweepsRun.plannedOffsets.length) axis.ticks = sweepsRun.plannedOffsets.slice().reverse().map(v=>({value:v})); },
+          ticks:{ color:'#b8ae95', autoSkip:true, callback:(v)=> sweepsRun.plannedOffsets.length ? '#'+(Math.round(-v/sweepsRun.step)+1) : '' } }
     }
   }
 });
@@ -805,7 +829,7 @@ const chartEnsemble = new Chart(document.getElementById('chartEnsemble'), {
     plugins:{ legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}, filter:(item)=>item.text==='Ensemble mean'}}, tooltip:{enabled:true} },
     scales:{
       x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
-      y:{ title:{display:true,text:'Mean current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
+      y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
     }
   }
 });
@@ -879,41 +903,98 @@ document.getElementById('clearPointsTab1Btn').addEventListener('click', ()=>{
   renderPointsTab1();
 });
 
-/* ================= TAB 2: MULTIPLE SWEEPS ================= */
-function runSweeps(){
-  const p = readParams();
-  const n = Math.max(1, Math.round(+val('nSweeps')));
-  const rng = mulberry32(p.seed);
-  const datasets = [];
-  const offsets = [];
-  const rows = [];
-  const offsetStep = (p.gamma * Math.abs(p.testV-p.Erev) * 1e-3) * 1.8 + 1;
-  for (let s=0;s<n;s++){
-    const res = simulateSweep(p, rng);
-    const noisy = addNoise(res.idealI, rng, p.noiseSD);
-    const offset = s*offsetStep;
-    offsets.push(offset);
-    datasets.push({
-      data: Array.from(res.time).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+(noisy[i2]+offset).toFixed(4)}; }),
-      borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1, pointRadius:0
-    });
-    rows.push({sweep:s+1, latency:res.firstOpenLatency, n:res.events.length, tot:res.openTimeInPulse, po:res.po});
-  }
-  sweepOffsets = offsets;
-  sweepTestV = p.testV;
-  sweepMarkerIdx = datasets.length;
-  datasets.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5 });
-  chartSweeps.data.datasets = datasets;
-  chartSweeps.update();
-
-  const tbody = document.querySelector('#tblSweeps tbody');
-  tbody.innerHTML = '';
-  rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.sweep}</td><td>${r.latency!==null?r.latency.toFixed(3):'—'}</td><td>${r.n}</td><td>${r.tot.toFixed(3)}</td><td>${r.po.toFixed(4)}</td>`;
-    tbody.appendChild(tr);
-  });
+/* ================= TAB 2: MULTIPLE SWEEPS (real-time acquisition) ================= */
+// One sweep every SWEEP_INTERVAL_MS, each drawn below the previous one, like a
+// chart recorder / acquisition software. Same Start/Stop/Reset model as the
+// Dwell-Time tab: side-panel parameters are snapshotted when a run starts.
+function getNSweeps(){ return Math.max(1, Math.round(+val('nSweeps')) || 20); }
+function sweepsFinished(){ return sweepsRun.index>0 && sweepsRun.index>=sweepsRun.n; }
+function updateSweepsProgress(){
+  const n = sweepsRun.index>0 ? sweepsRun.n : getNSweeps();
+  document.getElementById('sweepsProgress').textContent = `Sweep ${sweepsRun.index} / ${n}`;
 }
+function setSweepsButtons(){
+  document.getElementById('startSweepsBtn').disabled = sweepsRun.running;
+  document.getElementById('stopSweepsBtn').disabled = !sweepsRun.running;
+  document.getElementById('nSweeps').disabled = sweepsRun.index>0 && !sweepsFinished();
+}
+function sweepMarkerDataset(){
+  return { label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5, order:-1 };
+}
+function prepareSweepsRun(){
+  const p = readParams();
+  const n = getNSweeps();
+  const {total} = buildProtocol(p);
+  const iUnit = p.gamma*(p.testV-p.Erev)*1e-3;      // fully-open unitary current (pA)
+  const step = Math.abs(iUnit)*1.8 + 1;              // vertical spacing between sweeps
+  const margin = 4*p.noiseSD + 0.3;
+  sweepsRun.p = p; sweepsRun.n = n; sweepsRun.index = 0; sweepsRun.step = step;
+  sweepsRun.rng = mulberry32(p.seed);
+  sweepsRun.plannedOffsets = Array.from({length:n}, (_,s)=>-s*step);
+  sweepOffsets = []; sweepTestV = p.testV;
+  chartSweeps.data.datasets = [sweepMarkerDataset()];
+  sweepMarkerIdx = 0;
+  // Fix the axes for the whole run so the display does not rescale as sweeps arrive.
+  const xs = chartSweeps.options.scales.x, ys = chartSweeps.options.scales.y;
+  xs.min = 0; xs.max = total;
+  ys.max = Math.max(0, iUnit) + margin;
+  ys.min = -(n-1)*step + Math.min(0, iUnit) - margin;
+  chartSweeps.update('none');
+  document.querySelector('#tblSweeps tbody').innerHTML = '';
+  advanceSeedIfUnlocked();
+}
+function sweepsTick(){
+  if (sweepsRun.index >= sweepsRun.n){ stopSweepsRun(); return; }
+  const p = sweepsRun.p, s = sweepsRun.index;
+  const res = simulateSweep(p, sweepsRun.rng);
+  const noisy = addNoise(res.idealI, sweepsRun.rng, p.noiseSD);
+  const offset = -s*sweepsRun.step;
+  sweepOffsets.push(offset);
+  // Sweeps occupy dataset indices 0..k-1; the marker dataset always stays last.
+  chartSweeps.data.datasets.splice(sweepMarkerIdx, 0, {
+    data: Array.from(res.time).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+(noisy[i2]+offset).toFixed(4)}; }),
+    borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1, pointRadius:0
+  });
+  sweepMarkerIdx++;
+  chartSweeps.update('none');
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${s+1}</td><td>${res.firstOpenLatency!==null?res.firstOpenLatency.toFixed(3):'—'}</td><td>${res.events.length}</td><td>${res.openTimeInPulse.toFixed(3)}</td><td>${res.po.toFixed(4)}</td>`;
+  document.querySelector('#tblSweeps tbody').appendChild(tr);
+
+  sweepsRun.index++;
+  updateSweepsProgress();
+  if (sweepsRun.index >= sweepsRun.n) stopSweepsRun();
+}
+function startSweepsRun(){
+  if (sweepsRun.running) return;
+  if (sweepsRun.index===0 || sweepsFinished()) prepareSweepsRun(); // fresh run; otherwise resume
+  sweepsRun.running = true;
+  setSweepsButtons();
+  sweepsTick();                                   // first sweep immediately...
+  if (sweepsRun.running) sweepsRun.timer = setInterval(sweepsTick, SWEEP_INTERVAL_MS); // ...then one every 500 ms
+}
+function stopSweepsRun(){
+  sweepsRun.running = false;
+  if (sweepsRun.timer){ clearInterval(sweepsRun.timer); sweepsRun.timer = null; }
+  setSweepsButtons();
+}
+function resetSweepsRun(){
+  stopSweepsRun();
+  sweepsRun.index = 0; sweepsRun.n = 0; sweepsRun.plannedOffsets = [];
+  sweepOffsets = [];
+  chartSweeps.data.datasets = [];
+  sweepMarkerIdx = null;
+  chartSweeps.update('none');
+  document.querySelector('#tblSweeps tbody').innerHTML = '';
+  updateSweepsProgress();
+  setSweepsButtons();
+}
+document.getElementById('startSweepsBtn').addEventListener('click', startSweepsRun);
+document.getElementById('stopSweepsBtn').addEventListener('click', stopSweepsRun);
+document.getElementById('resetSweepsBtn').addEventListener('click', resetSweepsRun);
+document.getElementById('nSweeps').addEventListener('input', ()=>{ if (sweepsRun.index===0) updateSweepsProgress(); });
+setSweepsButtons();
 
 let pointsSweeps = [];
 function renderPointsSweeps(){
@@ -950,37 +1031,105 @@ chartSweeps.canvas.addEventListener('contextmenu', (e)=>{
   renderPointsSweeps();
 });
 
-/* ================= TAB 3: ENSEMBLE AVERAGE ================= */
-function runEnsemble(){
-  const p = readParams();
-  const n = Math.max(2, Math.round(+val('nEnsemble')));
-  const rng = mulberry32(p.seed);
-  const {nSteps} = buildProtocol(p);
-  const sumI = new Float64Array(nSteps);
-  const sampleTraces = [];
-  let timeRef = null;
-  for (let s=0;s<n;s++){
-    const res = simulateSweep(p, rng);
-    if (!timeRef) timeRef = res.time;
-    for (let i=0;i<nSteps;i++) sumI[i]+=res.idealI[i];
-    if (s<12){
-      const noisy = addNoise(res.idealI, rng, p.noiseSD*0.6);
-      sampleTraces.push(Array.from(timeRef).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+noisy[i2].toFixed(4)}; }));
-    }
-  }
-  const meanI = Array.from(sumI).map(v=>v/n);
-  const datasets = sampleTraces.map(tr=>({ data:tr, borderColor:'rgba(77,255,160,0.18)', backgroundColor:'transparent', borderWidth:1, pointRadius:0 }));
-  ensembleMeanIdx = datasets.length;
-  datasets.push({
-    label:'Ensemble mean', data: Array.from(timeRef).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+meanI[i2].toFixed(4)}; }),
-    borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:2.4, pointRadius:0
-  });
-  ensembleMarkerIdx = datasets.length;
-  datasets.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5 });
-  chartEnsemble.data.datasets = datasets;
-  chartEnsemble.update();
-  ensembleTestV = p.testV;
+/* ================= TAB 3: ENSEMBLE AVERAGE (real-time acquisition) ================= */
+// One sweep every SWEEP_INTERVAL_MS, overlaid on the previous ones. The newest
+// sweep is bright, older ones fade into the background. After the last sweep
+// the ensemble average (of the noise-free currents) is drawn on top.
+const ENS_FAINT = 'rgba(77,255,160,0.14)', ENS_BRIGHT = '#4dffa0';
+function getNEnsemble(){ return Math.max(2, Math.round(+val('nEnsemble')) || 150); }
+function ensembleFinished(){ return ensRun.index>0 && ensRun.index>=ensRun.n; }
+function updateEnsembleProgress(){
+  const n = ensRun.index>0 ? ensRun.n : getNEnsemble();
+  document.getElementById('ensembleProgress').textContent =
+    ensembleFinished() ? `Sweep ${ensRun.index} / ${n} — average of ${n} sweeps shown` : `Sweep ${ensRun.index} / ${n}`;
 }
+function setEnsembleButtons(){
+  document.getElementById('startEnsembleBtn').disabled = ensRun.running;
+  document.getElementById('stopEnsembleBtn').disabled = !ensRun.running;
+  document.getElementById('nEnsemble').disabled = ensRun.index>0 && !ensembleFinished();
+}
+function prepareEnsembleRun(){
+  const p = readParams();
+  const n = getNEnsemble();
+  const {nSteps, total} = buildProtocol(p);
+  ensRun.p = p; ensRun.n = n; ensRun.index = 0;
+  ensRun.rng = mulberry32(p.seed);
+  ensRun.sumI = new Float64Array(nSteps);
+  ensRun.timeRef = null;
+  ensRun.stride = Math.max(3, Math.ceil(nSteps/700)); // keep up to ~N×700 points drawable
+  ensembleMeanIdx = null; ensembleMarkerIdx = null; ensembleTestV = p.testV;
+  chartEnsemble.data.datasets = [];
+  const iUnit = p.gamma*(p.testV-p.Erev)*1e-3;
+  const margin = Math.max(Math.abs(iUnit)*0.6, 4*p.noiseSD*0.6 + 0.2);
+  const xs = chartEnsemble.options.scales.x, ys = chartEnsemble.options.scales.y;
+  xs.min = 0; xs.max = total;
+  // Round the limits outward to clean 0.5 pA values so the axis reads well.
+  ys.min = Math.floor((Math.min(0, iUnit) - margin)*2)/2;
+  ys.max = Math.ceil((Math.max(0, iUnit) + margin)*2)/2;
+  chartEnsemble.update('none');
+  advanceSeedIfUnlocked();
+}
+function ensembleTick(){
+  if (ensRun.index >= ensRun.n){ stopEnsembleRun(); return; }
+  const p = ensRun.p, k = ensRun.stride;
+  const res = simulateSweep(p, ensRun.rng);
+  if (!ensRun.timeRef) ensRun.timeRef = res.time;
+  for (let i=0;i<ensRun.sumI.length;i++) ensRun.sumI[i] += res.idealI[i];
+  const noisy = addNoise(res.idealI, ensRun.rng, p.noiseSD*0.6);
+  const ds = chartEnsemble.data.datasets;
+  if (ds.length){ ds[ds.length-1].borderColor = ENS_FAINT; ds[ds.length-1].order = 1; } // previous sweep fades
+  ds.push({
+    data: Array.from(res.time).filter((_,i)=>i%k===0).map((t,idx)=>{ const i2=idx*k; return {x:+t.toFixed(3), y:+noisy[i2].toFixed(4)}; }),
+    borderColor:ENS_BRIGHT, backgroundColor:'transparent', borderWidth:1, pointRadius:0, order:0
+  });
+  ensRun.index++;
+  if (ensRun.index >= ensRun.n) finishEnsembleRun();
+  else chartEnsemble.update('none');
+  updateEnsembleProgress();
+}
+function finishEnsembleRun(){
+  const n = ensRun.n, timeRef = ensRun.timeRef;
+  const meanI = Array.from(ensRun.sumI).map(v=>v/n);
+  const ds = chartEnsemble.data.datasets;
+  if (ds.length){ ds[ds.length-1].borderColor = ENS_FAINT; ds[ds.length-1].order = 1; }
+  ensembleMeanIdx = ds.length;
+  ds.push({
+    label:'Ensemble mean', data: Array.from(timeRef).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+meanI[i2].toFixed(4)}; }),
+    borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:2.4, pointRadius:0, order:-1
+  });
+  ensembleMarkerIdx = ds.length;
+  ds.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5, order:-2 });
+  chartEnsemble.update('none');
+  stopEnsembleRun();
+}
+function startEnsembleRun(){
+  if (ensRun.running) return;
+  if (ensRun.index===0 || ensembleFinished()) prepareEnsembleRun(); // fresh run; otherwise resume
+  ensRun.running = true;
+  setEnsembleButtons();
+  updateEnsembleProgress();
+  ensembleTick();                                 // first sweep immediately...
+  if (ensRun.running) ensRun.timer = setInterval(ensembleTick, SWEEP_INTERVAL_MS); // ...then one every 500 ms
+}
+function stopEnsembleRun(){
+  ensRun.running = false;
+  if (ensRun.timer){ clearInterval(ensRun.timer); ensRun.timer = null; }
+  setEnsembleButtons();
+}
+function resetEnsembleRun(){
+  stopEnsembleRun();
+  ensRun.index = 0; ensRun.n = 0; ensRun.sumI = null; ensRun.timeRef = null;
+  ensembleMeanIdx = null; ensembleMarkerIdx = null;
+  chartEnsemble.data.datasets = [];
+  chartEnsemble.update('none');
+  updateEnsembleProgress();
+  setEnsembleButtons();
+}
+document.getElementById('startEnsembleBtn').addEventListener('click', startEnsembleRun);
+document.getElementById('stopEnsembleBtn').addEventListener('click', stopEnsembleRun);
+document.getElementById('resetEnsembleBtn').addEventListener('click', resetEnsembleRun);
+document.getElementById('nEnsemble').addEventListener('input', ()=>{ if (ensRun.index===0) updateEnsembleProgress(); });
+setEnsembleButtons();
 
 let pointsEnsemble = [];
 function renderPointsEnsemble(){
@@ -1357,10 +1506,10 @@ wireCopy('copyEnsembleBtn','tblEnsemblePoints');
 document.getElementById('runBtn').addEventListener('click', ()=>{
   const active = document.querySelector('.tab-btn.active').dataset.tab;
   if (active==='single') runSingle();
-  else if (active==='sweeps') runSweeps();
-  else if (active==='ensemble') runEnsemble();
+  else if (active==='sweeps') startSweepsRun();
+  else if (active==='ensemble') startEnsembleRun();
   else if (active==='histograms') startHistRun();
-  if (active!=='histograms') advanceSeedIfUnlocked();
+  if (active==='single') advanceSeedIfUnlocked(); // real-time tabs advance the seed when a fresh run starts
 });
 
 /* initial run */

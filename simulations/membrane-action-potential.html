@@ -128,6 +128,10 @@
 
   .subgrid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px 10px; margin:6px 0 10px; }
   .subgrid .col-head{ font-size:10px; text-transform:none; color:var(--panel-text-dim); text-align:center; }
+  .conc-cell{ display:flex; align-items:center; gap:2px; }
+  .conc-cell input[type=number]{ flex:1; min-width:0; }
+  .conc-cell .unit{ font-size:9px; color:var(--panel-text-dim); flex-shrink:0; }
+  .conc-cell .reset-btn{ flex-shrink:0; }
   .subgrid input[type=number]{
     width:100%; background:#0d0a07; border:1px solid var(--panel-border); border-radius:5px;
     color:var(--panel-text); font-family:var(--font-mono); font-size:12px; padding:5px 4px; text-align:center;
@@ -350,13 +354,17 @@ header.app-head{padding-left:28px;padding-right:28px}
     <details class="panel">
       <summary>Concentrations</summary>
       <div class="panel-body">
-        <div class="subgrid">
-          <div class="col-head">Na⁺</div><div class="col-head">K⁺</div><div class="col-head"></div>
+        <div class="subgrid" style="grid-template-columns:auto 1fr 1fr">
+          <div class="col-head" style="text-align:left"></div>
+          <div class="col-head">Na⁺</div>
+          <div class="col-head">K⁺</div>
+          <div class="row-label">External</div>
+          <div class="conc-cell"><input type="number" id="in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nao" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input type="number" id="in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ko" title="Reset to default">↺</button></div>
+          <div class="row-label">Internal</div>
+          <div class="conc-cell"><input type="number" id="in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nai" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input type="number" id="in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ki" title="Reset to default">↺</button></div>
         </div>
-        <div class="field-row"><label>External</label><input type="number" id="in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nao" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Internal</label><input type="number" id="in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nai" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>External</label><input type="number" id="in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ko" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Internal</label><input type="number" id="in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ki" title="Reset to default">↺</button></div>
         <div class="field-row"><label>TTX</label><input type="number" id="in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset="in-ttx" title="Reset to default">↺</button></div>
         <div class="field-row"><label>Pronase</label><input type="number" id="in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset="in-pronase" title="Reset to default">↺</button></div>
         <div class="readout-mini">
@@ -585,13 +593,17 @@ header.app-head{padding-left:28px;padding-right:28px}
     <details class="panel">
       <summary>Concentrations</summary>
       <div class="panel-body">
-        <div class="subgrid">
-          <div class="col-head">Na⁺</div><div class="col-head">K⁺</div><div class="col-head"></div>
+        <div class="subgrid" style="grid-template-columns:auto 1fr 1fr">
+          <div class="col-head" style="text-align:left"></div>
+          <div class="col-head">Na⁺</div>
+          <div class="col-head">K⁺</div>
+          <div class="row-label">External</div>
+          <div class="conc-cell"><input type="number" id="vc-in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nao" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input type="number" id="vc-in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ko" title="Reset to default">↺</button></div>
+          <div class="row-label">Internal</div>
+          <div class="conc-cell"><input type="number" id="vc-in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nai" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input type="number" id="vc-in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ki" title="Reset to default">↺</button></div>
         </div>
-        <div class="field-row"><label>External</label><input type="number" id="vc-in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nao" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Internal</label><input type="number" id="vc-in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nai" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>External</label><input type="number" id="vc-in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ko" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Internal</label><input type="number" id="vc-in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ki" title="Reset to default">↺</button></div>
         <div class="field-row"><label>TTX</label><input type="number" id="vc-in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset-vc="vc-in-ttx" title="Reset to default">↺</button></div>
         <div class="field-row"><label>Pronase</label><input type="number" id="vc-in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset-vc="vc-in-pronase" title="Reset to default">↺</button></div>
         <div class="readout-mini">
