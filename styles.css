@@ -205,20 +205,21 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   color: var(--paper-text);
   padding: 76px 0 64px;
 }
-.hero-inner {
+.hero h1 { color: #fff; }
+.hero h2 { max-width: 72ch; }
+.hero-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: start;
+  gap: 48px;
+  margin-top: 28px;
 }
 @media (max-width: 860px) {
-  .hero-inner { grid-template-columns: 1fr; gap: 32px; }
+  .hero-body { grid-template-columns: 1fr; }
 }
-.hero h1 { color: #fff; }
 .hero .lede {
   font-size: 1.15rem;
   color: var(--paper-text-soft);
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 .page-hero {
