@@ -205,14 +205,21 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   color: var(--paper-text);
   padding: 76px 0 64px;
 }
-.hero h1 { color: #fff; max-width: 16ch; }
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 32px; }
+}
+.hero h1 { color: #fff; }
 .hero .lede {
   font-size: 1.15rem;
   color: var(--paper-text-soft);
-  max-width: 62ch;
   margin-top: 18px;
 }
-
 
 .page-hero {
   background: var(--ink);
@@ -220,7 +227,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   padding: 56px 0 42px;
 }
 .page-hero h1 { color: #fff; }
-.page-hero .lede { color: var(--paper-text-soft); max-width: 66ch; font-size: 1.05rem; }
+.page-hero .lede { color: var(--paper-text-soft); max-width: 80ch; font-size: 1.05rem; }
 
 
 
@@ -229,7 +236,7 @@ section { padding: 64px 0; }
 .section-alt { background: var(--paper-2); }
 section + section { border-top: 1px solid var(--line); }
 
-.section-head { max-width: 68ch; margin-bottom: 40px; }
+.section-head { max-width: 100%; margin-bottom: 40px; }
 .section-head p { color: var(--ink-text-soft); font-size: 1.05rem; }
 
 /* ---------------- Cards / grid ---------------- */
