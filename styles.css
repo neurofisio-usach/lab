@@ -28,7 +28,7 @@
   --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
 
-  --max: 1120px;
+  --max: 1400px;
 }
 
 * { box-sizing: border-box; }
@@ -67,7 +67,7 @@ img, svg { max-width: 100%; display: block; }
 .wrap {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 0 40px;
 }
 
 .eyebrow {
@@ -103,7 +103,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .nav {
   max-width: var(--max);
   margin: 0 auto;
-  padding: 16px 28px;
+  padding: 16px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -192,7 +192,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
     border-bottom: 1px solid var(--line-dark);
     flex-direction: column;
     gap: 0;
-    padding: 4px 28px 18px;
+    padding: 4px 40px 18px;
     display: none;
   }
   .nav-links.open { display: flex; }
@@ -204,10 +204,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   background: var(--ink);
   color: var(--paper-text);
   padding: 76px 0 64px;
-  position: relative;
-  overflow: hidden;
 }
-.hero .wrap { position: relative; z-index: 2; }
 .hero h1 { color: #fff; max-width: 16ch; }
 .hero .lede {
   font-size: 1.15rem;
@@ -215,20 +212,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   max-width: 62ch;
   margin-top: 18px;
 }
-.hero-trace {
-  position: absolute;
-  left: 0; right: 0; bottom: -6px;
-  width: 100%;
-  height: auto;
-  opacity: 0.9;
-}
-.hero-trace path {
-  fill: none;
-  stroke: var(--trace);
-  stroke-width: 1.4;
-  opacity: 0.55;
-}
-.hero-trace path.bright { stroke: var(--trace-bright); opacity: 0.85; stroke-width: 1.7; }
+
 
 .page-hero {
   background: var(--ink);
@@ -238,14 +222,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 .page-hero h1 { color: #fff; }
 .page-hero .lede { color: var(--paper-text-soft); max-width: 66ch; font-size: 1.05rem; }
 
-/* ---------------- Section divider trace ---------------- */
-.divider {
-  width: 100%;
-  height: 34px;
-  margin: 0;
-}
-.divider path { fill: none; stroke: var(--line); stroke-width: 1.3; }
-.divider.on-ink path { stroke: var(--line-dark); }
+
 
 /* ---------------- Sections ---------------- */
 section { padding: 64px 0; }
@@ -306,8 +283,7 @@ section + section { border-top: 1px solid var(--line); }
   position: relative;
 }
 .section-alt .card { background: #fff; }
-.card .card-trace { height: 22px; margin-bottom: 16px; }
-.card .card-trace path { stroke: var(--trace); fill: none; stroke-width: 1.5; }
+
 .card h3 { font-size: 1.2rem; margin-bottom: 10px; }
 .card p { color: var(--ink-text-soft); font-size: 0.97rem; margin-bottom: 12px; }
 .card .read-more {
