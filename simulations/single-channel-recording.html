@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patch-Clamp Lab — Single Channel Recording</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="Patch-Clamp%20Lab%20%E2%80%94%20Single%20Channel%20Recording_files/css2.css" rel="stylesheet">
 <script>
 /*!
  * Chart.js v4.4.4
@@ -154,7 +154,7 @@ table.data-table tbody tr:hover{ background:#211c15; }
 @media (max-width: 900px){ .two-col{ grid-template-columns:1fr; } .layout{ grid-template-columns:1fr; } aside.controls{ max-height:none; } }
 </style>
 </head>
-<body>
+<body data-new-gr-c-s-check-loaded="8.937.0" data-gr-ext-installed="">
 <!-- lab-nav:start -->
 <style>
 .lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
@@ -163,7 +163,7 @@ table.data-table tbody tr:hover{ background:#211c15; }
 .lab-nav--foot{text-align:left;padding:18px 28px 24px}
 header.app-head{padding-left:28px;padding-right:28px}
 </style>
-<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<div class="lab-nav lab-nav--top"><a href="https://neurofisio-usach.cl/simulaciones.html">← Back to Simulations</a></div>
 <!-- lab-nav:end -->
 
 <header class="app-head">
@@ -179,18 +179,21 @@ header.app-head{padding-left:28px;padding-right:28px}
 <div class="layout">
   <aside class="controls">
 
-    <details class="panel" open>
+    <details class="panel" open="">
       <summary>Channel type</summary>
       <div class="panel-body">
         <div style="display:flex; gap:8px;">
           <button class="ghost-btn channel-btn active" id="channelBtnNa" data-channel="Na" style="max-width:none;">Naᵥ (fast, inactivating)</button>
           <button class="ghost-btn channel-btn" id="channelBtnK" data-channel="K" style="max-width:none;">Kᵥ (delayed rectifier)</button>
         </div>
-        <div class="note" id="channelNote" style="margin-top:10px; margin-bottom:0;">Fast-activating, then inactivates — a single brief opening per depolarization, silent afterward until recovery at the holding potential.</div>
+        <div class="note" id="channelNote" style="margin-top:10px; margin-bottom:0;">Fast-
+activating, then inactivates — a single brief opening per 
+depolarization, silent afterward until recovery at the holding 
+potential.</div>
       </div>
     </details>
 
-    <details class="panel" open id="voltageCommandPanel">
+    <details class="panel" open="" id="voltageCommandPanel">
       <summary>Voltage command</summary>
       <div class="panel-body">
         <div class="field">
@@ -238,7 +241,10 @@ header.app-head{padding-left:28px;padding-right:28px}
     <details class="panel">
       <summary>Gating kinetics (advanced)</summary>
       <div class="panel-body">
-        <div class="note" id="kineticsNote" style="margin-top:0;">Rates are exponential in V (mV), matching the classic α/β voltage-dependence. Defaults reproduce textbook single Na⁺-channel behavior — bell-shaped Po vs V due to competing activation and inactivation.</div>
+        <div class="note" id="kineticsNote" style="margin-top:0;">Rates 
+are exponential in V (mV), matching the classic α/β voltage-dependence. 
+Defaults reproduce textbook single Na⁺-channel behavior — bell-shaped Po
+ vs V due to competing activation and inactivation.</div>
         <div id="naOnlyKinetics">
           <div class="field"><div class="field-row"><label for="a0" id="a0Label">α₀ — opening rate scale (ms⁻¹)</label><button class="reset-mini" data-reset="a0">reset</button></div><input type="number" id="a0" value="0.5" step="0.05"></div>
           <div class="field"><div class="field-row"><label for="b0" id="b0Label">β₀ — closing rate scale (ms⁻¹)</label><button class="reset-mini" data-reset="b0">reset</button></div><input type="number" id="b0" value="1.0" step="0.05"></div>
@@ -246,7 +252,11 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div class="field"><div class="field-row"><label for="kr0">kᵣ₀ — recovery scale (ms⁻¹)</label><button class="reset-mini" data-reset="kr0">reset</button></div><input type="number" id="kr0" value="0.05" step="0.01"></div>
         </div>
         <div id="kOnlyKinetics" style="display:none;">
-          <div class="note" style="margin-top:0;">Scheme: C0⇌C1⇌C2⇌O1⇌O2. Each closed-state step now has its own rate — giving genuinely distinct timescales — and O1⇌O2 is a fast flickery sub-state within the open pool (same conductance as O1), which is what makes the open-time histogram multi-exponential.</div>
+          <div class="note" style="margin-top:0;">Scheme: 
+C0⇌C1⇌C2⇌O1⇌O2. Each closed-state step now has its own rate — giving 
+genuinely distinct timescales — and O1⇌O2 is a fast flickery sub-state 
+within the open pool (same conductance as O1), which is what makes the 
+open-time histogram multi-exponential.</div>
           <div class="field"><div class="field-row"><label for="a1">α₁ — C0→C1 (ms⁻¹)</label><button class="reset-mini" data-reset="a1">reset</button></div><input type="number" id="a1" value="0.05" step="0.01"></div>
           <div class="field"><div class="field-row"><label for="b1">β₁ — C1→C0 (ms⁻¹)</label><button class="reset-mini" data-reset="b1">reset</button></div><input type="number" id="b1" value="1.0" step="0.05"></div>
           <div class="field"><div class="field-row"><label for="a2">α₂ — C1→C2 (ms⁻¹)</label><button class="reset-mini" data-reset="a2">reset</button></div><input type="number" id="a2" value="0.3" step="0.05"></div>
@@ -264,7 +274,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="panel-body">
         <div class="field">
           <div class="field-row"><label for="seed">Seed (same seed → same trace)</label><button class="reset-mini" data-reset="seed">reset</button></div>
-          <input type="number" id="seed" value="12345" step="1">
+          <input type="number" id="seed" value="489388784" step="1">
         </div>
         <button class="ghost-btn" id="randSeedBtn">Randomize seed</button>
         <div class="field" style="display:flex; align-items:center; gap:8px; margin-top:10px; margin-bottom:0;">
@@ -286,19 +296,20 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="stage-head">
         <div>
           <h2>Single channel trace</h2>
-          <p>One channel, one sweep. Watch it flicker open after the voltage step, then fall silent as it inactivates.</p>
+          <p>One channel, one sweep. The gate traces on top show each gating particle moving between its resting (low) and activated (high) position, time-aligned with the current below.</p>
         </div>
       </div>
       <div class="digital-readout">
         <div><span class="k">State</span><span class="v"><span class="state-pill state-C" id="s1-state">closed</span></span></div>
-        <div><span class="k">Openings</span><span class="v" id="s1-nopen">–</span></div>
-        <div><span class="k">First latency</span><span class="v" id="s1-latency">–</span></div>
-        <div><span class="k">Po (during pulse)</span><span class="v" id="s1-po">–</span></div>
-        <div><span class="k">Closed cursor (I)</span><span class="v" id="s1-cursorClosed">–</span></div>
-        <div><span class="k">Open cursor (I)</span><span class="v" id="s1-cursorOpen">–</span></div>
-        <div><span class="k">ΔI = I(open) − I(closed)</span><span class="v" id="s1-cursorDelta" style="color:#e8a53d;">–</span></div>
+        <div><span class="k">Openings</span><span class="v" id="s1-nopen">2</span></div>
+        <div><span class="k">First latency</span><span class="v" id="s1-latency">0.090 ms</span></div>
+        <div><span class="k">Po (during pulse)</span><span class="v" id="s1-po">0.0385</span></div>
+        <div><span class="k">Closed cursor (I)</span><span class="v" id="s1-cursorClosed">0.000 pA</span></div>
+        <div><span class="k">Open cursor (I)</span><span class="v" id="s1-cursorOpen">-1.125 pA</span></div>
+        <div><span class="k">ΔI = I(open) − I(closed)</span><span class="v" id="s1-cursorDelta" style="color:#e8a53d;">-1.125 pA</span></div>
       </div>
-      <div class="scope"><div class="chart-box"><canvas id="chartSingle"></canvas></div></div>
+      <div class="scope"><div class="chart-box" id="gatesBox" style="height:110px;"><canvas id="chartGates"></canvas></div><div class="chart-box" id="currentBox"><canvas id="chartSingle"></canvas></div></div>
+      <div class="note" id="gateNote" style="margin-top:10px;"></div>
       <div class="note" style="margin-top:10px;">Drag the two dashed cursor lines onto the trace — <b>Closed</b> onto the baseline, <b>Open</b> onto an open level — then press <b>Record point</b> to log the test voltage and the measured current step (ΔI) below.</div>
       <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
         <button class="run-btn" id="recordPointBtn" style="max-width:220px; background:#6fb8ff; color:#0a0f08;">Record point (V, ΔI)</button>
@@ -318,7 +329,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         </div>
         <div>
           <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">I–V plot</b></div><div></div></div>
-          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV1"></canvas></div></div>
+          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV1" style="display: block; box-sizing: border-box; height: 300px; width: 969px;" width="775" height="240"></canvas></div></div>
         </div>
       </div>
     </div>
@@ -328,21 +339,27 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="stage-head">
         <div>
           <h2>Multiple sweeps</h2>
-          <p>The same channel, repeated trials at the same test potential — trial-to-trial variability in latency, opening count and duration. As on a real rig, one sweep is acquired every 500 ms and each new sweep is drawn below the previous one. Right-click any trace to drop a marker and log its (voltage, current) into the table.</p>
+          <p>The same channel, repeated trials at the same test 
+potential — trial-to-trial variability in latency, opening count and 
+duration. As on a real rig, one sweep is acquired every 500 ms and each 
+new sweep is drawn below the previous one. Right-click any trace to drop
+ a marker and log its (voltage, current) into the table.</p>
         </div>
         <div class="field" style="width:160px;">
           <label for="nSweeps">Number of sweeps</label>
           <input type="number" id="nSweeps" value="20" step="1">
         </div>
       </div>
-      <div class="note" style="margin:0 0 4px;">The settings in the side panel are captured when a run starts; changes apply to the next run. The number of sweeps locks while a run is in progress — press <b>Reset</b> to change it.</div>
+      <div class="note" style="margin:0 0 4px;">The settings in the side
+ panel are captured when a run starts; changes apply to the next run. 
+The number of sweeps locks while a run is in progress — press <b>Reset</b> to change it.</div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
         <button class="run-btn" id="startSweepsBtn" style="max-width:140px;">Start</button>
-        <button class="ghost-btn" id="stopSweepsBtn" style="max-width:140px;">Stop</button>
+        <button class="ghost-btn" id="stopSweepsBtn" style="max-width:140px;" disabled="disabled">Stop</button>
         <button class="ghost-btn" id="resetSweepsBtn" style="max-width:140px;">Reset</button>
         <span class="v" id="sweepsProgress" style="font-family:var(--font-mono); font-size:12.5px;">Sweep 0 / 20</span>
       </div>
-      <div class="scope"><div class="chart-box chart-box-tall"><canvas id="chartSweeps"></canvas></div></div>
+      <div class="scope"><div class="chart-box chart-box-tall"><canvas id="chartSweeps" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
       <div class="table-controls">
         <div class="left"><b style="font-size:12.5px;">Per-sweep summary</b></div>
         <div><button id="copySweepsSummaryBtn">Copy table</button></div>
@@ -365,7 +382,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         </div>
         <div>
           <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">I–V plot</b></div><div></div></div>
-          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV2"></canvas></div></div>
+          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV2" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
         </div>
       </div>
     </div>
@@ -375,22 +392,33 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="stage-head">
         <div>
           <h2>Ensemble average</h2>
-          <p>Average many independent channels (or repeated sweeps) and the noisy single-channel flickers become the smooth macroscopic current students recognize from whole-cell recordings. Sweeps are acquired one every 500 ms and overlaid; when the last one arrives the average is computed and drawn on top. Right-click the bold average trace to log its (voltage, current) into the table.</p>
+          <p>Average many independent channels (or repeated sweeps) and 
+the noisy single-channel flickers become the smooth macroscopic current 
+students recognize from whole-cell recordings. Sweeps are acquired one 
+every 500 ms and overlaid; when the last one arrives the average is 
+computed and drawn on top. Right-click the bold average trace to log its
+ (voltage, current) into the table.</p>
         </div>
         <div class="field" style="width:160px;">
           <label for="nEnsemble">Channels / sweeps (N)</label>
           <input type="number" id="nEnsemble" value="150" step="10">
         </div>
       </div>
-      <div class="note" style="margin:0 0 4px;">The settings in the side panel are captured when a run starts; changes apply to the next run. N locks while a run is in progress — press <b>Reset</b> to change it.</div>
+      <div class="note" style="margin:0 0 4px;">The settings in the side
+ panel are captured when a run starts; changes apply to the next run. N 
+locks while a run is in progress — press <b>Reset</b> to change it.</div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
         <button class="run-btn" id="startEnsembleBtn" style="max-width:140px;">Start</button>
-        <button class="ghost-btn" id="stopEnsembleBtn" style="max-width:140px;">Stop</button>
+        <button class="ghost-btn" id="stopEnsembleBtn" style="max-width:140px;" disabled="disabled">Stop</button>
         <button class="ghost-btn" id="resetEnsembleBtn" style="max-width:140px;">Reset</button>
         <span class="v" id="ensembleProgress" style="font-family:var(--font-mono); font-size:12.5px;">Sweep 0 / 150</span>
       </div>
-      <div class="scope"><div class="chart-box"><canvas id="chartEnsemble"></canvas></div></div>
-      <div class="note" style="margin:12px 0;">The bright trace is the sweep just recorded; earlier sweeps fade into the background. The bold line, drawn after the last sweep, is the average of all N sweeps — i × Po(t), which scaled by the number of channels in a cell is exactly what the whole-cell macroscopic current represents.</div>
+      <div class="scope"><div class="chart-box"><canvas id="chartEnsemble" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
+      <div class="note" style="margin:12px 0;">The bright trace is the 
+sweep just recorded; earlier sweeps fade into the background. The bold 
+line, drawn after the last sweep, is the average of all N sweeps — i × 
+Po(t), which scaled by the number of channels in a cell is exactly what 
+the whole-cell macroscopic current represents.</div>
       <div style="margin-top:10px;"><button class="ghost-btn" id="clearPointsTab3Btn" style="max-width:160px;">Clear table</button></div>
       <div class="two-col" style="margin-top:16px; align-items:start;">
         <div>
@@ -405,7 +433,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         </div>
         <div>
           <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">Macroscopic-like I–V plot</b></div><div></div></div>
-          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV3"></canvas></div></div>
+          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV3" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
         </div>
       </div>
     </div>
@@ -415,7 +443,12 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="stage-head">
         <div>
           <h2>Dwell-time histograms</h2>
-          <p>Runs 200 pulses one at a time, like watching an oscilloscope sweep — most informative for the Kᵥ channel, whose non-inactivating flicker gives many open/closed events per pulse. Every 5th pulse, the closed- and open-time histograms below update with all events collected so far (first latency and any dwell still in progress at pulse end are excluded, to avoid bias).</p>
+          <p>Runs 200 pulses one at a time, like watching an 
+oscilloscope sweep — most informative for the Kᵥ channel, whose 
+non-inactivating flicker gives many open/closed events per pulse. Every 
+5th pulse, the closed- and open-time histograms below update with all 
+events collected so far (first latency and any dwell still in progress 
+at pulse end are excluded, to avoid bias).</p>
         </div>
       </div>
       <div class="two-col" style="margin-bottom:10px;">
@@ -426,22 +459,24 @@ header.app-head{padding-left:28px;padding-right:28px}
         <div class="field"><label for="histTPre">Baseline before step (ms)</label><input type="number" id="histTPre" value="5" step="1"></div>
         <div class="field"><label for="histTPost">Tail after step (ms)</label><input type="number" id="histTPost" value="5" step="1"></div>
       </div>
-      <div class="note" style="margin:0 0 4px;">These fields lock once a run starts (including while paused) so the accumulated histogram always reflects one consistent protocol — press <b>Reset</b> to change them.</div>
+      <div class="note" style="margin:0 0 4px;">These fields lock once a
+ run starts (including while paused) so the accumulated histogram always
+ reflects one consistent protocol — press <b>Reset</b> to change them.</div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
         <button class="run-btn" id="startHistBtn" style="max-width:140px;">Start</button>
-        <button class="ghost-btn" id="stopHistBtn" style="max-width:140px;">Stop</button>
+        <button class="ghost-btn" id="stopHistBtn" style="max-width:140px;" disabled="disabled">Stop</button>
         <button class="ghost-btn" id="resetHistBtn" style="max-width:140px;">Reset</button>
         <span class="v" id="histProgress" style="font-family:var(--font-mono); font-size:12.5px;">Pulse 0 / 200</span>
       </div>
-      <div class="scope"><div class="chart-box"><canvas id="chartHistScope"></canvas></div></div>
+      <div class="scope"><div class="chart-box"><canvas id="chartHistScope" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
       <div class="two-col" style="margin-top:16px; align-items:start;">
         <div>
           <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">Closed times</b></div><div class="v" id="histStatsClosed" style="font-family:var(--font-mono); font-size:11.5px; color:var(--panel-text-dim);">n=0</div></div>
-          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartClosedHist"></canvas></div></div>
+          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartClosedHist" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
           <div style="display:flex; gap:8px; align-items:center; margin:10px 0 0; flex-wrap:wrap;">
             <label for="fitClosedN" style="font-size:11.5px; color:var(--panel-text-dim);">Components:</label>
             <select id="fitClosedN" style="background:#100c08;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
-              <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+              <option value="1" selected="selected">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
             </select>
             <button class="ghost-btn" id="fitClosedBtn" style="max-width:110px;">Fit</button>
           </div>
@@ -449,11 +484,11 @@ header.app-head{padding-left:28px;padding-right:28px}
         </div>
         <div>
           <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">Open times</b></div><div class="v" id="histStatsOpen" style="font-family:var(--font-mono); font-size:11.5px; color:var(--panel-text-dim);">n=0</div></div>
-          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartOpenHist"></canvas></div></div>
+          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartOpenHist" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
           <div style="display:flex; gap:8px; align-items:center; margin:10px 0 0; flex-wrap:wrap;">
             <label for="fitOpenN" style="font-size:11.5px; color:var(--panel-text-dim);">Components:</label>
             <select id="fitOpenN" style="background:#100c08;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
-              <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+              <option value="1" selected="selected">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
             </select>
             <button class="ghost-btn" id="fitOpenBtn" style="max-width:110px;">Fit</button>
           </div>
@@ -729,6 +764,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 /* ================= CHART SETUP ================= */
 Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
+const GATE_AXIS_W = 96; // shared y-axis width so gate and current panels line up exactly
 let cursorClosedVal = 0, cursorOpenVal = -1;
 let draggingCursor = null; // 'closed' or 'open'
 
@@ -739,11 +775,11 @@ const chartSingle = new Chart(document.getElementById('chartSingle'), {
     { label:'Closed', data:[{x:0,y:cursorClosedVal},{x:1,y:cursorClosedVal}], borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:1 },
     { label:'Open', data:[{x:0,y:cursorOpenVal},{x:1,y:cursorOpenVal}], borderColor:'#6fb8ff', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:0 }
   ]},
-  options:{ animation:false, responsive:true, maintainAspectRatio:false,
+  options:{ animation:false, responsive:true, maintainAspectRatio:false, layout:{padding:{right:10}},
     plugins:{ legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}}}, tooltip:{enabled:true} },
     scales:{
-      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
-      y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
+      x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95', align:'inner'}, grid:{color:'#0f3a22'} },
+      y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'}, afterFit:(ax)=>{ ax.width = GATE_AXIS_W; } }
     }
   }
 });
@@ -858,6 +894,88 @@ const chartIV3 = new Chart(document.getElementById('chartIV3'), {
   options: ivChartOptions('Test potential (mV)','I (pA)')
 });
 
+
+/* ================= GATING-PARTICLE TRACES (above the current) ================= */
+// Markov states -> gating-particle positions (0 = resting, 1 = activated/engaged).
+//  Na: C=0, O=1, I=2.  m (activation gate) is activated in O and stays so in I;
+//      h (inactivation gate) is engaged only in I. Recovery I->C resets both at once
+//      (the model lumps recovery into a single transition).
+//  K : C0..C2, O1, O2 = 0..4. Four sequential steps C0->C1, C1->C2, C2->O1, O1->O2;
+//      particle n_k is activated whenever state index >= k.
+const GATE_DEFS = {
+  Na: [
+    { label:'m  act.',   test:s=>(s===1||s===2), color:'#4dffa0' },
+    { label:'h  inact.', test:s=>(s===2),        color:'#ff8a5c' }
+  ],
+  K: [
+    { label:'n₁ C0→C1', test:s=>s>=1, color:'#6fb8ff' },
+    { label:'n₂ C1→C2', test:s=>s>=2, color:'#b49bff' },
+    { label:'n₃ C2→O1', test:s=>s>=3, color:'#4dffa0' },
+    { label:'n₄ O1→O2', test:s=>s>=4, color:'#ffd24d' }
+  ]
+};
+const GATE_NOTES = {
+  Na: 'Gate traces: <b>m</b> (activation) moves up at the opening and stays up while the channel is inactivated; <b>h</b> (inactivation) moves up when the channel inactivates. Recovery at the holding potential resets both together (single I→C transition in this model). The channel conducts only when m is up and h is down.',
+  K: 'Gate traces: the Kᵥ scheme C0⇌C1⇌C2⇌O1⇌O2 is a chain of four sequential particle steps. Particle <b>n<sub>k</sub></b> is up whenever the channel has advanced at least k steps. Conduction begins when n₁–n₃ are all up (O1); n₄ is the fast flicker step within the open pool (O2).'
+};
+const GATE_ROW = 1.5;   // vertical spacing between gate rows
+const gateRowOffset = (i,n)=> (n-1-i)*GATE_ROW;   // row 0 is drawn at the top
+let gateLabelTicks = [];
+
+const chartGates = new Chart(document.getElementById('chartGates'), {
+  type:'line',
+  data:{ datasets:[] },
+  options:{ animation:false, responsive:true, maintainAspectRatio:false, layout:{padding:{right:10}},
+    plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+    scales:{
+      x:{ type:'linear', min:0, max:1, ticks:{display:false}, grid:{color:'#0f3a22'}, border:{display:true} },
+      y:{ min:-0.3, max:1.3, grid:{display:false}, afterFit:(ax)=>{ ax.width = GATE_AXIS_W; },
+          afterBuildTicks:(ax)=>{ ax.ticks = gateLabelTicks.map(t=>({value:t.value})); },
+          ticks:{ color:'#b8ae95', font:{size:10}, callback:(v)=>{ const t=gateLabelTicks.find(g=>g.value===v); return t?t.label:''; } } }
+    }
+  }
+});
+
+function buildGateTraces(res, p){
+  const defs = GATE_DEFS[p.channelType==='K' ? 'K' : 'Na'];
+  const n = defs.length, N = res.stateArr.length;
+  const xMax = res.time[N-1];
+  const datasets = [];
+  gateLabelTicks = [];
+  defs.forEach((g,i)=>{
+    const off = gateRowOffset(i,n);
+    gateLabelTicks.push({ value: off+0.5, label: g.label });
+    // faint resting / activated rails
+    datasets.push({ data:[{x:0,y:off},{x:xMax,y:off}], borderColor:'#2c2820', borderWidth:1, borderDash:[2,3], pointRadius:0, order:5 });
+    datasets.push({ data:[{x:0,y:off+1},{x:xMax,y:off+1}], borderColor:'#2c2820', borderWidth:1, borderDash:[2,3], pointRadius:0, order:5 });
+    // exact step trace: only points at the transitions
+    const pts = [];
+    let prev = g.test(res.stateArr[0]) ? 1 : 0;
+    pts.push({x:0, y:off+prev});
+    for (let k=1;k<N;k++){
+      const v = g.test(res.stateArr[k]) ? 1 : 0;
+      if (v!==prev){
+        const t = +(res.time[k]).toFixed(3);
+        pts.push({x:t, y:off+prev});
+        pts.push({x:t, y:off+v});
+        prev = v;
+      }
+    }
+    pts.push({x:xMax, y:off+prev});
+    datasets.push({ label:g.label, data:pts, borderColor:g.color, backgroundColor:'transparent', borderWidth:1.8, pointRadius:0, tension:0, order:1 });
+  });
+  chartGates.data.datasets = datasets;
+  chartGates.options.scales.y.min = -0.3;
+  chartGates.options.scales.y.max = gateRowOffset(0,n) + 1.3;
+  chartGates.options.scales.x.min = 0;
+  chartGates.options.scales.x.max = xMax;
+  const box = document.getElementById('gatesBox');
+  box.style.height = (n*46 + 16) + 'px';
+  chartGates.resize();
+  chartGates.update('none');
+  document.getElementById('gateNote').innerHTML = GATE_NOTES[p.channelType==='K' ? 'K' : 'Na'];
+}
+
 /* ================= TAB 1: SINGLE TRACE ================= */
 let pointsTab1 = [];
 function runSingle(){
@@ -867,8 +985,10 @@ function runSingle(){
   const noisy = addNoise(res.idealI, rng, p.noiseSD);
   chartSingle.data.datasets[0].data = Array.from(res.time).map((t,i)=>({x:+t.toFixed(3), y:+noisy[i].toFixed(4)}));
   const xMax = res.time[res.time.length-1];
+  chartSingle.options.scales.x.min = 0; chartSingle.options.scales.x.max = xMax;
   setCursorLines(0, xMax);
   chartSingle.update();
+  buildGateTraces(res, p);
   updateCursorReadout();
 
   const lastState = res.stateArr[res.stateArr.length-1];
@@ -1517,7 +1637,24 @@ runSingle();
 resetCursorsToDefaults();
 </script>
 <!-- lab-foot:start -->
-<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<div class="lab-nav lab-nav--foot"><a href="https://neurofisio-usach.cl/index.html">Laboratorio de Neurofisiología · USACH</a></div>
 <!-- lab-foot:end -->
-</body>
-</html>
+
+
+<script>mendeleyWebImporter = {
+  downloadPdfs(e,t) { return this._call('downloadPdfs', [e,t]); },
+  open() { return this._call('open', []); },
+  setLoginToken(e) { return this._call('setLoginToken', [e]); },
+  _call(methodName, methodArgs) {
+    const id = Math.random();
+    window.postMessage({ id, token: '0.18331861519049752', methodName, methodArgs }, 'https://neurofisio-usach.cl');
+    return new Promise(resolve => {
+      const listener = window.addEventListener('message', event => {
+        const data = event.data;
+        if (typeof data !== 'object' || !('result' in data) || data.id !== id) return;
+        window.removeEventListener('message', listener);
+        resolve(data.result);
+      });
+    });
+  }
+};</script></body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>
