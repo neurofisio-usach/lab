@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /scn/
+
+Sitemap: https://neurofisio-usach.cl/scn/sitemap.xml

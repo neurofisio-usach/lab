@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Noticias — Sociedad Chilena de Neurociencia</title>
+<!-- SEO & Open Graph -->
+<meta name="description" content="Últimas noticias, oportunidades, cursos, simposios y congresos de la comunidad neurocientífica chilena.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://neurofisio-usach.cl/scn/noticias.html">
+<meta property="og:title" content="Noticias — Sociedad Chilena de Neurociencia">
+<meta property="og:description" content="Últimas noticias, oportunidades, cursos, simposios y congresos de la comunidad neurocientífica chilena.">
+<meta property="og:image" content="https://neurofisio-usach.cl/scn/img/SAVETHEDATEFALAN2026.webp">
+<meta property="og:locale" content="es_CL">
+<meta property="og:site_name" content="Sociedad Chilena de Neurociencia">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Noticias — Sociedad Chilena de Neurociencia">
+<meta name="twitter:description" content="Últimas noticias, oportunidades, cursos, simposios y congresos de la comunidad neurocientífica chilena.">
+<meta name="twitter:image" content="https://neurofisio-usach.cl/scn/img/SAVETHEDATEFALAN2026.webp">
+
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -106,6 +121,19 @@ img{max-width:100%;height:auto;display:block}
 .sidebar-news-all:hover{text-decoration:underline}
 @media(max-width:900px){.page-outer{flex-direction:column}.sidebar{width:100%;position:static;padding:1.5rem var(--pad)}}
 
+
+/* ── FILTER BAR ──────────────────────────────────────── */
+.filter-bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:1.5rem 0 .5rem}
+.filter-search{flex:1;min-width:200px;padding:.55rem .9rem;border:1px solid var(--border);border-radius:5px;font-family:inherit;font-size:.875rem;color:var(--body);background:#fff;transition:border-color .15s}
+.filter-search:focus{outline:none;border-color:var(--teal)}
+.filter-search::placeholder{color:var(--muted)}
+.filter-btns{display:flex;flex-wrap:wrap;gap:.35rem}
+.filter-btn{padding:.35rem .85rem;border:1.5px solid var(--border);border-radius:20px;font-size:.78rem;font-weight:500;color:var(--muted);background:#fff;cursor:pointer;transition:all .15s;white-space:nowrap}
+.filter-btn:hover{border-color:var(--teal);color:var(--teal)}
+.filter-btn.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.no-results{display:none;padding:3rem 0;text-align:center;color:var(--muted);font-size:.95rem;grid-column:1/-1}
+.no-results.show{display:block}
+
 </style>
 </head>
 <body>
@@ -143,7 +171,19 @@ img{max-width:100%;height:auto;display:block}
   </div>
 </div>
 <div class="page-outer"><div class="page-main">
-<section><div class="wrap"><div class="card-grid">
+<section><div class="wrap"><div class="filter-bar">
+  <input type="search" class="filter-search" id="news-search" placeholder="Buscar noticias…" aria-label="Buscar noticias">
+  <div class="filter-btns" id="filter-btns">
+    <button class="filter-btn active" data-cat="all">Todas</button>
+    <button class="filter-btn" data-cat="b-dest">Destacado</button>
+    <button class="filter-btn" data-cat="b-congr">Congresos y Simposios</button>
+    <button class="filter-btn" data-cat="b-oport">Oportunidades</button>
+    <button class="filter-btn" data-cat="b-divul">Divulgación</button>
+    <button class="filter-btn" data-cat="b-gen">General</button>
+  </div>
+</div>
+<p class="no-results" id="no-results">No se encontraron noticias para esta búsqueda.</p>
+<div class="card-grid">
     <a href="noticias/laconeu-2027-convocatoria-de-postulacion-abierta.html" class="card">
       <div class="card-img"><img src="img/image-13.png" alt="" loading="lazy"></div>
       <div class="card-body">
@@ -420,6 +460,48 @@ img{max-width:100%;height:auto;display:block}
     var o=n.classList.toggle('open');b.textContent=o?'✕':'☰';
   });
 })();
+
+/* ── FILTER & SEARCH ─────────────────────────────────── */
+(function(){
+  var cards   = Array.from(document.querySelectorAll('.card'));
+  var btnWrap = document.getElementById('filter-btns');
+  var search  = document.getElementById('news-search');
+  var noRes   = document.getElementById('no-results');
+  var activeCat = 'all';
+
+  function matchesCat(card, cat) {
+    if (cat === 'all') return true;
+    var badge = card.querySelector('.badge');
+    return badge && badge.classList.contains(cat);
+  }
+  function matchesSearch(card, q) {
+    if (!q) return true;
+    var title = card.querySelector('.card-title');
+    var excerpt = card.querySelector('.card-excerpt');
+    var text = (title ? title.textContent : '') + ' ' + (excerpt ? excerpt.textContent : '');
+    return text.toLowerCase().indexOf(q.toLowerCase()) !== -1;
+  }
+  function applyFilters() {
+    var q = search.value.trim();
+    var visible = 0;
+    cards.forEach(function(c) {
+      var show = matchesCat(c, activeCat) && matchesSearch(c, q);
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    noRes.classList.toggle('show', visible === 0);
+  }
+  btnWrap.addEventListener('click', function(e) {
+    var btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    btnWrap.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeCat = btn.dataset.cat;
+    applyFilters();
+  });
+  search.addEventListener('input', applyFilters);
+})();
+
 </script>
 </body>
 </html>
