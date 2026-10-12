@@ -346,11 +346,10 @@ a{color:inherit}
   <p class="mform-sub">Complete el formulario para solicitar membresía en la Sociedad Chilena de Neurociencia. Todos los campos marcados con <span style="color:#e53e3e">*</span> son obligatorios.</p>
 
   <div class="mform-note">
-    <strong>Nota sobre archivos:</strong> El formulario acepta CV y carta de intención en PDF. Si tiene problemas para adjuntar archivos, puede enviarlos directamente a
-    <strong>sociedadchilenaneurociencia@gmail.com</strong> indicando su nombre completo en el asunto.
+    <strong>¿Cómo funciona?</strong> Al hacer clic en "Enviar solicitud" se abrirá su programa de correo (Outlook, Thunderbird, Gmail, etc.) con todos los datos del formulario ya incluidos en el mensaje. Solo deberá <strong>adjuntar los archivos</strong> (CV, carta de intención y, si es estudiante, el certificado de alumno regular) y pulsar Enviar.
   </div>
 
-  <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" enctype="multipart/form-data" id="membership-form">
+  <form id="membership-form" novalidate>
 
     <!-- Calidad de Miembro -->
     <div class="mform-section">
@@ -472,9 +471,6 @@ a{color:inherit}
       </div>
     </div>
 
-    <input type="hidden" name="_subject" value="Solicitud de incorporación SCN">
-    <input type="hidden" name="_next" value="https://neurofisio-usach.cl/scn/asociarse.html">
-
     <button type="submit" class="mform-submit">Enviar solicitud</button>
 
     <div class="mform-alt">
@@ -484,6 +480,13 @@ a{color:inherit}
     </div>
 
   </form>
+
+  <div id="mailto-msg" style="display:none;margin-top:1.5rem;padding:1rem 1.2rem;background:#d1fae5;border-left:3px solid #059669;border-radius:4px;font-size:.9rem;color:#065f46;line-height:1.6">
+    ✓ <strong>Su cliente de correo se ha abierto</strong> con los datos del formulario. Recuerde adjuntar los archivos antes de enviar:<br>
+    <strong>• CV</strong> &nbsp;|&nbsp; <strong>• Carta de intención</strong> &nbsp;|&nbsp; <strong>• Certificado de alumno regular</strong> (solo si es estudiante).<br>
+    Si no se abrió ninguna ventana, envíe los datos manualmente a
+    <a href="mailto:sociedadchilenaneurociencia@gmail.com" style="color:#065f46">sociedadchilenaneurociencia@gmail.com</a>.
+  </div>
 </div>
 
 <script>
@@ -493,6 +496,66 @@ function toggleStudent(radio) {
     el.style.display = show ? 'block' : 'none';
   });
 }
+
+document.getElementById('membership-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  // Basic validation
+  var required = this.querySelectorAll('[required]');
+  var valid = true;
+  required.forEach(function(el) {
+    if (!el.value.trim()) { el.style.borderColor = '#e53e3e'; valid = false; }
+    else el.style.borderColor = '';
+  });
+  if (!valid) { alert('Por favor complete todos los campos obligatorios (*)'); return; }
+
+  var data = new FormData(this);
+  var lines = [
+    'Solicitud de Incorporación — Sociedad Chilena de Neurociencia',
+    '============================================================',
+    '',
+    'CALIDAD DE MIEMBRO: ' + (data.get('members') || ''),
+    ''
+  ];
+
+  if (data.get('members') === 'Estudiante') {
+    lines.push('PROGRAMA DE POSTGRADO: ' + (data.get('programa-magister') || ''));
+    lines.push('AÑO DE INGRESO: '        + (data.get('ano-ingreso') || ''));
+    lines.push('');
+  }
+
+  lines.push('DATOS PERSONALES');
+  lines.push('Nombre completo: ' + (data.get('nombre-completo') || ''));
+  lines.push('RUT: '             + (data.get('rut') || ''));
+  lines.push('Correo: '         + (data.get('your-email') || ''));
+  lines.push('Teléfono: '       + (data.get('tele') || ''));
+  lines.push('Afiliación: '     + (data.get('your-afiliacion') || ''));
+  lines.push('Dirección postal: '+ (data.get('postal') || ''));
+  lines.push('');
+  lines.push('SOCIOS PATROCINADORES');
+  lines.push('Socio titular 1: ' + (data.get('socio-1-nombre') || '') +
+             ' | ' + (data.get('socio-1-email') || ''));
+  lines.push('Socio titular 2: ' + (data.get('socio-2-nombre') || '') +
+             ' | ' + (data.get('socio-2-email') || ''));
+  lines.push('');
+  lines.push('------------------------------------------------------------');
+  lines.push('RECUERDE ADJUNTAR ANTES DE ENVIAR:');
+  lines.push('  • Curriculum Vitae (PDF)');
+  lines.push('  • Carta de intención (PDF)');
+  if (data.get('members') === 'Estudiante') {
+    lines.push('  • Certificado de alumno regular año en curso (PDF)');
+  }
+
+  var subject = 'Solicitud de incorporación SCN — ' + (data.get('nombre-completo') || '');
+  var body    = lines.join('\n');
+  var mailto  = 'mailto:sociedadchilenaneurociencia@gmail.com'
+              + '?subject=' + encodeURIComponent(subject)
+              + '&body='    + encodeURIComponent(body);
+
+  window.location.href = mailto;
+  document.getElementById('mailto-msg').style.display = 'block';
+  document.getElementById('mailto-msg').scrollIntoView({behavior:'smooth'});
+});
 </script>
 
 
