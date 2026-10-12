@@ -185,6 +185,26 @@ a{color:inherit}
 .contact-form input:focus,.contact-form textarea:focus{outline:none;border-color:var(--teal)}
 .contact-form textarea{resize:vertical;min-height:140px}
 
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+.page-outer{display:flex;gap:0;align-items:start}
+.page-main{flex:1;min-width:0;overflow:hidden}
+.sidebar{width:290px;flex-shrink:0;position:sticky;top:76px;padding:2rem 1rem 2rem 1.5rem;align-self:start}
+.sidebar-falan-link{display:block;border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.14);transition:transform .15s,box-shadow .15s;margin-bottom:1.5rem}
+.sidebar-falan-link:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.sidebar-falan-img{width:100%;display:block}
+.sidebar-news-box{background:var(--offwhite);border-radius:8px;padding:1.1rem 1.1rem 1rem}
+.sidebar-news-hd{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:.85rem}
+.sidebar-news-list{list-style:none}
+.sidebar-news-list li{border-bottom:1px solid var(--border);padding:.55rem 0}
+.sidebar-news-list li:last-child{border-bottom:none}
+.sidebar-news-list a{text-decoration:none;font-size:.8rem;color:var(--body);line-height:1.4;display:block;transition:color .15s}
+.sidebar-news-list a:hover{color:var(--teal)}
+.sidebar-news-list span{display:block;font-size:.7rem;color:var(--muted);margin-top:.2rem}
+.sidebar-news-all{display:inline-block;margin-top:.85rem;font-size:.78rem;font-weight:600;color:var(--teal);text-decoration:none}
+.sidebar-news-all:hover{text-decoration:underline}
+@media(max-width:900px){.page-outer{flex-direction:column}.sidebar{width:100%;position:static;padding:1.5rem var(--pad)}}
+
 /* ── FOOTER ──────────────────────────────────────────── */
 .footer{background:#08121f;color:rgba(255,255,255,.42);padding:2.5rem 0;font-size:.82rem}
 .footer-inner{max-width:var(--max-w);margin:0 auto;padding:0 var(--pad);display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1.5rem}
@@ -221,7 +241,7 @@ a{color:inherit}
     <ul class="nav-links" id="nav-links">
       <li><a href="#">Inicio</a></li>
       <li class="nav-has-drop">
-        <a href="#sociedad">Quiénes somos</a>
+        <a href="quienes-somos.html">Quiénes somos</a>
         <ul class="nav-drop">
           <li><a href="#premio">Premio a la Trayectoria en Neurociencia</a></li>
         </ul>
@@ -285,6 +305,7 @@ a{color:inherit}
   </div>
 </div>
 
+<div class="page-outer"><div class="page-main">
 <!-- ── NOTICIAS ───────────────────────────────────────── -->
 <section class="section" id="noticias">
   <div class="wrap">
@@ -352,44 +373,6 @@ a{color:inherit}
   </div>
 </section>
 
-<!-- ── QUIÉNES SOMOS ──────────────────────────────────── -->
-<section class="section section-alt" id="sociedad">
-  <div class="wrap">
-    <div class="sh">
-      <span class="sh-label">Historia y misión</span>
-      <h2 class="sh-title">Quiénes somos</h2>
-    </div>
-    <p class="quien-text">
-      Desde hace algunos años, diferentes investigadores en el área de las Neurociencias hemos querido impulsar la idea de la constitución de una sociedad científica que agrupe a científicos básicos e investigadores clínicos en el área de las Neurociencias. Hemos constituido la <strong>Sociedad Chilena de Neurociencia (SCN)</strong>, sociedad científica sin fines de lucro cuyos principales objetivos son:
-    </p>
-    <ul class="quien-objectives">
-      <li class="quien-obj">
-        <div class="quien-obj-n">01</div>
-        <div class="quien-obj-t">Comprensión del sistema nervioso</div>
-        <p class="quien-obj-b">Contribuir a la comprensión de la estructura y función del sistema nervioso reuniendo a científicos de las disciplinas básicas y clínicas, facilitando la colaboración multidisciplinaria para desarrollar nuevos conocimientos y tratamientos.</p>
-      </li>
-      <li class="quien-obj">
-        <div class="quien-obj-n">02</div>
-        <div class="quien-obj-t">Desarrollo profesional</div>
-        <p class="quien-obj-b">Organizar actividades profesionales de desarrollo, de información, y obtener recursos educativos para los neurocientistas en todas las etapas de sus carreras, incluyendo estudiantes de pre y posgrado, posdoctorados y becarios clínicos.</p>
-      </li>
-      <li class="quien-obj">
-        <div class="quien-obj-n">03</div>
-        <div class="quien-obj-t">Difusión y ética</div>
-        <p class="quien-obj-b">Promover la información pública y la educación general sobre la naturaleza del descubrimiento científico y los resultados de las investigaciones en Neurociencias. Apoyar discusiones activas sobre las implicaciones éticas.</p>
-      </li>
-      <li class="quien-obj">
-        <div class="quien-obj-n">04</div>
-        <div class="quien-obj-t">Política científica</div>
-        <p class="quien-obj-b">Informar a los legisladores y autoridades sobre la importancia del desarrollo científico en Chile, los nuevos conocimientos en Neurociencias y sus implicaciones para la política nacional de salud pública y el bien común.</p>
-      </li>
-    </ul>
-    <a href="estatutos-scn-2005.pdf" class="estatutos-link" download>
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-      <div>Estatutos de la Sociedad Chilena de Neurociencia <small>Escritura pública · Repertorio Nº 1.924-2005</small></div>
-    </a>
-  </div>
-</section>
 
 <!-- ── CONGRESOS ──────────────────────────────────────── -->
 <section class="section" id="congresos">
@@ -590,6 +573,24 @@ a{color:inherit}
     </form>
   </div>
 </section>
+</div>
+<aside class="sidebar">
+  <a href="https://congress2026.neurocienciasfalan.org/" target="_blank" class="sidebar-falan-link">
+    <img src="img/SAVETHEDATEFALAN2026.webp" alt="FALAN Congress 2026 — Santiago, agosto 31 – septiembre 3" class="sidebar-falan-img">
+  </a>
+  <div class="sidebar-news-box">
+    <p class="sidebar-news-hd">Últimas noticias</p>
+    <ul class="sidebar-news-list">
+      <li><a href="noticias/laconeu-2027-convocatoria-de-postulacion-abierta.html">LACONEU 2027 | Convocatoria de postulación abierta<span>Sep 9, 2026</span></a></li>
+      <li><a href="noticias/curioseando-musica-para-entender-el-cerebro.html">Curioseando: música para entender el cerebro<span>Sep 9, 2026</span></a></li>
+      <li><a href="noticias/citacion-a-asamblea-general-ordinaria-de-socios-3.html">Citación a Asamblea General Ordinaria de Socios<span>Ago 12, 2026</span></a></li>
+      <li><a href="noticias/convocatoria-abierta-propuestas-de-simposios-para-el-congreso-mundial-de-neurociencia-ibro-2027.html">Convocatoria: Simposios IBRO 2027<span>Jul 27, 2026</span></a></li>
+      <li><a href="noticias/postulaciones-abiertas-doctorado-en-ciencias-bmcn.html">Postulaciones Abiertas: Doctorado en Ciencias BMCN<span>Jul 15, 2026</span></a></li>
+    </ul>
+    <a href="noticias.html" class="sidebar-news-all">Ver todas las noticias →</a>
+  </div>
+</aside>
+</div>
 
 <!-- ── FOOTER ─────────────────────────────────────────── -->
 <footer class="footer">
@@ -599,7 +600,7 @@ a{color:inherit}
       <div style="margin-top:.35rem">Corporación de derecho privado · Fundada en 2005 · Santiago, Chile</div>
     </div>
     <nav class="footer-links" aria-label="Pie de página">
-      <a href="#sociedad">Quiénes somos</a>
+      <a href="quienes-somos.html">Quiénes somos</a>
       <a href="#directorio">Directorio</a>
       <a href="#congresos">Congresos</a>
       <a href="asociarse.html">Membresía</a>

@@ -76,6 +76,26 @@ a{color:inherit}
 .btn-ghost{border:1.5px solid rgba(255,255,255,.3);color:rgba(255,255,255,.85)}
 .btn-ghost:hover{border-color:rgba(255,255,255,.65)}
 
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+.page-outer{display:flex;gap:0;align-items:start}
+.page-main{flex:1;min-width:0;overflow:hidden}
+.sidebar{width:290px;flex-shrink:0;position:sticky;top:76px;padding:2rem 1rem 2rem 1.5rem;align-self:start}
+.sidebar-falan-link{display:block;border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.14);transition:transform .15s,box-shadow .15s;margin-bottom:1.5rem}
+.sidebar-falan-link:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.sidebar-falan-img{width:100%;display:block}
+.sidebar-news-box{background:var(--offwhite);border-radius:8px;padding:1.1rem 1.1rem 1rem}
+.sidebar-news-hd{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:.85rem}
+.sidebar-news-list{list-style:none}
+.sidebar-news-list li{border-bottom:1px solid var(--border);padding:.55rem 0}
+.sidebar-news-list li:last-child{border-bottom:none}
+.sidebar-news-list a{text-decoration:none;font-size:.8rem;color:var(--body);line-height:1.4;display:block;transition:color .15s}
+.sidebar-news-list a:hover{color:var(--teal)}
+.sidebar-news-list span{display:block;font-size:.7rem;color:var(--muted);margin-top:.2rem}
+.sidebar-news-all{display:inline-block;margin-top:.85rem;font-size:.78rem;font-weight:600;color:var(--teal);text-decoration:none}
+.sidebar-news-all:hover{text-decoration:underline}
+@media(max-width:900px){.page-outer{flex-direction:column}.sidebar{width:100%;position:static;padding:1.5rem var(--pad)}}
+
 /* ── FOOTER ──────────────────────────────────────────── */
 .footer{background:#08121f;color:rgba(255,255,255,.42);padding:2.5rem 0;font-size:.82rem}
 .footer-inner{max-width:var(--max-w);margin:0 auto;padding:0 var(--pad);display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1.5rem}
@@ -146,6 +166,7 @@ a{color:inherit}
   </div>
 </header>
 
+<div class="page-outer"><div class="page-main">
 <!-- ── MEMBRESÍA ──────────────────────────────────────── -->
 <section class="section-dark mem-section">
   <div class="wrap">
@@ -197,6 +218,24 @@ a{color:inherit}
     <p style="margin-top:1rem;font-size:.78rem;color:rgba(255,255,255,.45)">El Directorio resolverá la solicitud en la primera sesión celebrada después de su presentación (máximo 60 días hábiles). El pago de la cuota anual se realiza vía electrónica desde el sitio web de la Sociedad.</p>
   </div>
 </section>
+</div>
+<aside class="sidebar">
+  <a href="https://congress2026.neurocienciasfalan.org/" target="_blank" class="sidebar-falan-link">
+    <img src="img/SAVETHEDATEFALAN2026.webp" alt="FALAN Congress 2026 — Santiago, agosto 31 – septiembre 3" class="sidebar-falan-img">
+  </a>
+  <div class="sidebar-news-box">
+    <p class="sidebar-news-hd">Últimas noticias</p>
+    <ul class="sidebar-news-list">
+      <li><a href="noticias/laconeu-2027-convocatoria-de-postulacion-abierta.html">LACONEU 2027 | Convocatoria de postulación abierta<span>Sep 9, 2026</span></a></li>
+      <li><a href="noticias/curioseando-musica-para-entender-el-cerebro.html">Curioseando: música para entender el cerebro<span>Sep 9, 2026</span></a></li>
+      <li><a href="noticias/citacion-a-asamblea-general-ordinaria-de-socios-3.html">Citación a Asamblea General Ordinaria de Socios<span>Ago 12, 2026</span></a></li>
+      <li><a href="noticias/convocatoria-abierta-propuestas-de-simposios-para-el-congreso-mundial-de-neurociencia-ibro-2027.html">Convocatoria: Simposios IBRO 2027<span>Jul 27, 2026</span></a></li>
+      <li><a href="noticias/postulaciones-abiertas-doctorado-en-ciencias-bmcn.html">Postulaciones Abiertas: Doctorado en Ciencias BMCN<span>Jul 15, 2026</span></a></li>
+    </ul>
+    <a href="noticias.html" class="sidebar-news-all">Ver todas las noticias →</a>
+  </div>
+</aside>
+</div>
 
 <!-- ── FOOTER ─────────────────────────────────────────── -->
 <footer class="footer">
