@@ -153,6 +153,17 @@ table.data-table tbody tr:hover{ background:#211c15; }
 .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 @media (max-width: 900px){ .two-col{ grid-template-columns:1fr; } .layout{ grid-template-columns:1fr; } aside.controls{ max-height:none; } }
 </style>
+<style>
+.play-bar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:0 0 10px 0; }
+#playInfo{ font-size:12px; color:#b8ae95; }
+.single-layout{ display:grid; grid-template-columns:minmax(0,1fr) 316px; gap:14px; align-items:start; }
+@media (max-width: 1280px){ .single-layout{ grid-template-columns:1fr; } }
+.scheme-panel{ background:var(--scope-bg); border:1px solid #2c2820; border-radius:10px; padding:12px 12px 10px; }
+.scheme-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font-size:13px; }
+.scheme-legend{ font-size:10.5px; color:#8a8068; margin-top:6px; line-height:1.5; }
+.scheme-legend .lg-now{ color:#4dffa0; } .scheme-legend .lg-vis{ color:#d9cfae; } .scheme-legend .lg-arr{ color:#ffd24d; }
+#schemeWrap svg{ display:block; width:100%; height:auto; }
+</style>
 </head>
 <body data-new-gr-c-s-check-loaded="8.937.0" data-gr-ext-installed="">
 <!-- lab-nav:start -->
@@ -182,9 +193,11 @@ header.app-head{padding-left:28px;padding-right:28px}
     <details class="panel" open="">
       <summary>Channel type</summary>
       <div class="panel-body">
-        <div style="display:flex; gap:8px;">
-          <button class="ghost-btn channel-btn active" id="channelBtnNa" data-channel="Na" style="max-width:none;">Naᵥ (fast, inactivating)</button>
-          <button class="ghost-btn channel-btn" id="channelBtnK" data-channel="K" style="max-width:none;">Kᵥ (delayed rectifier)</button>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="ghost-btn channel-btn active" id="channelBtnNa" data-channel="Na" style="max-width:none;">Naᵥ — 3-state (C ⇌ O → I)</button>
+          <button class="ghost-btn channel-btn" id="channelBtnNaHH" data-channel="NaHH" style="max-width:none;">Naᵥ — m³h (HH-type gates)</button>
+          <button class="ghost-btn channel-btn" id="channelBtnNa8" data-channel="Na8" style="max-width:none;">Naᵥ — m³h lumped (8-state)</button>
+          <button class="ghost-btn channel-btn" id="channelBtnK" data-channel="K" style="max-width:none;">Kᵥ — delayed rectifier (5-state)</button>
         </div>
         <div class="note" id="channelNote" style="margin-top:10px; margin-bottom:0;">Fast-
 activating, then inactivates — a single brief opening per 
@@ -192,6 +205,8 @@ depolarization, silent afterward until recovery at the holding
 potential.</div>
       </div>
     </details>
+
+    <button class="run-btn" id="runBtn" style="margin:0 0 12px 0;">Run recording</button>
 
     <details class="panel" open="" id="voltageCommandPanel">
       <summary>Voltage command</summary>
@@ -215,8 +230,20 @@ potential.</div>
         </div>
         <div class="field">
           <div class="field-row"><label for="tPost">Tail after step (ms)</label><button class="reset-mini" data-reset="tPost">reset</button></div>
-          <input type="number" id="tPost" value="10" step="1">
+          <input type="number" id="tPost" value="5" step="1">
         </div>
+      </div>
+    </details>
+
+    <details class="panel" open="">
+      <summary>Simulation parameters</summary>
+      <div class="panel-body">
+        <div class="field">
+          <div class="field-row"><label for="noiseSD">Noise SD (pA)</label><button class="reset-mini" data-reset="noiseSD">reset</button></div>
+          <input type="number" id="noiseSD" value="0.15" step="0.01" min="0">
+        </div>
+        <div class="note" id="snrNote" style="margin:0;"></div>
+        <div class="note" style="margin:8px 0 0 0;">RMS of the Gaussian noise added by the recording circuit (amplifier, seal, electrode). Raise it to bury the openings; set it to 0 for the ideal noise-free current.</div>
       </div>
     </details>
 
@@ -230,10 +257,6 @@ potential.</div>
         <div class="field">
           <div class="field-row"><label for="Erev">Reversal potential E (mV)</label><button class="reset-mini" data-reset="Erev">reset</button></div>
           <input type="number" id="Erev" value="55" step="1">
-        </div>
-        <div class="field">
-          <div class="field-row"><label for="noiseSD">Recording noise SD (pA)</label><button class="reset-mini" data-reset="noiseSD">reset</button></div>
-          <input type="number" id="noiseSD" value="0.15" step="0.01">
         </div>
       </div>
     </details>
@@ -250,6 +273,11 @@ Defaults reproduce textbook single Na⁺-channel behavior — bell-shaped Po
           <div class="field"><div class="field-row"><label for="b0" id="b0Label">β₀ — closing rate scale (ms⁻¹)</label><button class="reset-mini" data-reset="b0">reset</button></div><input type="number" id="b0" value="1.0" step="0.05"></div>
           <div class="field"><div class="field-row"><label for="ki0">kᵢ₀ — inactivation onset (ms⁻¹)</label><button class="reset-mini" data-reset="ki0">reset</button></div><input type="number" id="ki0" value="1.0" step="0.05"></div>
           <div class="field"><div class="field-row"><label for="kr0">kᵣ₀ — recovery scale (ms⁻¹)</label><button class="reset-mini" data-reset="kr0">reset</button></div><input type="number" id="kr0" value="0.05" step="0.01"></div>
+        </div>
+        <div id="naHHKinetics" style="display:none;">
+          <div class="note" style="margin-top:0;">Rates use the Hodgkin–Huxley squid-axon functions (V in mV, rates in ms⁻¹). The fields below scale every rate of the m-type and h-type transitions (a quick stand-in for temperature or a kinetic shift).</div>
+          <div class="field"><div class="field-row"><label for="sm">m gates — rate scale</label><button class="reset-mini" data-reset="sm">reset</button></div><input type="number" id="sm" value="1" step="0.1" min="0.05"></div>
+          <div class="field"><div class="field-row"><label for="sh">h gate — rate scale</label><button class="reset-mini" data-reset="sh">reset</button></div><input type="number" id="sh" value="1" step="0.1" min="0.05"></div>
         </div>
         <div id="kOnlyKinetics" style="display:none;">
           <div class="note" style="margin-top:0;">Scheme: 
@@ -285,7 +313,6 @@ open-time histogram multi-exponential.</div>
       </div>
     </details>
 
-    <button class="run-btn" id="runBtn">Run recording</button>
     <button class="ghost-btn" id="resetAllBtn">Reset all parameters</button>
   </aside>
 
@@ -308,7 +335,26 @@ open-time histogram multi-exponential.</div>
         <div><span class="k">Open cursor (I)</span><span class="v" id="s1-cursorOpen">-1.125 pA</span></div>
         <div><span class="k">ΔI = I(open) − I(closed)</span><span class="v" id="s1-cursorDelta" style="color:#e8a53d;">-1.125 pA</span></div>
       </div>
-      <div class="scope"><div class="chart-box" id="gatesBox" style="height:110px;"><canvas id="chartGates"></canvas></div><div class="chart-box" id="currentBox"><canvas id="chartSingle"></canvas></div></div>
+      <div class="play-bar">
+        <button class="ghost-btn" id="replayBtn" style="max-width:130px;">▶ Replay</button>
+        <button class="ghost-btn" id="skipBtn" style="max-width:170px;">⏭ Show full trace</button>
+        <label for="screenTime" style="display:flex; align-items:center; gap:8px; font-size:12px; color:#b8ae95;">Screen time
+          <input type="range" id="screenTime" min="2" max="30" step="1" value="5" style="width:170px;">
+          <b id="screenTimeVal" style="min-width:34px; color:#f4ecd8;">5 s</b></label>
+        <span id="playInfo"></span>
+      </div>
+      <div class="single-layout">
+        <div class="scope">
+          <div class="chart-box" id="gatesBox" style="height:110px;"><canvas id="chartGates"></canvas></div>
+          <div class="chart-box" id="currentBox"><canvas id="chartSingle"></canvas></div>
+        </div>
+        <aside class="scheme-panel">
+          <div class="scheme-head"><b>Kinetic scheme</b><span class="state-pill state-C" id="schemeState">—</span></div>
+          <div id="schemeWrap"></div>
+          <div class="scheme-legend"><span class="lg-now">●</span> current state &nbsp; <span class="lg-vis">○</span> visited &nbsp; <span class="lg-arr">→</span> transitions taken (thicker = more often, yellow = just now)</div>
+          <div class="note" id="schemeNote" style="margin:8px 0 0 0;"></div>
+        </aside>
+      </div>
       <div class="note" id="gateNote" style="margin-top:10px;"></div>
       <div class="note" style="margin-top:10px;">Drag the two dashed cursor lines onto the trace — <b>Closed</b> onto the baseline, <b>Open</b> onto an open level — then press <b>Record point</b> to log the test voltage and the measured current step (ΔI) below.</div>
       <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
@@ -503,17 +549,22 @@ at pulse end are excluded, to avoid bias).</p>
 <script>
 /* ================= PHYSICS ENGINE ================= */
 const NA_DEFAULTS = {
-  holdV:-80, testV:-20, tPre:5, tPulse:20, tPost:10,
+  holdV:-80, testV:-20, tPre:5, tPulse:20, tPost:5,
   gamma:15, Erev:55, noiseSD:0.15,
   a0:0.5, b0:1.0, ki0:1.0, kr0:0.05, seed:12345
 };
 const K_DEFAULTS = {
-  holdV:-80, testV:20, tPre:5, tPulse:25, tPost:10,
+  holdV:-80, testV:20, tPre:5, tPulse:25, tPost:5,
   gamma:12, Erev:-85, noiseSD:0.15,
   a1:0.05, b1:1.0, a2:0.3, b2:3.0, a3:0.6, b3:0.3, a4:0.12, b4:1.2, seed:12345
 };
+const NAHH_DEFAULTS = {
+  holdV:-80, testV:-20, tPre:5, tPulse:20, tPost:5,
+  gamma:15, Erev:55, noiseSD:0.15,
+  sm:1, sh:1, seed:12345
+};
 let DEFAULTS = NA_DEFAULTS;
-let channelType = 'Na'; // 'Na' or 'K'
+let channelType = 'Na'; // 'Na' (3-state), 'NaHH' (m3h, independent gates), 'Na8' (m3h lumped 8-state) or 'K'
 
 function ratesNa(V,p){
   const alpha = p.a0 * Math.exp((V+40)/12);
@@ -569,10 +620,10 @@ function simulateSweepNa(p, rng){
     const r = ratesNa(V,p);
     const u = rng();
     if (state===0){
-      // Openings are only possible once the test pulse has begun — at the
-      // holding potential the channel is taken to be reliably closed, as in
-      // a real recording from a strongly hyperpolarized holding voltage.
-      if (t>=p.tPre && u < r.alpha*DT){ state=1; openStart=t; if(firstOpenLatency===null) firstOpenLatency=t-p.tPre; }
+      // Openings are only possible while the test pulse is on — at the holding
+      // potential (before AND after the pulse) the channel is taken to be reliably
+      // closed, as in a real recording from a strongly hyperpolarized holding voltage.
+      if (t>=p.tPre && t<p.tPre+p.tPulse && u < r.alpha*DT){ state=1; openStart=t; if(firstOpenLatency===null) firstOpenLatency=t-p.tPre; }
     } else if (state===1){
       const pClose=r.beta*DT, pInact=r.ki*DT;
       if (u<pClose){ events.push({start:openStart, dur:t-openStart}); state=0; openStart=null; }
@@ -613,19 +664,20 @@ function simulateSweepK(p, rng){
     const V = Vfunc(t);
     const r = ratesK(V,p);
     const u = rng();
+    const inPulse = t>=p.tPre && t<p.tPre+p.tPulse;
     if (t>=p.tPre){
       if (state===K_C0){
-        const f=r.t1.f*DT;
+        const f=(inPulse?r.t1.f:0)*DT;
         if (u<f) state=K_C1;
       } else if (state===K_C1){
-        const f=r.t2.f*DT, b=r.t1.b*DT;
+        const f=(inPulse?r.t2.f:0)*DT, b=r.t1.b*DT;
         if (u<f) state=K_C2; else if (u<f+b) state=K_C0;
       } else if (state===K_C2){
-        const f=r.t3.f*DT, b=r.t2.b*DT;
+        const f=(inPulse?r.t3.f:0)*DT, b=r.t2.b*DT;
         if (u<f){ state=K_O1; openStart=t; if(firstOpenLatency===null) firstOpenLatency=t-p.tPre; }
         else if (u<f+b) state=K_C1;
       } else if (state===K_O1){
-        const f=r.t4.f*DT, b=r.t3.b*DT; // f: flicker into O2, b: true closing back to C2
+        const f=(inPulse?r.t4.f:0)*DT, b=r.t3.b*DT; // f: flicker into O2, b: true closing back to C2
         if (u<f) state=K_O2;
         else if (u<f+b){ events.push({start:openStart, dur:t-openStart}); state=K_C2; openStart=null; }
       } else { // K_O2
@@ -642,8 +694,132 @@ function simulateSweepK(p, rng){
   return {time, Varr, stateArr, idealI, events, firstOpenLatency, openTimeInPulse, po: openTimeInPulse/p.tPulse, openStates:[K_O1,K_O2]};
 }
 
+// Hodgkin-Huxley squid-axon rate functions, shifted to modern convention (V in mV, rest ~ -65 mV).
+function ratesNaHH(V,p){
+  const x = V+40;
+  const am = Math.abs(x)<1e-6 ? 1.0 : 0.1*x/(1-Math.exp(-x/10));
+  const bm = 4*Math.exp(-(V+65)/18);
+  const ah = 0.07*Math.exp(-(V+65)/20);
+  const bh = 1/(1+Math.exp(-(V+35)/10));
+  return {am:am*p.sm, bm:bm*p.sm, ah:ah*p.sh, bh:bh*p.sh};
+}
+// Naᵥ m³h: three independent m gates + one independent h gate, each a stochastic two-state process.
+// Composite state integer = m1 | m2<<1 | m3<<2 | h<<3 (bit = 1 means gate "up"/permissive), so the
+// downstream code (dwell times, ensemble, sweeps) keeps working through stateArr / openStates.
+// Open only when all four gates are up (state 15).
+const NAHH_OPEN = 15;
+function simulateSweepNaHH(p, rng){
+  const {nSteps, Vfunc} = buildProtocol(p);
+  const probCache = {};
+  const probs = (V)=>{
+    if (!probCache[V]){
+      const r = ratesNaHH(V,p);
+      probCache[V] = { am:1-Math.exp(-r.am*DT), bm:1-Math.exp(-r.bm*DT), ah:1-Math.exp(-r.ah*DT), bh:1-Math.exp(-r.bh*DT) };
+    }
+    return probCache[V];
+  };
+  // draw the initial gate positions from equilibrium at the holding potential
+  const r0 = ratesNaHH(p.holdV,p);
+  const pm0 = r0.am/(r0.am+r0.bm), ph0 = r0.ah/(r0.ah+r0.bh);
+  const g = [rng()<pm0?1:0, rng()<pm0?1:0, rng()<pm0?1:0, rng()<ph0?1:0]; // m1,m2,m3,h
+  const time = new Float32Array(nSteps);
+  const Varr = new Float32Array(nSteps);
+  const stateArr = new Int8Array(nSteps);
+  const idealI = new Float32Array(nSteps);
+  const events = [];
+  let openStart = null, firstOpenLatency = null, openTimeInPulse = 0, wasOpen = false;
+  for (let i=0;i<nSteps;i++){
+    const t = i*DT;
+    const V = Vfunc(t);
+    const pr = probs(V);
+    for (let k=0;k<3;k++){
+      const u = rng();
+      if (g[k]) { if (u<pr.bm) g[k]=0; } else { if (u<pr.am) g[k]=1; }
+    }
+    { const u = rng(); if (g[3]) { if (u<pr.bh) g[3]=0; } else { if (u<pr.ah) g[3]=1; } }
+    const state = g[0] | (g[1]<<1) | (g[2]<<2) | (g[3]<<3);
+    const isOpen = state===NAHH_OPEN;
+    if (isOpen && !wasOpen){
+      openStart = t;
+      if (firstOpenLatency===null) firstOpenLatency = Math.max(0, t-p.tPre);
+    } else if (!isOpen && wasOpen){
+      events.push({start:openStart, dur:t-openStart}); openStart = null;
+    }
+    wasOpen = isOpen;
+    if (isOpen && t>=p.tPre && t<p.tPre+p.tPulse) openTimeInPulse += DT;
+    time[i]=t; Varr[i]=V; stateArr[i]=state;
+    idealI[i] = isOpen ? p.gamma*(V-p.Erev)*1e-3 : 0; // pA
+  }
+  if (openStart!==null) events.push({start:openStart, dur:(nSteps*DT)-openStart});
+  return {time, Varr, stateArr, idealI, events, firstOpenLatency, openTimeInPulse, po: openTimeInPulse/p.tPulse, openStates:[NAHH_OPEN]};
+}
+
+// Naᵥ m³h, lumped 8-state scheme: the m gates are indistinguishable, so only the number k of
+// m gates that are up (0-3) is tracked, plus the h gate.  State index s = k + 4*h  (h=1: available).
+//   k -> k+1 at (3-k)*alpha_m,  k -> k-1 at k*beta_m,   h: 1 -> 0 at beta_h,  0 -> 1 at alpha_h.
+// Open only in k=3, h=1  (s = 7).  Equivalent in distribution to the independent-gate model.
+const NA8_OPEN = 7;
+function simulateSweepNa8(p, rng){
+  const {nSteps, Vfunc} = buildProtocol(p);
+  const tableCache = {};
+  const table = (V)=>{
+    if (!tableCache[V]){
+      const r = ratesNaHH(V,p);
+      const T = [];
+      for (let st=0; st<8; st++){
+        const k = st&3, h = st>>2;
+        const targets = [], rates = [];
+        if (k<3){ targets.push(st+1);  rates.push((3-k)*r.am); }
+        if (k>0){ targets.push(st-1);  rates.push(k*r.bm); }
+        if (h===1){ targets.push(st-4); rates.push(r.bh); } else { targets.push(st+4); rates.push(r.ah); }
+        const R = rates.reduce((a,b)=>a+b,0);
+        T.push({ pLeave: 1-Math.exp(-R*DT), targets, cum: rates.map((x,i)=>rates.slice(0,i+1).reduce((a,b)=>a+b,0)/R) });
+      }
+      tableCache[V] = T;
+    }
+    return tableCache[V];
+  };
+  // equilibrium initial condition at the holding potential (binomial in k, Bernoulli in h)
+  const r0 = ratesNaHH(p.holdV,p);
+  const pm0 = r0.am/(r0.am+r0.bm), ph0 = r0.ah/(r0.ah+r0.bh);
+  let k0 = 0; for (let j=0;j<3;j++) if (rng()<pm0) k0++;
+  let state = k0 + (rng()<ph0 ? 4 : 0);
+  const time = new Float32Array(nSteps);
+  const Varr = new Float32Array(nSteps);
+  const stateArr = new Int8Array(nSteps);
+  const idealI = new Float32Array(nSteps);
+  const events = [];
+  let openStart = null, firstOpenLatency = null, openTimeInPulse = 0, wasOpen = false;
+  for (let i=0;i<nSteps;i++){
+    const t = i*DT;
+    const V = Vfunc(t);
+    const e = table(V)[state];
+    if (rng() < e.pLeave){
+      const u = rng(); let j = 0;
+      while (j < e.cum.length-1 && u > e.cum[j]) j++;
+      state = e.targets[j];
+    }
+    const isOpen = state===NA8_OPEN;
+    if (isOpen && !wasOpen){
+      openStart = t;
+      if (firstOpenLatency===null) firstOpenLatency = Math.max(0, t-p.tPre);
+    } else if (!isOpen && wasOpen){
+      events.push({start:openStart, dur:t-openStart}); openStart = null;
+    }
+    wasOpen = isOpen;
+    if (isOpen && t>=p.tPre && t<p.tPre+p.tPulse) openTimeInPulse += DT;
+    time[i]=t; Varr[i]=V; stateArr[i]=state;
+    idealI[i] = isOpen ? p.gamma*(V-p.Erev)*1e-3 : 0;
+  }
+  if (openStart!==null) events.push({start:openStart, dur:(nSteps*DT)-openStart});
+  return {time, Varr, stateArr, idealI, events, firstOpenLatency, openTimeInPulse, po: openTimeInPulse/p.tPulse, openStates:[NA8_OPEN]};
+}
+
 function simulateSweep(p, rng){
-  return p.channelType==='K' ? simulateSweepK(p, rng) : simulateSweepNa(p, rng);
+  if (p.channelType==='K') return simulateSweepK(p, rng);
+  if (p.channelType==='Na8') return simulateSweepNa8(p, rng);
+  if (p.channelType==='NaHH') return simulateSweepNaHH(p, rng);
+  return simulateSweepNa(p, rng);
 }
 
 function addNoise(idealI, rng, sd){
@@ -660,7 +836,7 @@ function readParams(){
     a0:+val('a0'), b0:+val('b0'), ki0:+val('ki0'), kr0:+val('kr0'),
     a1:+val('a1'), b1:+val('b1'), a2:+val('a2'), b2:+val('b2'),
     a3:+val('a3'), b3:+val('b3'), a4:+val('a4'), b4:+val('b4'),
-    seed:+val('seed'), channelType
+    sm:+val('sm'), sh:+val('sh'), seed:+val('seed'), channelType
   };
 }
 function val(id){ return document.getElementById(id).value; }
@@ -669,7 +845,7 @@ function setVal(id,v){ document.getElementById(id).value = v; }
 document.getElementById('testVRange').addEventListener('input', e=>{ setVal('testV', e.target.value); });
 document.getElementById('testV').addEventListener('input', e=>{ setVal('testVRange', e.target.value); });
 
-const ALL_RESET_KEYS = Array.from(new Set([...Object.keys(NA_DEFAULTS), ...Object.keys(K_DEFAULTS)]));
+const ALL_RESET_KEYS = Array.from(new Set([...Object.keys(NA_DEFAULTS), ...Object.keys(K_DEFAULTS), ...Object.keys(NAHH_DEFAULTS)]));
 ALL_RESET_KEYS.forEach(k=>{
   document.querySelectorAll(`[data-reset="${k}"]`).forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -696,32 +872,43 @@ function advanceSeedIfUnlocked(){
 
 /* ================= CHANNEL TYPE TOGGLE ================= */
 const HIST_DEFAULTS = {
+  Na8: { histHoldV:-80, histTestV:-30, histTPulse:10,  histTPre:5, histTPost:5,  histNPulses:200 },
+  NaHH: { histHoldV:-80, histTestV:-30, histTPulse:10,  histTPre:5, histTPost:5,  histNPulses:200 },
   Na: { histHoldV:-80, histTestV:-30, histTPulse:10,  histTPre:5, histTPost:5,  histNPulses:200 },
   K:  { histHoldV:-80, histTestV:-10, histTPulse:100, histTPre:5, histTPost:10, histNPulses:200 }
 };
 const CHANNEL_NOTES = {
+  Na8: 'The same m³h sodium channel written as a lumped 8-state Markov scheme: C0⇌C1⇌C2⇌O in the m direction (rates 3α, 2α, α forward; β, 2β, 3β back) with h available, duplicated as I0⇌I1⇌I2⇌I3 with h inactivated. The m gates are indistinguishable, so only how many are up (0–3) is tracked.',
+  NaHH: 'Hodgkin–Huxley-style sodium channel: three independent m (activation) gates and one h (inactivation) gate, each flipping on its own. It opens only when all four are up, so activation is a sigmoidal climb through several closed states (0–3 m gates up), and inactivation (h closing) can occur from closed states too.',
   Na: 'Fast-activating, then inactivates — a single brief opening per depolarization, silent afterward until recovery at the holding potential.',
   K: 'Delayed rectifier: opens only after threading through several closed sub-states (the classic sigmoidal delay), then stays available — flickering open and closed for as long as the depolarization lasts, since it does not inactivate. The open pool itself has two sub-states (a main open level and a fast flickery/blocked one), so both the closed-time and open-time distributions are genuinely multi-exponential.'
 };
 const KINETICS_NOTES = {
+  Na8: 'Scheme (k = number of m gates up, h = available or inactivated): k→k+1 at (3−k)αₘ, k→k−1 at kβₘ, and h flips at βₕ (inactivation) / αₕ (recovery) from any k. Open only for k = 3 with h available. Same Hodgkin–Huxley rate functions as the independent-gate model, so the two give the same ensemble kinetics; this version cannot tell which of the three m gates moved.',
+  NaHH: 'Each gate is a two-state process: m (×3) with αₘ/βₘ and h with αₕ/βₕ, using the Hodgkin–Huxley rate functions. Gates are independent, so the closed-state structure (number of m gates up, h up/down) emerges from the gate traces rather than being drawn as separate states. Initial gate positions are drawn from equilibrium at the holding potential.',
   Na: 'Rates are exponential in V (mV), matching the classic α/β voltage-dependence. Defaults reproduce textbook single Na⁺-channel behavior — bell-shaped Po vs V due to competing activation and inactivation.',
   K: 'Scheme: C0⇌C1⇌C2⇌O1⇌O2. Each closed-state step (α₁/β₁, α₂/β₂, α₃/β₃) has its own rate, giving genuinely distinct timescales instead of one shared step. O1⇌O2 (α₄/β₄) is a fast flickery sub-state of equal conductance within the open pool — its presence is what makes the observable open-time distribution multi-exponential. No inactivation, so Po vs V is a simple rising sigmoid, not bell-shaped.'
 };
 function applyChannelDefaults(type){
   channelType = type;
-  DEFAULTS = type==='K' ? K_DEFAULTS : NA_DEFAULTS;
+  DEFAULTS = type==='K' ? K_DEFAULTS : ((type==='NaHH'||type==='Na8') ? NAHH_DEFAULTS : NA_DEFAULTS);
   Object.keys(DEFAULTS).forEach(k=>setVal(k, DEFAULTS[k]));
   setVal('testVRange', DEFAULTS.testV);
   const hd = HIST_DEFAULTS[type];
   Object.keys(hd).forEach(k=>setVal(k, hd[k]));
-  document.getElementById('naOnlyKinetics').style.display = type==='K' ? 'none' : 'block';
+  document.getElementById('naOnlyKinetics').style.display = type==='Na' ? 'block' : 'none';
+  document.getElementById('naHHKinetics').style.display = (type==='NaHH'||type==='Na8') ? 'block' : 'none';
   document.getElementById('kOnlyKinetics').style.display = type==='K' ? 'block' : 'none';
   document.getElementById('channelNote').textContent = CHANNEL_NOTES[type];
   document.getElementById('kineticsNote').textContent = KINETICS_NOTES[type];
   document.getElementById('channelSubtitle').textContent = type==='K'
     ? '— Single Channel Recording (Kᵥ delayed rectifier, 5-state)'
-    : '— Single Channel Recording (Naᵥ-type, 3-state)';
+    : (type==='NaHH' ? '— Single Channel Recording (Naᵥ m³h, 4 independent gates)'
+      : (type==='Na8' ? '— Single Channel Recording (Naᵥ m³h, lumped 8-state)'
+                      : '— Single Channel Recording (Naᵥ-type, 3-state)'));
   document.getElementById('channelBtnNa').classList.toggle('active', type==='Na');
+  document.getElementById('channelBtnNaHH').classList.toggle('active', type==='NaHH');
+  document.getElementById('channelBtnNa8').classList.toggle('active', type==='Na8');
   document.getElementById('channelBtnK').classList.toggle('active', type==='K');
 
   // Switching channel invalidates any measurements collected for the other
@@ -740,6 +927,8 @@ function applyChannelDefaults(type){
   resetCursorsToDefaults();
 }
 document.getElementById('channelBtnNa').addEventListener('click', ()=>applyChannelDefaults('Na'));
+document.getElementById('channelBtnNaHH').addEventListener('click', ()=>applyChannelDefaults('NaHH'));
+document.getElementById('channelBtnNa8').addEventListener('click', ()=>applyChannelDefaults('Na8'));
 document.getElementById('channelBtnK').addEventListener('click', ()=>applyChannelDefaults('K'));
 
 /* ================= TABS ================= */
@@ -756,6 +945,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     // keep ticking invisibly in the background (mutating a hidden chart) — stop it,
     // same as switching conditions elsewhere invalidates a stale run.
     if (btn.dataset.tab!=='histograms') stopHistRun();
+    if (btn.dataset.tab!=='single') finishPlayback();
     if (btn.dataset.tab!=='sweeps') stopSweepsRun();
     if (btn.dataset.tab!=='ensemble') stopEnsembleRun();
   });
@@ -764,19 +954,63 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 /* ================= CHART SETUP ================= */
 Chart.defaults.font.family = "'JetBrains Mono', monospace";
 
+// Draws dashed vertical lines at the start and end of the voltage pulse.
+const pulseMarkerPlugin = {
+  id:'pulseMarkers',
+  afterDatasetsDraw(chart, args, opts){
+    if (!opts || opts.start==null) return;
+    const {ctx, chartArea, scales} = chart;
+    if (!chartArea || !scales.x) return;
+    ctx.save();
+    ctx.setLineDash([6,4]); ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(244,236,216,0.75)';
+    [opts.start, opts.end].forEach(v=>{
+      const px = scales.x.getPixelForValue(v);
+      if (px>=chartArea.left-0.5 && px<=chartArea.right+0.5){
+        ctx.beginPath(); ctx.moveTo(px, chartArea.top); ctx.lineTo(px, chartArea.bottom); ctx.stroke();
+      }
+    });
+    ctx.restore();
+  }
+};
+// Slow-motion playback: the whole sweep is revealed over PLAYBACK.ms of real time.
+// While PLAYBACK.t is a number, datasets flagged clipToPlayhead are clipped at that time and a
+// playhead line is drawn; null = show everything.
+const PLAYBACK = { t:null, ms:5000 };
+const playheadPlugin = {
+  id:'playhead',
+  beforeDatasetDraw(chart, args){
+    if (PLAYBACK.t==null) return;
+    const ds = chart.data.datasets[args.index];
+    if (!ds || !ds.clipToPlayhead) return;
+    const ca = chart.chartArea, px = chart.scales.x.getPixelForValue(PLAYBACK.t), ctx = chart.ctx;
+    ctx.save(); ctx.beginPath();
+    ctx.rect(ca.left-2, ca.top-2, Math.max(0, px-ca.left)+2, ca.bottom-ca.top+4); ctx.clip();
+    chart._pbClipped = true;
+  },
+  afterDatasetDraw(chart){
+    if (chart._pbClipped){ chart.ctx.restore(); chart._pbClipped = false; }
+  },
+  afterDatasetsDraw(chart){
+    if (PLAYBACK.t==null) return;
+    const ca = chart.chartArea, px = chart.scales.x.getPixelForValue(PLAYBACK.t), ctx = chart.ctx;
+    ctx.save(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(px, ca.top); ctx.lineTo(px, ca.bottom); ctx.stroke(); ctx.restore();
+  }
+};
 const GATE_AXIS_W = 96; // shared y-axis width so gate and current panels line up exactly
 let cursorClosedVal = 0, cursorOpenVal = -1;
 let draggingCursor = null; // 'closed' or 'open'
 
 const chartSingle = new Chart(document.getElementById('chartSingle'), {
   type:'line',
+  plugins:[pulseMarkerPlugin, playheadPlugin],
   data:{ datasets:[
-    { label:'Single channel I (pA)', data:[], borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1.3, pointRadius:0, stepped:false, order:2 },
+    { label:'Single channel I (pA)', clipToPlayhead:true, data:[], borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1.3, pointRadius:0, stepped:false, order:2 },
     { label:'Closed', data:[{x:0,y:cursorClosedVal},{x:1,y:cursorClosedVal}], borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:1 },
     { label:'Open', data:[{x:0,y:cursorOpenVal},{x:1,y:cursorOpenVal}], borderColor:'#6fb8ff', backgroundColor:'transparent', borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:0 }
   ]},
   options:{ animation:false, responsive:true, maintainAspectRatio:false, layout:{padding:{right:10}},
-    plugins:{ legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}}}, tooltip:{enabled:true} },
+    plugins:{ legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}}}, tooltip:{enabled:true}, pulseMarkers:{start:null,end:null} },
     scales:{
       x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95', align:'inner'}, grid:{color:'#0f3a22'} },
       y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'}, afterFit:(ax)=>{ ax.width = GATE_AXIS_W; } }
@@ -845,9 +1079,10 @@ let ensRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, sumI:n
 
 const chartSweeps = new Chart(document.getElementById('chartSweeps'), {
   type:'line',
+  plugins:[pulseMarkerPlugin],
   data:{ datasets:[] },
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+    plugins:{ pulseMarkers:{start:null,end:null}, legend:{display:false}, tooltip:{enabled:false} },
     scales:{
       x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
       y:{ title:{display:true,text:'Sweep',color:'#b8ae95'}, grid:{color:'#0f3a22'},
@@ -860,9 +1095,10 @@ let sweepMarkerIdx = null, sweepOffsets = [], sweepTestV = null;
 
 const chartEnsemble = new Chart(document.getElementById('chartEnsemble'), {
   type:'line',
+  plugins:[pulseMarkerPlugin],
   data:{ datasets:[] },
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}, filter:(item)=>item.text==='Ensemble mean'}}, tooltip:{enabled:true} },
+    plugins:{ pulseMarkers:{start:null,end:null}, legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}, filter:(item)=>item.text==='Ensemble mean'}}, tooltip:{enabled:true} },
     scales:{
       x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
       y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
@@ -905,7 +1141,24 @@ const chartIV3 = new Chart(document.getElementById('chartIV3'), {
 const GATE_DEFS = {
   Na: [
     { label:'m  act.',   test:s=>(s===1||s===2), color:'#4dffa0' },
-    { label:'h  inact.', test:s=>(s===2),        color:'#ff8a5c' }
+    { label:'h  avail.', test:s=>(s!==2),        color:'#ff8a5c' }
+  ],
+  // state index s = k + 4*h  (k = number of m gates up, h=1 available): C_k = 4+k (k<3), O = 7, I_k = k
+  Na8: [
+    { label:'C0', test:s=>s===4, color:'#6fb8ff' },
+    { label:'C1', test:s=>s===5, color:'#8fa6ff' },
+    { label:'C2', test:s=>s===6, color:'#b49bff' },
+    { label:'O',  test:s=>s===7, color:'#4dffa0' },
+    { label:'I3', test:s=>s===3, color:'#ff6b4d' },
+    { label:'I2', test:s=>s===2, color:'#ff8a5c' },
+    { label:'I1', test:s=>s===1, color:'#ff9a4d' },
+    { label:'I0', test:s=>s===0, color:'#ffb066' }
+  ],
+  NaHH: [
+    { label:'m₁ gate',   test:s=>(s&1)!==0, color:'#6fb8ff' },
+    { label:'m₂ gate',   test:s=>(s&2)!==0, color:'#8fa6ff' },
+    { label:'m₃ gate',   test:s=>(s&4)!==0, color:'#b49bff' },
+    { label:'h  avail.', test:s=>(s&8)!==0, color:'#ff8a5c' }
   ],
   K: [
     { label:'n₁ C0→C1', test:s=>s>=1, color:'#6fb8ff' },
@@ -915,7 +1168,9 @@ const GATE_DEFS = {
   ]
 };
 const GATE_NOTES = {
-  Na: 'Gate traces: <b>m</b> (activation) moves up at the opening and stays up while the channel is inactivated; <b>h</b> (inactivation) moves up when the channel inactivates. Recovery at the holding potential resets both together (single I→C transition in this model). The channel conducts only when m is up and h is down.',
+  Na8: 'State traces: one line per state of the 8-state scheme, up while the channel occupies that state (exactly one line is up at any time). Top block: C0→C1→C2→O along the activation chain with h available (the channel conducts only in <b>O</b>). Bottom block: the same chain with h inactivated, listed I3→I2→I1→I0 so that each I state sits under the C state with the same number of m gates up (I3 under O, I0 at the bottom). Vertical moves between blocks are inactivation and recovery.',
+  Na: 'Gate traces (up = permissive): <b>m</b> (activation) goes up at the opening and stays up while the channel is inactivated; <b>h</b> (availability) is up at rest and drops when the channel inactivates. Recovery at the holding potential resets both together (single I→C transition in this model). The channel conducts only when both gates are up.',
+  NaHH: 'Gate traces (up = permissive): the three <b>m</b> gates and the <b>h</b> gate are independent stochastic particles. The channel conducts only when all four lines are up at the same time. Watch the m gates come up one by one (the closed-state ladder), h drop independently (it can inactivate the channel before it ever opens), and the gates reset after the pulse at their own rates.',
   K: 'Gate traces: the Kᵥ scheme C0⇌C1⇌C2⇌O1⇌O2 is a chain of four sequential particle steps. Particle <b>n<sub>k</sub></b> is up whenever the channel has advanced at least k steps. Conduction begins when n₁–n₃ are all up (O1); n₄ is the fast flicker step within the open pool (O2).'
 };
 const GATE_ROW = 1.5;   // vertical spacing between gate rows
@@ -924,9 +1179,10 @@ let gateLabelTicks = [];
 
 const chartGates = new Chart(document.getElementById('chartGates'), {
   type:'line',
+  plugins:[pulseMarkerPlugin, playheadPlugin],
   data:{ datasets:[] },
   options:{ animation:false, responsive:true, maintainAspectRatio:false, layout:{padding:{right:10}},
-    plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+    plugins:{ legend:{display:false}, tooltip:{enabled:false}, pulseMarkers:{start:null,end:null} },
     scales:{
       x:{ type:'linear', min:0, max:1, ticks:{display:false}, grid:{color:'#0f3a22'}, border:{display:true} },
       y:{ min:-0.3, max:1.3, grid:{display:false}, afterFit:(ax)=>{ ax.width = GATE_AXIS_W; },
@@ -937,23 +1193,32 @@ const chartGates = new Chart(document.getElementById('chartGates'), {
 });
 
 function buildGateTraces(res, p){
-  const defs = GATE_DEFS[p.channelType==='K' ? 'K' : 'Na'];
+  const defs = GATE_DEFS[p.channelType] || GATE_DEFS.Na;
   const n = defs.length, N = res.stateArr.length;
   const xMax = res.time[N-1];
+  const GAP = 0.5;
+  // rows are listed top -> bottom; lay them out from the bottom up
+  const heights = defs.map(g=>g.levels||1);
+  const offsets = new Array(n);
+  let acc = 0;
+  for (let i=n-1;i>=0;i--){ offsets[i] = acc; acc += heights[i] + GAP; }
+  const totalUnits = acc - GAP;
   const datasets = [];
   gateLabelTicks = [];
   defs.forEach((g,i)=>{
-    const off = gateRowOffset(i,n);
-    gateLabelTicks.push({ value: off+0.5, label: g.label });
-    // faint resting / activated rails
-    datasets.push({ data:[{x:0,y:off},{x:xMax,y:off}], borderColor:'#2c2820', borderWidth:1, borderDash:[2,3], pointRadius:0, order:5 });
-    datasets.push({ data:[{x:0,y:off+1},{x:xMax,y:off+1}], borderColor:'#2c2820', borderWidth:1, borderDash:[2,3], pointRadius:0, order:5 });
+    const off = offsets[i], H = heights[i];
+    const val = g.value ? g.value : (s=> g.test(s) ? 1 : 0);
+    gateLabelTicks.push({ value: off + H/2, label: g.label });
+    // faint rails at every integer level
+    for (let L=0; L<=H; L++){
+      datasets.push({ data:[{x:0,y:off+L},{x:xMax,y:off+L}], borderColor:'#2c2820', borderWidth:1, borderDash:[2,3], pointRadius:0, order:5 });
+    }
     // exact step trace: only points at the transitions
     const pts = [];
-    let prev = g.test(res.stateArr[0]) ? 1 : 0;
+    let prev = val(res.stateArr[0]);
     pts.push({x:0, y:off+prev});
     for (let k=1;k<N;k++){
-      const v = g.test(res.stateArr[k]) ? 1 : 0;
+      const v = val(res.stateArr[k]);
       if (v!==prev){
         const t = +(res.time[k]).toFixed(3);
         pts.push({x:t, y:off+prev});
@@ -962,19 +1227,183 @@ function buildGateTraces(res, p){
       }
     }
     pts.push({x:xMax, y:off+prev});
-    datasets.push({ label:g.label, data:pts, borderColor:g.color, backgroundColor:'transparent', borderWidth:1.8, pointRadius:0, tension:0, order:1 });
+    datasets.push({ label:g.label, clipToPlayhead:true, data:pts, borderColor:g.color, backgroundColor:'transparent', borderWidth:1.8, pointRadius:0, tension:0, order:1 });
   });
   chartGates.data.datasets = datasets;
   chartGates.options.scales.y.min = -0.3;
-  chartGates.options.scales.y.max = gateRowOffset(0,n) + 1.3;
+  chartGates.options.scales.y.max = totalUnits + 0.3;
   chartGates.options.scales.x.min = 0;
   chartGates.options.scales.x.max = xMax;
+  chartGates.options.plugins.pulseMarkers = { start:p.tPre, end:p.tPre+p.tPulse };
   const box = document.getElementById('gatesBox');
-  box.style.height = (n*46 + 16) + 'px';
+  const pxPerUnit = n>5 ? 19 : 31;
+  box.style.height = Math.round(totalUnits*pxPerUnit + 34) + 'px';
   chartGates.resize();
   chartGates.update('none');
-  document.getElementById('gateNote').innerHTML = GATE_NOTES[p.channelType==='K' ? 'K' : 'Na'];
+  document.getElementById('gateNote').innerHTML = (GATE_NOTES[p.channelType] || GATE_NOTES.Na);
 }
+
+
+/* ================= KINETIC SCHEME DIAGRAM + PLAYBACK ================= */
+const SCHEME_COL = { C:'#6fb8ff', O:'#4dffa0', I:'#ff8a5c' };
+const SCHEMES = {
+  Na: { w:300, h:300, r:24,
+    nodes:[{id:'C',x:65,y:75},{id:'O',x:235,y:75},{id:'I',x:150,y:238}],
+    edges:[['C','O','α'],['O','C','β'],['O','I','kᵢ'],['I','C','kᵣ']],
+    note:'C ⇌ O → I → C. The channel opens from C, inactivates only from the open state, and recovers back to C at the holding potential.' },
+  K: { w:300, h:420, r:20,
+    nodes:[{id:'C0',x:150,y:45},{id:'C1',x:150,y:130},{id:'C2',x:150,y:215},{id:'O1',x:150,y:300},{id:'O2',x:150,y:385}],
+    edges:[['C0','C1','α₁'],['C1','C0','β₁'],['C1','C2','α₂'],['C2','C1','β₂'],['C2','O1','α₃'],['O1','C2','β₃'],['O1','O2','α₄'],['O2','O1','β₄']],
+    note:'Delayed rectifier: three sequential closed steps (C0→C1→C2) before the first opening, then an open pool with a fast flicker sub-state (O1 ⇌ O2). No inactivation, so the channel keeps flickering open and closed for the whole pulse.' }
+};
+(function(){
+  const nodes = [], edges = [];
+  const rows = [65,150,235,320];
+  const L = ['C0','C1','C2','O'], R = ['I0','I1','I2','I3'];
+  L.forEach((id,i)=>nodes.push({id, x:75, y:rows[i]}));
+  R.forEach((id,i)=>nodes.push({id, x:225, y:rows[i]}));
+  const fw = ['3αₘ','2αₘ','αₘ'], bw = ['βₘ','2βₘ','3βₘ'];
+  [L,R].forEach(col=>{ for (let i=0;i<3;i++){ edges.push([col[i],col[i+1],fw[i]]); edges.push([col[i+1],col[i],bw[i]]); } });
+  for (let i=0;i<4;i++){ edges.push([L[i],R[i],'βₕ']); edges.push([R[i],L[i],'αₕ']); }
+  SCHEMES.Na8 = { w:300, h:360, r:19, nodes, edges,
+    headers:[{x:75,y:20,text:'h available'},{x:225,y:20,text:'h inactivated'}],
+    note:'Lumped m³h scheme: moving down a column adds one activated m gate (3α, 2α, α), moving up removes one (β, 2β, 3β). h flips independently of m: βₕ inactivates, αₕ recovers. Only the O state conducts.' };
+  SCHEMES.NaHH = Object.assign({}, SCHEMES.Na8, {
+    note:'The four independent gates are mapped onto this equivalent lumped scheme: the row is the number of m gates that are up (0–3) and the column is whether h is available or inactivated. Only O (3 m gates up, h available) conducts.' });
+})();
+
+function schemeNodeOf(type, sv){
+  if (type==='Na') return ['C','O','I'][sv];
+  if (type==='K') return ['C0','C1','C2','O1','O2'][sv];
+  let k, h;
+  if (type==='Na8'){ k = sv&3; h = (sv>>2)&1; }
+  else { k = (sv&1)+((sv>>1)&1)+((sv>>2)&1); h = (sv>>3)&1; }  // NaHH bits: m1,m2,m3,h
+  return h ? (k===3 ? 'O' : 'C'+k) : 'I'+k;
+}
+
+let schemeType = null, schemeEls = null;
+function buildScheme(type){
+  const S = SCHEMES[type] || SCHEMES.Na;
+  schemeType = type;
+  const cx = S.nodes.reduce((a,n)=>a+n.x,0)/S.nodes.length, cy = S.nodes.reduce((a,n)=>a+n.y,0)/S.nodes.length;
+  const byId = {}; S.nodes.forEach(n=>byId[n.id]=n);
+  const has = new Set(S.edges.map(e=>e[0]+'>'+e[1]));
+  const mk = (id,col)=>`<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" fill="${col}"/></marker>`;
+  let svg = `<svg viewBox="0 0 ${S.w} ${S.h}" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace"><defs>${mk('ahBase','#5a5444')}${mk('ahTrav','#d9cfae')}${mk('ahRec','#ffd24d')}</defs>`;
+  (S.headers||[]).forEach(h=>{ svg += `<text x="${h.x}" y="${h.y}" text-anchor="middle" font-size="11" fill="#8a8068">${h.text}</text>`; });
+  let labels = '';
+  S.edges.forEach(([a,b,lab])=>{
+    const A = byId[a], B = byId[b];
+    let dx = B.x-A.x, dy = B.y-A.y; const len = Math.hypot(dx,dy); dx/=len; dy/=len;
+    let nx = dy, ny = -dx, off = 0;
+    const mx = (A.x+B.x)/2, my = (A.y+B.y)/2;
+    if (has.has(b+'>'+a)) off = 7;
+    else { const sg = ((mx-cx)*nx+(my-cy)*ny) >= 0 ? 1 : -1; nx*=sg; ny*=sg; }
+    const x1 = A.x+dx*S.r+nx*off, y1 = A.y+dy*S.r+ny*off, x2 = B.x-dx*S.r+nx*off, y2 = B.y-dy*S.r+ny*off;
+    svg += `<line id="edge-${a}-${b}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#5a5444" stroke-width="1.4" marker-end="url(#ahBase)"/>`;
+    const lx = mx+nx*(off+14), ly = my+ny*(off+14)+4;
+    const anchor = nx>0.5 ? 'start' : (nx<-0.5 ? 'end' : 'middle');
+    labels += `<text x="${(lx+(anchor==='start'?-6:(anchor==='end'?6:0))).toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" font-size="11.5" fill="#b8ae95">${lab}</text>`;
+  });
+  svg += labels;
+  S.nodes.forEach(n=>{
+    svg += `<g id="node-${n.id}"><circle cx="${n.x}" cy="${n.y}" r="${S.r}" fill="#0b130d" stroke="${SCHEME_COL[n.id[0]]}" stroke-opacity="0.4" stroke-width="1.6"/><text x="${n.x}" y="${n.y+4.5}" text-anchor="middle" font-size="13" font-weight="700" fill="${SCHEME_COL[n.id[0]]}" fill-opacity="0.75">${n.id}</text></g>`;
+  });
+  svg += '</svg>';
+  document.getElementById('schemeWrap').innerHTML = svg;
+  document.getElementById('schemeNote').textContent = S.note;
+  schemeEls = { nodes:{}, edges:{} };
+  S.nodes.forEach(n=>{ const g = document.getElementById('node-'+n.id); schemeEls.nodes[n.id] = { c:g.querySelector('circle'), t:g.querySelector('text'), col:SCHEME_COL[n.id[0]] }; });
+  S.edges.forEach(([a,b])=>{ schemeEls.edges[a+'>'+b] = document.getElementById(`edge-${a}-${b}`); });
+}
+
+let playCtx = null, playRaf = null;
+function updatePlayInfo(){
+  if (!playCtx) return;
+  document.getElementById('playInfo').textContent =
+    `${playCtx.xMax.toFixed(0)} ms of recording shown in ${(PLAYBACK.ms/1000).toFixed(0)} s (${Math.round(PLAYBACK.ms/playCtx.xMax)}× slower than real time)`;
+}
+document.getElementById('screenTime').addEventListener('input', (e)=>{
+  const v = +e.target.value;
+  document.getElementById('screenTimeVal').textContent = v + ' s';
+  const oldMs = PLAYBACK.ms; PLAYBACK.ms = v*1000;
+  // retime a playback that is already running, keeping the same progress
+  if (playCtx && playRaf!==null && playCtx.t0!==null){
+    const now = performance.now(), f = Math.min(1,(now-playCtx.t0)/oldMs);
+    playCtx.t0 = now - f*PLAYBACK.ms;
+  }
+  updatePlayInfo();
+});
+function stateLabelFor(res, sv){
+  if (res.openStates.includes(sv)) return 'open';
+  if (channelType==='Na' && sv===2) return 'inactivated';
+  if (channelType==='NaHH' && (sv&8)===0) return 'inactivated';
+  if (channelType==='Na8' && (sv>>2)===0) return 'inactivated';
+  return 'closed';
+}
+function updateScheme(t){
+  if (!playCtx || !schemeEls) return;
+  const {res, trans, p, xMax} = playCtx;
+  const idx = Math.min(res.stateArr.length-1, Math.floor(t/DT + 1e-9));
+  const cur = schemeNodeOf(p.channelType, res.stateArr[idx]);
+  const visited = new Set(), counts = {}; let last = null;
+  for (const tr of trans){
+    if (tr.t > t) break;
+    visited.add(tr.node);
+    if (tr.from){ const k = tr.from+'>'+tr.node; counts[k] = (counts[k]||0)+1; last = {k, t:tr.t}; }
+  }
+  const recent = last && (t - last.t) < 0.06*xMax && t < xMax ? last.k : null;
+  for (const id in schemeEls.nodes){
+    const e = schemeEls.nodes[id];
+    if (id===cur){ e.c.setAttribute('fill', e.col); e.c.setAttribute('stroke', '#ffffff'); e.c.setAttribute('stroke-opacity','1'); e.c.setAttribute('stroke-width','3'); e.t.setAttribute('fill', '#0a0f08'); e.t.setAttribute('fill-opacity','1'); }
+    else if (visited.has(id)){ e.c.setAttribute('fill', '#0b130d'); e.c.setAttribute('stroke', e.col); e.c.setAttribute('stroke-opacity','1'); e.c.setAttribute('stroke-width','2.6'); e.t.setAttribute('fill', e.col); e.t.setAttribute('fill-opacity','1'); }
+    else { e.c.setAttribute('fill', '#0b130d'); e.c.setAttribute('stroke', e.col); e.c.setAttribute('stroke-opacity','0.4'); e.c.setAttribute('stroke-width','1.6'); e.t.setAttribute('fill', e.col); e.t.setAttribute('fill-opacity','0.75'); }
+  }
+  for (const k in schemeEls.edges){
+    const el = schemeEls.edges[k], c = counts[k]||0;
+    if (k===recent){ el.setAttribute('stroke','#ffd24d'); el.setAttribute('stroke-width','3.4'); el.setAttribute('marker-end','url(#ahRec)'); }
+    else if (c>0){ el.setAttribute('stroke','#d9cfae'); el.setAttribute('stroke-width',(1.8+Math.min(c,8)*0.45).toFixed(2)); el.setAttribute('marker-end','url(#ahTrav)'); }
+    else { el.setAttribute('stroke','#5a5444'); el.setAttribute('stroke-width','1.4'); el.setAttribute('marker-end','url(#ahBase)'); }
+  }
+  // live readouts
+  const sp = document.getElementById('schemeState');
+  sp.textContent = cur; sp.className = 'state-pill ' + (cur[0]==='O' ? 'state-O' : (cur[0]==='I' ? 'state-I' : 'state-C'));
+  const lab = stateLabelFor(res, res.stateArr[idx]);
+  const pill = document.getElementById('s1-state');
+  pill.textContent = lab; pill.className = 'state-pill ' + (lab==='open' ? 'state-O' : (lab==='inactivated' ? 'state-I' : 'state-C'));
+}
+function startPlayback(res, p){
+  cancelAnimationFrame(playRaf);
+  const xMax = res.time[res.time.length-1];
+  const trans = []; let prev = null;
+  for (let i=0;i<res.stateArr.length;i++){
+    const nd = schemeNodeOf(p.channelType, res.stateArr[i]);
+    if (nd!==prev){ trans.push({t:res.time[i], node:nd, from:prev}); prev = nd; }
+  }
+  playCtx = { res, p, xMax, trans, t0:null };
+  updatePlayInfo();
+  PLAYBACK.t = 0;
+  chartSingle.draw(); chartGates.draw(); updateScheme(0);
+  playRaf = requestAnimationFrame(playTick);
+}
+function playTick(now){
+  if (!playCtx) return;
+  if (playCtx.t0===null) playCtx.t0 = now;
+  const f = Math.min(1, (now-playCtx.t0)/PLAYBACK.ms);
+  if (f>=1){ finishPlayback(); return; }
+  const t = f*playCtx.xMax;
+  PLAYBACK.t = t;
+  chartSingle.draw(); chartGates.draw(); updateScheme(t);
+  playRaf = requestAnimationFrame(playTick);
+}
+function finishPlayback(){
+  cancelAnimationFrame(playRaf); playRaf = null;
+  PLAYBACK.t = null;
+  chartSingle.draw(); chartGates.draw();
+  if (playCtx) updateScheme(playCtx.xMax);
+}
+document.getElementById('replayBtn').addEventListener('click', ()=>{ if (playCtx) startPlayback(playCtx.res, playCtx.p); });
+document.getElementById('skipBtn').addEventListener('click', finishPlayback);
 
 /* ================= TAB 1: SINGLE TRACE ================= */
 let pointsTab1 = [];
@@ -983,20 +1412,20 @@ function runSingle(){
   const rng = mulberry32(p.seed);
   const res = simulateSweep(p, rng);
   const noisy = addNoise(res.idealI, rng, p.noiseSD);
+  PLAYBACK.t = 0;
   chartSingle.data.datasets[0].data = Array.from(res.time).map((t,i)=>({x:+t.toFixed(3), y:+noisy[i].toFixed(4)}));
   const xMax = res.time[res.time.length-1];
   chartSingle.options.scales.x.min = 0; chartSingle.options.scales.x.max = xMax;
+  chartSingle.options.plugins.pulseMarkers = { start:p.tPre, end:p.tPre+p.tPulse };
   setCursorLines(0, xMax);
   chartSingle.update();
   buildGateTraces(res, p);
+  if (schemeType!==p.channelType) buildScheme(p.channelType);
+  { const iU = Math.abs(p.gamma*(p.testV-p.Erev)*1e-3);
+    document.getElementById('snrNote').innerHTML = 'Unitary current at the test voltage: <b>' + iU.toFixed(2) + ' pA</b>' + (p.noiseSD>0 ? ' · single-channel SNR ≈ <b>' + (iU/p.noiseSD).toFixed(1) + '</b>' : ' · noise-free'); }
+  startPlayback(res, p);
   updateCursorReadout();
 
-  const lastState = res.stateArr[res.stateArr.length-1];
-  const isOpen = res.openStates.includes(lastState);
-  const stateLabel = isOpen ? 'open' : (channelType==='Na' && lastState===2) ? 'inactivated' : 'closed';
-  const pill = document.getElementById('s1-state');
-  pill.textContent = stateLabel;
-  pill.className = 'state-pill ' + (isOpen ? 'state-O' : (stateLabel==='inactivated' ? 'state-I' : 'state-C'));
   document.getElementById('s1-nopen').textContent = res.events.length;
   document.getElementById('s1-latency').textContent = res.firstOpenLatency!==null ? res.firstOpenLatency.toFixed(3)+' ms' : 'none';
   document.getElementById('s1-po').textContent = res.po.toFixed(4);
@@ -1057,6 +1486,7 @@ function prepareSweepsRun(){
   // Fix the axes for the whole run so the display does not rescale as sweeps arrive.
   const xs = chartSweeps.options.scales.x, ys = chartSweeps.options.scales.y;
   xs.min = 0; xs.max = total;
+  chartSweeps.options.plugins.pulseMarkers = { start:p.tPre, end:p.tPre+p.tPulse };
   ys.max = Math.max(0, iUnit) + margin;
   ys.min = -(n-1)*step + Math.min(0, iUnit) - margin;
   chartSweeps.update('none');
@@ -1104,6 +1534,7 @@ function resetSweepsRun(){
   sweepsRun.index = 0; sweepsRun.n = 0; sweepsRun.plannedOffsets = [];
   sweepOffsets = [];
   chartSweeps.data.datasets = [];
+  chartSweeps.options.plugins.pulseMarkers = { start:null, end:null };
   sweepMarkerIdx = null;
   chartSweeps.update('none');
   document.querySelector('#tblSweeps tbody').innerHTML = '';
@@ -1183,6 +1614,7 @@ function prepareEnsembleRun(){
   const margin = Math.max(Math.abs(iUnit)*0.6, 4*p.noiseSD*0.6 + 0.2);
   const xs = chartEnsemble.options.scales.x, ys = chartEnsemble.options.scales.y;
   xs.min = 0; xs.max = total;
+  chartEnsemble.options.plugins.pulseMarkers = { start:p.tPre, end:p.tPre+p.tPulse };
   // Round the limits outward to clean 0.5 pA values so the axis reads well.
   ys.min = Math.floor((Math.min(0, iUnit) - margin)*2)/2;
   ys.max = Math.ceil((Math.max(0, iUnit) + margin)*2)/2;
@@ -1241,6 +1673,7 @@ function resetEnsembleRun(){
   ensRun.index = 0; ensRun.n = 0; ensRun.sumI = null; ensRun.timeRef = null;
   ensembleMeanIdx = null; ensembleMarkerIdx = null;
   chartEnsemble.data.datasets = [];
+  chartEnsemble.options.plugins.pulseMarkers = { start:null, end:null };
   chartEnsemble.update('none');
   updateEnsembleProgress();
   setEnsembleButtons();
