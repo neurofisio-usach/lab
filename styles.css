@@ -216,6 +216,23 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 @media (max-width: 860px) {
   .hero-body { grid-template-columns: 1fr; }
 }
+/* Hero with lab logo: logo centered in left column, text right */
+.hero-body.hero-with-logo { align-items: center; }
+.hero-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.hero-logo img {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border-radius: 50%;
+}
+.hero-text .lede:last-child { margin-bottom: 0; }
+@media (max-width: 860px) {
+  .hero-logo img { max-width: 240px; }
+}
 .hero .lede {
   font-size: 1.15rem;
   color: var(--paper-text-soft);
