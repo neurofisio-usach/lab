@@ -1,26 +1,9 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Squid Axon Lab — Membrane Action Potential</title>
-<script>
-/* Visible error reporter: phones/tablets have no console, so any script error is shown on the page. */
-(function(){
-  function show(msg){
-    var b = document.getElementById('js-error-banner');
-    if (!b){
-      b = document.createElement('div'); b.id = 'js-error-banner';
-      b.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#5a1d14;color:#fde8e2;border:1px solid #d9694f;border-radius:8px;padding:10px 12px;font:12px/1.4 monospace;white-space:pre-wrap;max-height:40vh;overflow:auto;';
-      (document.body || document.documentElement).appendChild(b);
-    }
-    b.textContent += (b.textContent ? '\n' : '') + msg;
-  }
-  window.addEventListener('error', function(e){
-    show('Script error: ' + e.message + (e.lineno ? '  (line ' + e.lineno + ':' + e.colno + ')' : '') + '\nBrowser: ' + navigator.userAgent);
-  });
-  window.addEventListener('unhandledrejection', function(e){ show('Unhandled promise rejection: ' + (e.reason && e.reason.message || e.reason)); });
-})();
-</script>
 <script>
 /* Chart.js v4.4.4 — embedded so this file has zero external dependencies (MIT license, chartjs.org) */
 /*!
@@ -46,7 +29,6 @@
     --panel-text:#f4ecd8;
     --panel-text-dim:#b8ae95;
     --scope-bg:#05130a;
-    --scope-h:520px;
     --ink:#dff5e8;
     --accent:#e8a53d;
     --accent-soft:rgba(232,165,61,0.16);
@@ -204,25 +186,12 @@
   .scope{
     background:var(--scope-bg); border-radius:10px; padding:14px 18px 6px; border:1px solid #2c2820;
   }
-  .scope-canvas-wrap{ position:relative; width:100%; height:var(--scope-h); }
-  /* command-protocol strip above the VC oscilloscope: 1/3 of the scope height */
-  .protocol-wrap{
-    position:relative; width:100%; height:calc(var(--scope-h) / 3);
-    border-bottom:1px dashed rgba(77,255,160,0.22); margin-bottom:6px;
-  }
-  .protocol-tag{
-    position:absolute; top:2px; right:4px; z-index:1; pointer-events:none;
-    font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:#4dffa0; opacity:.75;
-  }
-  /* vertical page scroll still works on phones; horizontal drag scrubs the readout cursor */
-  #mainChart, #vcMainChart{ touch-action:pan-y; }
+  .scope-canvas-wrap{ position:relative; width:100%; height:520px; }
+  .vc-protocol-wrap{ position:relative; width:100%; height:72px; background:var(--scope-bg); border-radius:6px 6px 0 0; border-bottom:1px solid #2c2820; overflow:hidden; margin-bottom:0; }
 
   .stim-preview-wrap{ position:relative; width:100%; height:130px; background:var(--scope-bg); border-radius:6px; margin-top:8px; overflow:hidden; }
 
   .picked-panel{ margin-top:18px; }
-  .iv-toggle{ margin-top:14px; padding:10px 14px; background:var(--panel); border:1px solid var(--panel-border); border-radius:8px; font-size:13px; color:var(--ink); }
-  .iv-toggle input{ width:16px; height:16px; accent-color:var(--accent); }
-  #vc-iv-panel{ margin-top:10px; }
   .picked-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
   .picked-head h3{ margin:0 0 2px; font-size:12px; font-family:var(--font-mono); letter-spacing:.04em; text-transform:uppercase; color:#f4ecd8; font-weight:600; }
   .picked-head p{ margin:0; font-size:11.5px; color:#b8ae95; }
@@ -290,10 +259,6 @@
   footer.note code{ font-family:var(--font-mono); background:rgba(77,255,160,0.08); color:var(--phosphor); padding:1px 5px; border-radius:4px; }
 
   @media (max-width:860px){
-    /* header used to overflow phone screens (nowrap title) and push the tab bar off-screen */
-    header.app-head{ flex-wrap:wrap; gap:10px 24px; }
-    header.app-head h1{ white-space:normal; }
-    nav.tabs{ width:100%; }
     .layout{ grid-template-columns:1fr; }
     aside.controls{ max-height:none; border-right:none; border-bottom:1px solid var(--panel-border); }
     main.stage{ max-height:none; }
@@ -301,7 +266,7 @@
 
   .tab-view{ display:none; }
   .tab-view.active{ display:grid; }
-  .iv-wrap{ position:relative; width:100%; height:340px; }
+
   .family-note{ font-size:11px; color:#b8ae95; margin-top:6px; }
 </style>
 </head>
@@ -314,32 +279,26 @@
 .lab-nav--foot{text-align:left;padding:18px 28px 24px}
 header.app-head{padding-left:28px;padding-right:28px}
 </style>
-<div class="lab-nav lab-nav--top"><a href="https://neurofisio-usach.cl/simulaciones.html">← Back to Simulations</a></div>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
 <!-- lab-nav:end -->
 
-<div id="boot-check" style="margin:10px 28px;padding:12px 14px;border:1px solid #d9694f;border-radius:8px;background:#5a1d14;color:#fde8e2;font:13px/1.45 monospace;">
-  <strong>The simulation code has not run in this browser.</strong><br>
-  JavaScript is disabled or blocked for this page (for example by NoScript, uBlock&nbsp;Origin "no scripts" or a privacy setting), or the script stopped before starting.
-  Try a private window (extensions off), or allow scripts for this file.
-</div>
-<noscript><div style="margin:10px 28px;padding:12px 14px;border:1px solid #d9694f;border-radius:8px;background:#5a1d14;color:#fde8e2;font:13px/1.45 monospace;">JavaScript is disabled, so the simulators cannot run.</div></noscript>
 <header class="app-head">
   <h1>SQUID AXON LAB <span>· Hodgkin–Huxley teaching simulators</span></h1>
   <nav class="tabs" id="tabBar">
-    <button data-tab="vc" class="active">Voltage Clamp</button>
-    <button data-tab="map" class="">Membrane Action Potential</button>
-    <button data-tab="papt" disabled="disabled" title="Coming soon">Propagated AP (V vs T)</button>
-    <button data-tab="papx" disabled="disabled" title="Coming soon">Propagated AP (V vs X)</button>
-    <button data-tab="curr" disabled="disabled" title="Coming soon">Currents of Propagation</button>
+    <button data-tab="vc">Voltage Clamp</button>
+    <button data-tab="map" class="active">Membrane Action Potential</button>
+    <button data-tab="papt" disabled title="Coming soon">Propagated AP (V vs T)</button>
+    <button data-tab="papx" disabled title="Coming soon">Propagated AP (V vs X)</button>
+    <button data-tab="curr" disabled title="Coming soon">Currents of Propagation</button>
   </nav>
 </header>
 
-<div class="layout tab-view" id="view-map">
+<div class="layout tab-view active" id="view-map">
 
   <!-- ===================== CONTROLS SIDEBAR ===================== -->
   <aside class="controls">
 
-    <details class="panel" open="">
+    <details class="panel" open>
       <summary>Stimulus</summary>
       <div class="panel-body">
         <div class="field-row">
@@ -385,7 +344,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         <div class="field-row"><label>Radius</label><input type="number" id="in-radius" step="1" value="238"><span class="unit">µm</span><button class="reset-btn" data-reset="in-radius" title="Reset to default">↺</button></div>
         <div class="field-row"><label>Temperature</label><input type="number" id="in-temp" step="1" value="6.3"><span class="unit">°C</span><button class="reset-btn" data-reset="in-temp" title="Reset to default">↺</button></div>
         <div class="radio-row">
-          <label><input type="radio" name="channelType" id="in-nonideal" checked="checked"> Non-ideal (HH) channels</label>
+          <label><input type="radio" name="channelType" id="in-nonideal" checked> Non-ideal (HH) channels</label>
         </div>
         <div class="radio-row" style="margin-top:-6px;">
           <label><input type="radio" name="channelType" id="in-ideal"> Ideal (perfectly selective) channels</label>
@@ -410,10 +369,10 @@ header.app-head{padding-left:28px;padding-right:28px}
         <div class="field-row"><label>TTX</label><input type="number" id="in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset="in-ttx" title="Reset to default">↺</button></div>
         <div class="field-row"><label>Pronase</label><input type="number" id="in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset="in-pronase" title="Reset to default">↺</button></div>
         <div class="readout-mini">
-          <div>E<sub>Na</sub> <strong id="out-ena">41.3</strong> mV</div>
-          <div>E<sub>K</sub> <strong id="out-ek">-73.3</strong> mV</div>
-          <div>E<sub>L</sub> <strong id="out-el">-50.8</strong> mV</div>
-          <div>E<sub>rest</sub> <strong id="out-er">-60.8</strong> mV</div>
+          <div>E<sub>Na</sub> <strong id="out-ena">—</strong> mV</div>
+          <div>E<sub>K</sub> <strong id="out-ek">—</strong> mV</div>
+          <div>E<sub>L</sub> <strong id="out-el">—</strong> mV</div>
+          <div>E<sub>rest</sub> <strong id="out-er">—</strong> mV</div>
         </div>
       </div>
     </details>
@@ -423,7 +382,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="panel-body">
         <div class="axis-label">Current (mA/cm²)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:var(--stim)"></span><input type="checkbox" id="chk-Im" checked="checked"> I<sub>m</sub> — stimulus</label>
+          <label><span class="swatch" style="background:var(--stim)"></span><input type="checkbox" id="chk-Im" checked> I<sub>m</sub> — stimulus</label>
           <label><span class="swatch" style="background:#7fae8f"></span><input type="checkbox" id="chk-Ii"> I<sub>i</sub> — total ionic</label>
           <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="chk-IK"> I<sub>K</sub></label>
           <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="chk-INa"> I<sub>Na</sub></label>
@@ -465,11 +424,11 @@ header.app-head{padding-left:28px;padding-right:28px}
     </div>
 
     <div class="digital-readout" id="readout">
-      <div><span class="k">t</span><span class="v" id="rd-t">0.34</span> ms</div>
-      <div><span class="k">Vm</span><span class="v" id="rd-vm">-54.35</span> mV</div>
-      <div><span class="k">INa</span><span class="v" id="rd-ina">-0.0012</span> mA/cm²</div>
-      <div><span class="k">IK</span><span class="v" id="rd-ik">0.0060</span> mA/cm²</div>
-      <div><span class="k">Ii</span><span class="v" id="rd-ii">0.0037</span> mA/cm²</div>
+      <div><span class="k">t</span><span class="v" id="rd-t">—</span> ms</div>
+      <div><span class="k">Vm</span><span class="v" id="rd-vm">—</span> mV</div>
+      <div><span class="k">INa</span><span class="v" id="rd-ina">—</span> mA/cm²</div>
+      <div><span class="k">IK</span><span class="v" id="rd-ik">—</span> mA/cm²</div>
+      <div><span class="k">Ii</span><span class="v" id="rd-ii">—</span> mA/cm²</div>
     </div>
 
     <div class="sim-row">
@@ -483,9 +442,9 @@ header.app-head{padding-left:28px;padding-right:28px}
             Plot picked points
           </label>
           <div class="axis-selectors">
-            <select id="selPlotX" disabled="disabled"><option value="index" selected="selected">Trace #</option><option value="time">t (ms)</option><option value="Vm">Vm (mV)</option><option value="n">n</option><option value="m">m</option><option value="h">h</option><option value="INa">INa (mA/cm²)</option><option value="IK">IK (mA/cm²)</option><option value="IL">IL (mA/cm²)</option><option value="Ii">Ii (mA/cm²)</option><option value="Im">Im (mA/cm²)</option><option value="gNa">gNa (mS/cm²)</option><option value="gK">gK (mS/cm²)</option></select>
+            <select id="selPlotX" disabled></select>
             <span>vs</span>
-            <select id="selPlotY" disabled="disabled"><option value="index">Trace #</option><option value="time">t (ms)</option><option value="Vm" selected="selected">Vm (mV)</option><option value="n">n</option><option value="m">m</option><option value="h">h</option><option value="INa">INa (mA/cm²)</option><option value="IK">IK (mA/cm²)</option><option value="IL">IL (mA/cm²)</option><option value="Ii">Ii (mA/cm²)</option><option value="Im">Im (mA/cm²)</option><option value="gNa">gNa (mS/cm²)</option><option value="gK">gK (mS/cm²)</option></select>
+            <select id="selPlotY" disabled></select>
           </div>
         </div>
         <div class="picked-plot-wrap" id="pickedPlotWrap" style="display:none;">
@@ -507,8 +466,8 @@ header.app-head{padding-left:28px;padding-right:28px}
       </div>
       <div class="table-wrap" id="pickedWrap">
         <table class="data-table" id="pickedTable">
-          <thead><tr><th>#</th><th>t (ms)</th><th>Vm (mV)</th><th>Im (stim)</th></tr></thead>
-          <tbody id="pickedBody"><tr><td colspan="4" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr></tbody>
+          <thead><tr><th>#</th><th>t (ms)</th><th>Vm (mV)</th></tr></thead>
+          <tbody id="pickedBody"><tr><td colspan="3" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -518,7 +477,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         <button id="btnToggleTable">Show data table</button>
         <select id="selResolution">
           <option value="1">Every point</option>
-          <option value="5" selected="selected">Every 5th point</option>
+          <option value="5" selected>Every 5th point</option>
           <option value="10">Every 10th point</option>
           <option value="25">Every 25th point</option>
         </select>
@@ -550,16 +509,16 @@ header.app-head{padding-left:28px;padding-right:28px}
 </div>
 
 <!-- ===================== VOLTAGE CLAMP TAB ===================== -->
-<div class="layout tab-view active" id="view-vc">
+<div class="layout tab-view" id="view-vc">
 
   <aside class="controls">
 
-    <details class="panel" open="">
-      <summary>Voltage protocol</summary>
+    <details class="panel" open>
+      <summary>Clamp protocol</summary>
       <div class="panel-body">
         <div class="field-row">
           <label>Holding potential</label>
-          <input type="number" id="vc-in-hp" step="1" value="-80">
+          <input type="number" id="vc-in-hp" step="1" value="-60">
           <span class="unit">mV</span>
           <button class="reset-btn" data-reset-vc="vc-in-hp" title="Reset to default">↺</button>
         </div>
@@ -577,7 +536,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         <div id="vc-single-block">
           <div class="field-row">
             <label>Test potential</label>
-            <input type="number" id="vc-in-vtest" step="5" value="0">
+            <input type="number" id="vc-in-vtest" step="5" value="-30">
             <span class="unit">mV</span>
             <button class="reset-btn" data-reset-vc="vc-in-vtest" title="Reset to default">↺</button>
           </div>
@@ -587,27 +546,27 @@ header.app-head{padding-left:28px;padding-right:28px}
             <div class="col-head">From</div><div class="col-head">To</div><div class="col-head">Step</div><div class="col-head"></div>
           </div>
           <div class="subgrid subgrid-4">
-            <input type="number" id="vc-in-vfrom" step="5" value="-80">
+            <input type="number" id="vc-in-vfrom" step="5" value="-40">
             <input type="number" id="vc-in-vto" step="5" value="60">
             <input type="number" id="vc-in-vstep" step="5" value="10">
             <button class="reset-btn" data-reset-vc="vc-in-vfrom,vc-in-vto,vc-in-vstep" title="Reset to default">↺</button>
           </div>
-          <div class="toggle-row">
-            <input type="checkbox" id="vc-chk-colormatch">
-            <label for="vc-chk-colormatch">Match colors of current traces and voltage commands</label>
-          </div>
-          <p class="family-note">Acquires one sweep per step (one every 0.5 s) and overlays them. The I–V plot can be shown with the checkbox below the oscilloscope.</p>
+          <p class="family-note">Runs one clamp per step and overlays them; also builds the I–V panel below.</p>
         </div>
 
         <div class="field-row">
           <label>Pulse duration</label>
-          <input type="number" id="vc-in-pulsedur" step="0.5" min="0.1" value="10">
+          <input type="number" id="vc-in-pulsedur" step="0.5" min="0.1" value="8">
           <span class="unit">ms</span>
           <button class="reset-btn" data-reset-vc="vc-in-pulsedur" title="Reset to default">↺</button>
         </div>
+        <div class="toggle-row" style="display:none;">
+          <input type="checkbox" id="vc-chk-tail" checked>
+          <label for="vc-chk-tail">Return to holding potential (tail)</label>
+        </div>
         <div class="field-row">
           <label>Tail duration</label>
-          <input type="number" id="vc-in-taildur" step="0.5" min="0.1" value="2">
+          <input type="number" id="vc-in-taildur" step="0.5" min="0.1" value="4">
           <span class="unit">ms</span>
           <button class="reset-btn" data-reset-vc="vc-in-taildur" title="Reset to default">↺</button>
         </div>
@@ -624,7 +583,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         <div class="field-row"><label>gL</label><input type="number" id="vc-in-gl" step="0.05" value="0.3"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset-vc="vc-in-gl" title="Reset to default">↺</button></div>
         <div class="field-row"><label>Temperature</label><input type="number" id="vc-in-temp" step="1" value="6.3"><span class="unit">°C</span><button class="reset-btn" data-reset-vc="vc-in-temp" title="Reset to default">↺</button></div>
         <div class="radio-row">
-          <label><input type="radio" name="vc-channelType" id="vc-in-nonideal" checked="checked"> Non-ideal (HH) channels</label>
+          <label><input type="radio" name="vc-channelType" id="vc-in-nonideal" checked> Non-ideal (HH) channels</label>
         </div>
         <div class="radio-row" style="margin-top:-6px;">
           <label><input type="radio" name="vc-channelType" id="vc-in-ideal"> Ideal (perfectly selective) channels</label>
@@ -649,9 +608,9 @@ header.app-head{padding-left:28px;padding-right:28px}
         <div class="field-row"><label>TTX</label><input type="number" id="vc-in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset-vc="vc-in-ttx" title="Reset to default">↺</button></div>
         <div class="field-row"><label>Pronase</label><input type="number" id="vc-in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset-vc="vc-in-pronase" title="Reset to default">↺</button></div>
         <div class="readout-mini">
-          <div>E<sub>Na</sub> <strong id="vc-out-ena">41.3</strong> mV</div>
-          <div>E<sub>K</sub> <strong id="vc-out-ek">-73.3</strong> mV</div>
-          <div>E<sub>L</sub> <strong id="vc-out-el">-50.8</strong> mV</div>
+          <div>E<sub>Na</sub> <strong id="vc-out-ena">—</strong> mV</div>
+          <div>E<sub>K</sub> <strong id="vc-out-ek">—</strong> mV</div>
+          <div>E<sub>L</sub> <strong id="vc-out-el">—</strong> mV</div>
           <div></div>
         </div>
       </div>
@@ -669,7 +628,7 @@ header.app-head{padding-left:28px;padding-right:28px}
           <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="vc-chk-INa"> I<sub>Na</sub></label>
           <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="vc-chk-IK"> I<sub>K</sub></label>
           <label><span class="swatch" style="background:#7fae8f"></span><input type="checkbox" id="vc-chk-IL"> I<sub>L</sub></label>
-          <label><span class="swatch" style="background:#a89a7f"></span><input type="checkbox" id="vc-chk-Ii" checked="checked"> I<sub>i</sub> — total ionic</label>
+          <label><span class="swatch" style="background:#a89a7f"></span><input type="checkbox" id="vc-chk-Ii" checked> I<sub>i</sub> — total ionic</label>
         </div>
         <div class="axis-label">Gating variables (0–1)</div>
         <div class="checklist">
@@ -682,13 +641,16 @@ header.app-head{padding-left:28px;padding-right:28px}
           <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="vc-chk-gK"> g<sub>K</sub></label>
           <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="vc-chk-gNa"> g<sub>Na</sub></label>
         </div>
-        <p class="family-note">Changes are applied on the next run.</p>
       </div>
     </details>
 
     <div class="toggle-row">
       <input type="checkbox" id="vc-chk-overlay">
       <label for="vc-chk-overlay">Keep previous run (overlay)</label>
+    </div>
+    <div class="toggle-row">
+      <input type="checkbox" id="vc-chk-rainbow">
+      <label for="vc-chk-rainbow">Color sweeps by voltage step</label>
     </div>
     <button class="ghost-btn" id="vc-btnClear">Clear overlays</button>
     <button class="ghost-btn" id="vc-btnResetAll">Reset all parameters</button>
@@ -704,16 +666,16 @@ header.app-head{padding-left:28px;padding-right:28px}
     </div>
 
     <div class="digital-readout" id="vc-readout">
-      <div><span class="k">t</span><span class="v" id="vc-rd-t">9.00</span> ms</div>
-      <div><span class="k">Vcmd</span><span class="v" id="vc-rd-vm">0.00</span> mV</div>
-      <div><span class="k">INa</span><span class="v" id="vc-rd-ina">-0.0173</span> mA/cm²</div>
-      <div><span class="k">IK</span><span class="v" id="vc-rd-ik">1.6450</span> mA/cm²</div>
-      <div><span class="k">Ii</span><span class="v" id="vc-rd-ii">1.6429</span> mA/cm²</div>
+      <div><span class="k">t</span><span class="v" id="vc-rd-t">—</span> ms</div>
+      <div><span class="k">Vcmd</span><span class="v" id="vc-rd-vm">—</span> mV</div>
+      <div><span class="k">INa</span><span class="v" id="vc-rd-ina">—</span> mA/cm²</div>
+      <div><span class="k">IK</span><span class="v" id="vc-rd-ik">—</span> mA/cm²</div>
+      <div><span class="k">Ii</span><span class="v" id="vc-rd-ii">—</span> mA/cm²</div>
     </div>
 
     <div class="sim-row">
       <div class="scope">
-        <div class="protocol-wrap"><span class="protocol-tag">Command protocol</span><canvas id="vcProtocolChart"></canvas></div>
+        <div class="vc-protocol-wrap"><canvas id="vcProtocolChart"></canvas></div>
         <div class="scope-canvas-wrap"><canvas id="vcMainChart"></canvas></div>
       </div>
       <div class="side-column">
@@ -724,9 +686,9 @@ header.app-head{padding-left:28px;padding-right:28px}
               Plot picked points
             </label>
             <div class="axis-selectors">
-              <select id="vc-selPlotX" disabled="disabled"><option value="index">Trace #</option><option value="time">t (ms)</option><option value="Vm" selected="selected">Vm (mV)</option><option value="INa">INa (mA/cm²)</option><option value="IK">IK (mA/cm²)</option><option value="IL">IL (mA/cm²)</option><option value="Ii">Ii (mA/cm²)</option><option value="n">n</option><option value="m">m</option><option value="h">h</option><option value="gNa">gNa (mS/cm²)</option><option value="gK">gK (mS/cm²)</option></select>
+              <select id="vc-selPlotX" disabled></select>
               <span>vs</span>
-              <select id="vc-selPlotY" disabled="disabled"><option value="index">Trace #</option><option value="time">t (ms)</option><option value="Vm">Vm (mV)</option><option value="INa" selected="selected">INa (mA/cm²)</option><option value="IK">IK (mA/cm²)</option><option value="IL">IL (mA/cm²)</option><option value="Ii">Ii (mA/cm²)</option><option value="n">n</option><option value="m">m</option><option value="h">h</option><option value="gNa">gNa (mS/cm²)</option><option value="gK">gK (mS/cm²)</option></select>
+              <select id="vc-selPlotY" disabled></select>
             </div>
           </div>
           <div class="picked-plot-wrap" id="vc-pickedPlotWrap" style="display:none;">
@@ -738,9 +700,9 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div class="side-plot-head">
             <div class="side-plot-toggle" style="cursor:default;">Gating particles</div>
             <div class="axis-selectors">
-              <label><input type="checkbox" id="vc-chk-gate-n" checked="checked"> n</label>
-              <label><input type="checkbox" id="vc-chk-gate-m" checked="checked"> m</label>
-              <label><input type="checkbox" id="vc-chk-gate-h" checked="checked"> h</label>
+              <label><input type="checkbox" id="vc-chk-gate-n" checked> n</label>
+              <label><input type="checkbox" id="vc-chk-gate-m" checked> m</label>
+              <label><input type="checkbox" id="vc-chk-gate-h" checked> h</label>
             </div>
           </div>
           <div class="picked-plot-wrap">
@@ -748,21 +710,6 @@ header.app-head{padding-left:28px;padding-right:28px}
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="toggle-row iv-toggle">
-      <input type="checkbox" id="vc-chk-iv">
-      <label for="vc-chk-iv">Show current–voltage (I–V) relationship — peak I<sub>Na</sub> and steady-state I<sub>K</sub></label>
-    </div>
-    <div class="picked-panel" id="vc-iv-panel" style="display:none;">
-      <div class="picked-head">
-        <div>
-          <h3>Current–voltage (I–V) relationship</h3>
-          <p>From the last family run: peak I<sub>Na</sub> (●, filled) and steady-state I<sub>K</sub> at pulse end (○, open), vs. test potential.</p>
-        </div>
-      </div>
-      <p class="family-note" id="vc-iv-empty">Tick “Family of test potentials” in the Voltage protocol panel and run to fill this plot.</p>
-      <div class="iv-wrap"><canvas id="vcIVChart"></canvas></div>
     </div>
 
     <div class="picked-panel">
@@ -778,18 +725,20 @@ header.app-head{padding-left:28px;padding-right:28px}
       </div>
       <div class="table-wrap" id="vc-pickedWrap">
         <table class="data-table" id="vc-pickedTable">
-          <thead><tr><th>#</th><th>t (ms)</th><th>Vm (mV)</th><th>INa</th><th>IK</th></tr></thead>
-          <tbody id="vc-pickedBody"><tr><td colspan="5" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr></tbody>
+          <thead><tr><th>#</th><th>t (ms)</th><th>Vm (mV)</th></tr></thead>
+          <tbody id="vc-pickedBody"><tr><td colspan="3" style="text-align:center;color:#b8ae95;">No points yet — right-click the plot.</td></tr></tbody>
         </table>
       </div>
     </div>
+
+
 
     <div class="table-controls">
       <div class="left">
         <button id="vc-btnToggleTable">Show data table</button>
         <select id="vc-selResolution">
           <option value="1">Every point</option>
-          <option value="5" selected="selected">Every 5th point</option>
+          <option value="5" selected>Every 5th point</option>
           <option value="10">Every 10th point</option>
           <option value="25">Every 25th point</option>
         </select>
@@ -826,11 +775,6 @@ header.app-head{padding-left:28px;padding-right:28px}
 /* =========================================================================
    HODGKIN–HUXLEY PHYSICS ENGINE
    ========================================================================= */
-/* Software (CPU) canvas: some Linux/Android GPU drivers silently show a blank
-   hardware-accelerated canvas even though drawing succeeds. willReadFrequently
-   makes the browser keep these small plots on the CPU path, which always displays. */
-const CANVAS_OPTS = { willReadFrequently: true };
-
 const HH = (() => {
   const Eref  = -60;                 // reference resting potential, mV
   const Kttx  = 3;                   // TTX half-block, nM
@@ -1075,6 +1019,7 @@ function deriveTS23(p){
 
 let lastRun = null;
 let overlayDatasets = [];
+let apProgressTimer = null; // progressive trace-drawing timer for AP tab
 
 /* ---------- default values + reset-to-default wiring ---------- */
 const DEFAULTS = {
@@ -1101,7 +1046,7 @@ el('btnResetAll').addEventListener('click', () => {
 const AXIS_COLORS = { na: '#e8a53d', k: '#4dc9ff', leak: '#b8ae95', stim: '#d9694f', vm: '#4dffa0' };
 
 /* ---------- main chart ---------- */
-const mainCtx = document.getElementById('mainChart').getContext('2d', CANVAS_OPTS);
+const mainCtx = document.getElementById('mainChart').getContext('2d');
 const mainChart = new Chart(mainCtx, {
   type: 'line',
   data: { datasets: [] },
@@ -1125,7 +1070,7 @@ const mainChart = new Chart(mainCtx, {
               seen.add(ds.label);
               items.push({
                 text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor,
-                fontColor: '#b8ae95', lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false
+                lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false
               });
             });
             return items;
@@ -1145,10 +1090,10 @@ const mainChart = new Chart(mainCtx, {
 });
 
 /* ---------- stimulus preview chart ---------- */
-const stimCtx = document.getElementById('stimPreview').getContext('2d', CANVAS_OPTS);
+const stimCtx = document.getElementById('stimPreview').getContext('2d');
 const stimChart = new Chart(stimCtx, {
   type: 'line',
-  data: { datasets: [{ data: [], borderColor: '#d9694f', borderWidth: 1.5, pointRadius: 0, stepped: false }] },
+  data: { datasets: [{ data: [], borderColor: '#d9694f', borderWidth: 2.5, pointRadius: 0, stepped: false }] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { enabled: false } },
@@ -1198,7 +1143,7 @@ function buildDatasets(run, opacity){
 
   datasets.push({
     label: 'Vm', yAxisID: 'yVm', borderColor: a(AXIS_COLORS.vm, opacity), backgroundColor: 'transparent',
-    borderWidth: 2, pointRadius: 0, sourceRun: run, sourceKey: 'Vm',
+    borderWidth: 3, pointRadius: 0, sourceRun: run, sourceKey: 'Vm',
     data: run.time.map((t,i) => ({ x: t, y: run.Vm[i] }))
   });
 
@@ -1208,7 +1153,7 @@ function buildDatasets(run, opacity){
       activeAxes.add(cfg.axis);
       datasets.push({
         label: cfg.label, yAxisID: cfg.axis, borderColor: a(cfg.color, opacity), backgroundColor: 'transparent',
-        borderWidth: 1.4, pointRadius: 0, sourceRun: run, sourceKey: cfg.key,
+        borderWidth: 2.2, pointRadius: 0, sourceRun: run, sourceKey: cfg.key,
         data: run.time.map((t,i) => ({ x: t, y: run[cfg.key][i] }))
       });
     }
@@ -1216,9 +1161,9 @@ function buildDatasets(run, opacity){
 
   if (el('chk-Erefs').checked){
     activeAxes.add('yVm');
-    datasets.push({ label: 'ENa', yAxisID: 'yVm', borderColor: a('#e8a53d', opacity), borderDash: [5,4], borderWidth: 1, pointRadius: 0,
+    datasets.push({ label: 'ENa', yAxisID: 'yVm', borderColor: a('#e8a53d', opacity), borderDash: [5,4], borderWidth: 1.8, pointRadius: 0,
       data: [{ x: run.time[0], y: run.ENa }, { x: run.time[run.time.length-1], y: run.ENa }] });
-    datasets.push({ label: 'EK', yAxisID: 'yVm', borderColor: a('#4dc9ff', opacity), borderDash: [5,4], borderWidth: 1, pointRadius: 0,
+    datasets.push({ label: 'EK', yAxisID: 'yVm', borderColor: a('#4dc9ff', opacity), borderDash: [5,4], borderWidth: 1.8, pointRadius: 0,
       data: [{ x: run.time[0], y: run.EK }, { x: run.time[run.time.length-1], y: run.EK }] });
   }
 
@@ -1233,8 +1178,10 @@ function refreshAxesVisibility(activeAxes){
 
 /* Rebuilds the chart's datasets from lastRun + current checkbox state + any
    dimmed overlay runs, without re-running the physics. Used both after a
-   fresh simulation and whenever a "variables to plot" checkbox is toggled. */
-function applyChartUpdate(){
+   fresh simulation and whenever a "variables to plot" checkbox is toggled.
+   progressive=true: reveals the current-run traces incrementally (like real
+   acquisition), leaving overlay datasets visible immediately. */
+function applyChartUpdate(progressive = false){
   if (!lastRun) return;
   const { datasets, activeAxes } = buildDatasets(lastRun, 1);
   refreshAxesVisibility(activeAxes);
@@ -1244,8 +1191,40 @@ function applyChartUpdate(){
     allDatasets = allDatasets.concat(group.map(ds => ({ ...ds, borderDash: ds.borderDash || [] })));
   });
 
+  if (!progressive){
+    mainChart.data.datasets = allDatasets;
+    refreshPickedOverlay();
+    return;
+  }
+
+  // Progressive draw — reveal new-run datasets point-by-point over ~600 ms
+  if (apProgressTimer){ clearInterval(apProgressTimer); apProgressTimer = null; }
+  const N = datasets.length ? datasets[0].data.length : 0;
+  const INTERVAL_MS = 16; // ~60 fps
+  const TOTAL_MS = 600;
+  const pts_per_tick = Math.max(1, Math.ceil(N / (TOTAL_MS / INTERVAL_MS)));
+  const fullData = datasets.map(ds => ds.data);
+  datasets.forEach(ds => { ds.data = []; }); // start empty
+
+  // Pin x-axis to the full simulation range so it never moves during drawing
+  mainChart.options.scales.x.min = 0;
+  mainChart.options.scales.x.max = lastRun.time[lastRun.time.length - 1];
+
   mainChart.data.datasets = allDatasets;
   refreshPickedOverlay();
+
+  let drawn = 0;
+  apProgressTimer = setInterval(() => {
+    drawn = Math.min(drawn + pts_per_tick, N);
+    datasets.forEach((ds, i) => { ds.data = fullData[i].slice(0, drawn); });
+    mainChart.update('none');
+    if (drawn >= N){
+      clearInterval(apProgressTimer); apProgressTimer = null;
+      // Restore auto-scaling for the x-axis once drawing is complete
+      mainChart.options.scales.x.min = undefined;
+      mainChart.options.scales.x.max = undefined;
+    }
+  }, INTERVAL_MS);
 }
 
 function runSimulation(){
@@ -1268,7 +1247,7 @@ function runSimulation(){
     if (overlayDatasets.length > MAX_OVERLAYS) overlayDatasets = overlayDatasets.slice(-MAX_OVERLAYS);
   }
 
-  applyChartUpdate();
+  applyChartUpdate(true); // progressive: trace scrolls in like real acquisition
   renderTable();
   renderPickedTable();
   updateReadoutFromRun(run, run.time.length - 1);
@@ -1360,14 +1339,14 @@ function updateHoverMarker(hit){
 }
 
 let lastHoverKey = null;
-document.getElementById('mainChart').addEventListener('pointermove', (evt) => {
+document.getElementById('mainChart').addEventListener('mousemove', (evt) => {
   const hit = findNearestPoint(evt);
   if (!hit) return;
   updateReadoutFromRun(hit.run, hit.index);
   const key = hit.run.time[hit.index] + '|' + hit.key;
   if (key !== lastHoverKey){ lastHoverKey = key; updateHoverMarker(hit); }
 });
-document.getElementById('mainChart').addEventListener('pointerleave', () => {
+document.getElementById('mainChart').addEventListener('mouseleave', () => {
   lastHoverKey = null;
   updateHoverMarker(null);
 });
@@ -1489,7 +1468,7 @@ function axisValue(p, i, key){
   return key === 'index' ? (i + 1) : p[key];
 }
 
-const pickedPlotChart = new Chart(document.getElementById('pickedPlotChart').getContext('2d', CANVAS_OPTS), {
+const pickedPlotChart = new Chart(document.getElementById('pickedPlotChart').getContext('2d'), {
   type: 'scatter',
   data: { datasets: [{
     label: 'Picked points', data: [], showLine: false,
@@ -1565,7 +1544,11 @@ el('btnClearPicked').addEventListener('click', clearPickedPoints);
 });
 
 el('btnRun').addEventListener('click', runSimulation);
-el('btnClear').addEventListener('click', () => { overlayDatasets = []; runSimulation(); });
+el('btnClear').addEventListener('click', () => {
+  if (apProgressTimer){ clearInterval(apProgressTimer); apProgressTimer = null; }
+  overlayDatasets = [];
+  runSimulation();
+});
 el('btnCsv').addEventListener('click', downloadCsv);
 el('selResolution').addEventListener('change', renderTable);
 el('btnToggleTable').addEventListener('click', () => {
@@ -1579,9 +1562,9 @@ el('btnToggleTable').addEventListener('click', () => {
    VOLTAGE CLAMP TAB
    ========================================================================= */
 const VC_DEFAULTS = {
-  'vc-in-hp': -80, 'vc-in-delay': 1, 'vc-in-vtest': 0,
-  'vc-in-vfrom': -80, 'vc-in-vto': 60, 'vc-in-vstep': 10,
-  'vc-in-pulsedur': 10, 'vc-in-taildur': 2,
+  'vc-in-hp': -60, 'vc-in-delay': 1, 'vc-in-vtest': -30,
+  'vc-in-vfrom': -40, 'vc-in-vto': 60, 'vc-in-vstep': 10,
+  'vc-in-pulsedur': 8, 'vc-in-taildur': 4,
   'vc-in-gk': 36, 'vc-in-gna': 120, 'vc-in-gl': 0.3, 'vc-in-temp': 6.3,
   'vc-in-nao': 440, 'vc-in-nai': 50, 'vc-in-ko': 10, 'vc-in-ki': 440, 'vc-in-ttx': 0, 'vc-in-pronase': 0
 };
@@ -1612,7 +1595,7 @@ function vcReadParams(){
     HP: n('vc-in-hp'),
     delay: n('vc-in-delay'),
     pulseDur: n('vc-in-pulsedur'),
-    tail: true, // the command always returns to the holding potential
+    tail: true,
     tailDur: n('vc-in-taildur'),
     GK: n('vc-in-gk'),
     gNaBase: n('vc-in-gna'),
@@ -1641,26 +1624,10 @@ const VC_VAR_CONFIG = [
   { chk: 'vc-chk-gNa', key: 'gNa', label: 'gNa', axis: 'vcyCond', color: AXIS_COLORS.na }
 ];
 
-/* Both VC panels share one time axis: the left y-axis gutter is a fixed width and the
-   protocol chart copies the main chart's right-hand gap after every layout pass. */
-const VC_LEFT_GUTTER = 62;
-let vcProtocolChart = null; // created below, after the IV chart
-const vcFixLeftAxis = (scale) => { scale.width = VC_LEFT_GUTTER; }; // applies even while the Vm axis is hidden, so the gutter never moves
-const vcSyncProtocolPlugin = {
-  id: 'vcSyncProtocol',
-  afterLayout(chart){
-    if (!vcProtocolChart || !chart.chartArea) return;
-    const gap = Math.max(0, Math.round(chart.width - chart.chartArea.right));
-    const pad = vcProtocolChart.options.layout.padding;
-    if (pad.right !== gap){ pad.right = gap; vcProtocolChart.update('none'); }
-  }
-};
-const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext('2d', CANVAS_OPTS), {
+const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext('2d'), {
   type: 'line',
   data: { datasets: [] },
-  plugins: [vcSyncProtocolPlugin],
   options: {
-    layout: { padding: { left: 0 } },
     animation: false, parsing: false, responsive: true, maintainAspectRatio: false,
     interaction: { mode: 'nearest', intersect: false },
     plugins: {
@@ -1675,9 +1642,7 @@ const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext(
               if (ds.label === 'Cursor' || ds.label === 'Picked points') return;
               if (seen.has(ds.label)) return;
               seen.add(ds.label);
-              items.push(ds.colorMatched
-                ? { text: ds.label, fontColor: '#b8ae95', strokeStyle: '#b8ae95', fillStyle: 'transparent', lineDash: ds.borderDash, lineWidth: 2, datasetIndex: i, hidden: false }
-                : { text: ds.label, fontColor: '#b8ae95', strokeStyle: ds.borderColor, fillStyle: ds.borderColor, lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false });
+              items.push({ text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor, lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false });
             });
             return items;
           }
@@ -1687,154 +1652,51 @@ const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext(
     },
     scales: {
       x: { type: 'linear', title: { display: true, text: 'time (ms)', color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#b8ae95' } },
-      vcyVm: { position: 'right', display: false, title: { display: true, text: 'Vm (mV)', color: '#4dffa0' }, grid: { drawOnChartArea: false }, ticks: { color: '#4dffa0' } },
-      vcyCurrent: { position: 'left', display: true, afterFit: vcFixLeftAxis, title: { display: true, text: 'I (mA/cm²)', color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#b8ae95' } },
+      vcyVm: { position: 'left', title: { display: true, text: 'Vm (mV)', color: '#4dffa0' }, grid: { color: 'rgba(77,255,160,0.16)' }, ticks: { color: '#4dffa0' } },
+      vcyCurrent: { position: 'right', display: true, title: { display: true, text: 'I (mA/cm²)', color: '#b8ae95' }, grid: { drawOnChartArea: false }, ticks: { color: '#b8ae95' } },
       vcyGate: { position: 'right', display: false, offset: true, min: 0, max: 1, title: { display: true, text: 'gating (0–1)', color: '#b98dfa' }, grid: { drawOnChartArea: false }, ticks: { color: '#b98dfa' } },
       vcyCond: { position: 'right', display: false, offset: true, title: { display: true, text: 'g (mS/cm²)', color: '#d4c24d' }, grid: { drawOnChartArea: false }, ticks: { color: '#d4c24d' } }
     }
   }
 });
 
-const vcIVChart = new Chart(document.getElementById('vcIVChart').getContext('2d', CANVAS_OPTS), {
-  type: 'scatter',
-  data: { datasets: [
-    { label: 'Peak INa', data: [], showLine: true, borderColor: '#e8a53d', borderWidth: 1.5, pointStyle: 'circle', pointRadius: 5, backgroundColor: '#e8a53d' },
-    { label: 'Steady-state IK', data: [], showLine: true, borderColor: '#4dc9ff', borderWidth: 2, pointStyle: 'circle', pointRadius: 5, backgroundColor: 'transparent' }
-  ] },
-  options: {
-    animation: false, responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: true, position: 'top', labels: { color: '#b8ae95', font: { size: 11 } } }, tooltip: { enabled: true } },
-    scales: {
-      x: { type: 'linear', title: { display: true, text: 'Test potential (mV)', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } },
-      y: { title: { display: true, text: 'I (mA/cm²)', color: '#b8ae95' }, ticks: { color: '#b8ae95' }, grid: { color: 'rgba(77,255,160,0.16)' } }
-    }
-  }
-});
-
-/* ---------- command-protocol window (top strip of the oscilloscope) ---------- */
-let vcCursorT = null; // time of the hover cursor, mirrored as a vertical line on the protocol
-const vcProtocolCursorPlugin = {
-  id: 'vcProtocolCursor',
-  afterDatasetsDraw(chart){
-    if (vcCursorT === null) return;
-    const x = chart.scales.x.getPixelForValue(vcCursorT), a = chart.chartArea;
-    if (x < a.left || x > a.right) return;
-    const c = chart.ctx; c.save();
-    c.strokeStyle = 'rgba(217,105,79,0.9)'; c.lineWidth = 1; c.setLineDash([4, 3]);
-    c.beginPath(); c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.restore();
-  }
-};
-vcProtocolChart = new Chart(document.getElementById('vcProtocolChart').getContext('2d', CANVAS_OPTS), {
+/* Small protocol strip: voltage command waveform above the oscilloscope */
+const vcProtocolChartInst = new Chart(document.getElementById('vcProtocolChart').getContext('2d'), {
   type: 'line',
   data: { datasets: [] },
-  plugins: [vcProtocolCursorPlugin],
   options: {
     animation: false, parsing: false, responsive: true, maintainAspectRatio: false,
-    layout: { padding: { left: 0, right: 0, top: 4, bottom: 0 } },
     plugins: { legend: { display: false }, tooltip: { enabled: false } },
-    elements: { line: { tension: 0 } },
-    events: [],
     scales: {
-      x: { type: 'linear', min: 0, ticks: { display: false }, border: { display: false },
-           grid: { color: 'rgba(77,255,160,0.10)' } },
-      y: { position: 'left', afterFit: vcFixLeftAxis, grace: '12%',
-           title: { display: true, text: 'Vcmd (mV)', color: '#4dffa0', font: { size: 11 } },
-           ticks: { color: '#4dffa0', maxTicksLimit: 4, font: { size: 10 } },
-           grid: { color: 'rgba(77,255,160,0.10)' } }
+      x: { type: 'linear', display: false },
+      y: {
+        position: 'left',
+        title: { display: true, text: 'Vm (mV)', color: '#4dffa0', font: { size: 9 } },
+        ticks: { color: '#4dffa0', font: { size: 9 }, maxTicksLimit: 3 },
+        grid: { color: 'rgba(77,255,160,0.10)' }
+      }
     }
   }
 });
 
-/* Reduce the sampled command (piecewise constant) to its corner points so the
-   steps are drawn perfectly square. */
-function vcProtocolVertices(run){
-  const t = run.time, V = run.Vm, pts = [{ x: t[0], y: V[0] }];
-  for (let k = 1; k < V.length; k++){
-    if (V[k] !== V[k-1]){ pts.push({ x: t[k-1], y: V[k-1] }); pts.push({ x: t[k-1], y: V[k] }); }
-  }
-  pts.push({ x: t[t.length-1], y: V[V.length-1] });
-  return pts;
-}
-/* Limits padded by 6 % of the range and rounded outward to a tidy value. */
-function vcPaddedLimits(lo, hi){
-  if (!isFinite(lo) || !isFinite(hi)) return null;
-  if (hi - lo < 1e-9){ lo -= 1; hi += 1; }
-  const pad = 0.06 * (hi - lo);
-  const q = Math.pow(10, Math.floor(Math.log10((hi - lo) / 10)));
-  const tidy = (x) => Number(x.toPrecision(10)); // avoid 4.800000000000001
-  let min = tidy(Math.floor((lo - pad) / q) * q);
-  if (lo >= 0 && min < 0) min = 0; // non-negative quantities (conductances) start at 0
-  return { min, max: tidy(Math.ceil((hi + pad) / q) * q) };
-}
-/* For a family, the y-axes are fixed before acquisition from ALL sweeps: the most
-   inward (min) and most outward (max) current of the plotted variables, so the
-   scale does not jump as sweeps arrive. Single runs keep auto-scaling. */
-function vcApplyFamilyLimits(){
-  const sc = vcMainChart.options.scales;
-  ['vcyCurrent', 'vcyCond', 'vcyVm'].forEach(ax => {
-    let lim = null;
-    if (vcFamilyRuns){
-      let lo = Infinity, hi = -Infinity;
-      VC_VAR_CONFIG.forEach(cfg => {
-        if (cfg.axis !== ax || !vcVarOn(cfg)) return;
-        vcFamilyRuns.forEach(r => { const a = r[cfg.key]; for (let k = 0; k < a.length; k++){ if (a[k] < lo) lo = a[k]; if (a[k] > hi) hi = a[k]; } });
-      });
-      lim = vcPaddedLimits(lo, hi);
-    }
-    sc[ax].min = lim ? lim.min : undefined;
-    sc[ax].max = lim ? lim.max : undefined;
-  });
-  let plim = null;
-  if (vcFamilyRuns){
-    let lo = Infinity, hi = -Infinity;
-    vcFamilyRuns.forEach(r => r.Vm.forEach(v => { if (v < lo) lo = v; if (v > hi) hi = v; }));
-    plim = vcPaddedLimits(lo, hi);
-  }
-  vcProtocolChart.options.scales.y.min = plim ? plim.min : undefined;
-  vcProtocolChart.options.scales.y.max = plim ? plim.max : undefined;
-}
-
-function vcRenderProtocol(tMax){
-  vcProtocolChart.data.datasets = vcCurrentRuns.map((run) => ({
-    label: 'Vcmd', borderColor: (st => st.matchColor || vcAxisColor(AXIS_COLORS.vm, st.opacity))(vcRunStyle(run)),
-    backgroundColor: 'transparent', borderWidth: 1.8, pointRadius: 0,
-    data: vcProtocolVertices(run)
-  }));
-  vcProtocolChart.options.scales.x.max = tMax;
-  vcProtocolChart.update('none');
-}
 
 function vcAxisColor(hex, opacity){
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   return `rgba(${r},${g},${b},${opacity})`;
 }
 
-/* Family sweeps carry familyIndex/familyTotal so their styling does not change
-   as later sweeps arrive. With "Match colors", sweep k gets one hue (blue = first
-   step ... red = last) used for both its voltage step and its current traces;
-   several plotted variables of the same sweep are then told apart by dash style. */
-const VC_DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3], [1, 2], [8, 2], [4, 4], [12, 4], [3, 6], [6, 2, 2, 2], [2, 6]];
-function vcFamilyColor(i, n){ return `hsl(${Math.round(240 - 240 * i / Math.max(n - 1, 1))}, 85%, 62%)`; }
-function vcRunStyle(run){
-  const i = run.familyIndex || 0, n = run.familyTotal || 1;
-  const match = n > 1 && el('vc-chk-colormatch').checked;
-  return { opacity: 1, matchColor: match ? vcFamilyColor(i, n) : null }; // all sweeps same colour unless colour-matched
-}
-
-function vcBuildDatasets(run, style, labelSuffix){
+function vcBuildDatasets(run, opacity, labelSuffix, sweepColor = null){
   const datasets = [];
   const activeAxes = new Set();
-  let varIdx = 0;
   VC_VAR_CONFIG.forEach(cfg => {
-    if (vcVarOn(cfg)){
+    if (el(cfg.chk).checked){
       activeAxes.add(cfg.axis);
-      // only currents and the command voltage take the sweep colour; n, m, h and g keep their own colours
-      const matched = !!style.matchColor && (cfg.axis === 'vcyCurrent' || cfg.axis === 'vcyVm');
+      const color = sweepColor
+        ? `rgba(${sweepColor.r},${sweepColor.g},${sweepColor.b},${opacity})`
+        : vcAxisColor(cfg.color, opacity);
       datasets.push({
-        label: cfg.label + labelSuffix, yAxisID: cfg.axis,
-        borderColor: matched ? style.matchColor : vcAxisColor(cfg.color, style.opacity),
-        borderDash: matched ? VC_DASHES[varIdx++ % VC_DASHES.length] : [], colorMatched: matched,
-        backgroundColor: 'transparent', borderWidth: 1.6, pointRadius: 0,
+        label: cfg.label + labelSuffix, yAxisID: cfg.axis, borderColor: color,
+        backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0,
         sourceRun: run, sourceKey: cfg.key, // lets picking trace a click back to the exact run + variable + axis
         data: run.time.map((t,i) => ({ x: t, y: run[cfg.key][i] }))
       });
@@ -1843,13 +1705,21 @@ function vcBuildDatasets(run, style, labelSuffix){
   return { datasets, activeAxes };
 }
 
+/* Convert sweep index → RGB for rainbow coloring (blue→cyan→green→yellow→red) */
+function sweepHue(i, n){
+  const hue = 240 - 240 * (i / Math.max(n - 1, 1)); // 240=blue, 0=red
+  // Convert HSL(hue,90%,65%) to RGB
+  const s = 0.9, l = 0.65;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => { const k = (n + hue/30) % 12; return l - a * Math.max(Math.min(k-3,9-k,1),-1); };
+  return { r: Math.round(f(0)*255), g: Math.round(f(8)*255), b: Math.round(f(4)*255) };
+}
+
 let vcLastRun = null;       // set only for single (non-family) runs — enables hover/picking
 let vcOverlayDatasets = [];
 let vcPickedPoints = [];
-let vcPlotVars = null;      // Set of variable checkbox ids captured when the last run started
-const vcVarOn = (cfg) => vcPlotVars ? vcPlotVars.has(cfg.chk) : el(cfg.chk).checked;
-let vcFamilyRuns = null;    // every sweep of the current family (incl. not-yet-shown ones); null for single runs
 let vcCurrentRuns = [];     // whichever run(s) are currently plotted — reused by the gating-particles panel
+let vcFamilyTimer = null;   // progressive family-trace reveal timer
 
 const VC_MAX_FAMILY_STEPS = 25; // guards against a tiny/zero step spawning huge numbers of traces
 
@@ -1861,35 +1731,41 @@ function vcApplyChartUpdate(){
   if (!vcCurrentRuns.length) return;
   let allDatasets = [];
   const activeAxes = new Set();
-  vcCurrentRuns.forEach((run) => {
-    const built = vcBuildDatasets(run, vcRunStyle(run), '');
+  const n = vcCurrentRuns.length;
+  const rainbow = el('vc-chk-rainbow').checked && n > 1;
+  const protocolDatasets = [];
+
+  vcCurrentRuns.forEach((run, i) => {
+    const sc = rainbow ? sweepHue(i, n) : null;
+    const built = vcBuildDatasets(run, 1, '', sc);
     allDatasets = allDatasets.concat(built.datasets);
     built.activeAxes.forEach(a => activeAxes.add(a));
+
+    // Protocol chart: voltage command waveform for each sweep
+    const protoColor = sc
+      ? `rgba(${sc.r},${sc.g},${sc.b},1)`
+      : vcAxisColor('#4dffa0', 1);
+    protocolDatasets.push({
+      data: run.time.map((t, k) => ({ x: t, y: run.Vm[k] })),
+      borderColor: protoColor, borderWidth: 1.8, pointRadius: 0, stepped: true
+    });
   });
-  ['vcyVm','vcyCurrent','vcyGate','vcyCond'].forEach(ax => { vcMainChart.options.scales[ax].display = activeAxes.has(ax); });
+
+  ['vcyCurrent','vcyGate','vcyCond'].forEach(ax => { vcMainChart.options.scales[ax].display = activeAxes.has(ax); });
   vcOverlayDatasets.forEach(group => { allDatasets = allDatasets.concat(group); });
   vcMainChart.data.datasets = allDatasets;
-  // identical time window on both panels (longest of the current runs and any overlays)
-  let tMax = 0;
-  vcCurrentRuns.forEach(r => { tMax = Math.max(tMax, r.time[r.time.length - 1]); });
-  allDatasets.forEach(ds => { const d = ds.data; if (d && d.length) tMax = Math.max(tMax, d[d.length - 1].x); });
-  vcMainChart.options.scales.x.min = 0;
-  vcMainChart.options.scales.x.max = tMax;
-  vcApplyFamilyLimits();
-  vcRenderProtocol(tMax);
+
+  // Update protocol chart
+  const tEnd = vcCurrentRuns[0].time[vcCurrentRuns[0].time.length - 1];
+  vcProtocolChartInst.options.scales.x.min = 0;
+  vcProtocolChartInst.options.scales.x.max = tEnd;
+  vcProtocolChartInst.data.datasets = protocolDatasets;
+  vcProtocolChartInst.update('none');
+
   vcRefreshPickedOverlay();
 }
 
-const VC_SWEEP_INTERVAL_MS = 500;
-let vcSweepTimer = null;
-function vcStopSweeps(){
-  if (vcSweepTimer){ clearTimeout(vcSweepTimer); vcSweepTimer = null; }
-  el('vc-btnRun').textContent = 'Run simulation';
-}
-
 function vcRunSimulation(){
-  vcStopSweeps(); // a new run (or any reset) cancels a family still being acquired
-  vcPlotVars = new Set(VC_VAR_CONFIG.filter(c => el(c.chk).checked).map(c => c.chk));
   const p = vcReadParams();
   const family = el('vc-chk-family').checked;
   const keepOverlay = el('vc-chk-overlay').checked;
@@ -1903,17 +1779,17 @@ function vcRunSimulation(){
   let lastFamilyRun = null;
 
   if (!family){
+    // Clear any axis locks left by a previous family run
+    vcMainChart.options.scales.vcyCurrent.min = undefined;
+    vcMainChart.options.scales.vcyCurrent.max = undefined;
     const Vtest = numOr('vc-in-vtest', VC_DEFAULTS['vc-in-vtest']);
     const run = HH.simulateVoltageClamp(p, Vtest);
     vcLastRun = run;
     vcCurrentRuns = [run];
-    vcFamilyRuns = null;
     el('vc-out-ena').textContent = run.ENa.toFixed(1);
     el('vc-out-ek').textContent = run.EK.toFixed(1);
     el('vc-out-el').textContent = run.EL.toFixed(1);
-    vcIVChart.data.datasets.forEach(ds => { ds.data = []; });
-    vcIVChart.update('none');
-    vcShowIV();
+
     el('vc-table-note').style.display = 'none';
     vcRenderTable(run);
   } else {
@@ -1929,46 +1805,51 @@ function vcRunSimulation(){
     else { for (let v = from; v >= to - 1e-9; v -= step) steps.push(Math.round(v*100)/100); }
 
     const runs = steps.map(V => HH.simulateVoltageClamp(p, V));
-    runs.forEach((run, i) => { run.familyIndex = i; run.familyTotal = runs.length; });
-    vcCurrentRuns = [];
-    vcFamilyRuns = runs;
+    lastFamilyRun = runs.length ? runs[runs.length - 1] : null;
     if (runs.length){
       const last = runs[runs.length-1];
       el('vc-out-ena').textContent = last.ENa.toFixed(1);
       el('vc-out-ek').textContent = last.EK.toFixed(1);
       el('vc-out-el').textContent = last.EL.toFixed(1);
     }
-    vcIVChart.data.datasets[0].data = [];
-    vcIVChart.data.datasets[1].data = [];
-    vcIVChart.update('none');
-    vcShowIV();
-    el('vc-table-note').style.display = '';
 
-    // Sweeps arrive one at a time, VC_SWEEP_INTERVAL_MS apart, like a real acquisition.
-    const btn = el('vc-btnRun');
-    const showSweep = (k) => {
-      const run = runs[k];
-      vcCurrentRuns.push(run);
-      const seg = run.INa.slice(run.pulseStartIdx, run.pulseEndIdx);
-      // peak = largest-magnitude INa, so it turns outward above ENa instead of reading ~0
-      const peak = seg.reduce((best, v) => Math.abs(v) > Math.abs(best) ? v : best, 0);
-      vcIVChart.data.datasets[0].data.push({ x: run.Vtest, y: seg.length ? peak : NaN });
-      vcIVChart.data.datasets[1].data.push({ x: run.Vtest, y: run.IK[Math.max(run.pulseEndIdx - 1, 0)] });
-      vcIVChart.update('none');
+    el('vc-table-note').style.display = '';
+    if (runs.length) vcRenderTable(runs[runs.length - 1]);
+
+    // Pre-compute global current-axis range across ALL family runs so the
+    // y-axis stays fixed while traces are added one by one
+    let cMin = Infinity, cMax = -Infinity;
+    runs.forEach(run => {
+      VC_VAR_CONFIG.filter(cfg => cfg.axis === 'vcyCurrent' && el(cfg.chk).checked)
+        .forEach(cfg => {
+          run[cfg.key].forEach(v => {
+            if (isFinite(v)){ if (v < cMin) cMin = v; if (v > cMax) cMax = v; }
+          });
+        });
+    });
+    if (isFinite(cMin) && isFinite(cMax)){
+      const pad = Math.abs(cMax - cMin) * 0.05;
+      vcMainChart.options.scales.vcyCurrent.min = cMin - pad;
+      vcMainChart.options.scales.vcyCurrent.max = cMax + pad;
+    }
+
+    // Progressive reveal: add one trace every 500 ms
+    if (vcFamilyTimer){ clearInterval(vcFamilyTimer); vcFamilyTimer = null; }
+    vcCurrentRuns = [];
+    let famIdx = 0;
+    vcFamilyTimer = setInterval(() => {
+      vcCurrentRuns.push(runs[famIdx]);
+      famIdx++;
       vcApplyChartUpdate();
-      vcRenderGatingChart();
-      vcUpdateReadoutFromRun(run, run.time.length - 1);
-      if (k + 1 < runs.length){
-        btn.textContent = `Acquiring sweep ${k + 2} / ${runs.length}… (click to restart)`;
-        vcSweepTimer = setTimeout(() => showSweep(k + 1), VC_SWEEP_INTERVAL_MS);
-      } else {
-        vcSweepTimer = null;
-        btn.textContent = 'Run simulation';
-        vcRenderTable(run);
-        vcRenderPickedTable();
+      vcRefreshPickedOverlay();
+      if (famIdx >= runs.length){
+        clearInterval(vcFamilyTimer);
+        vcFamilyTimer = null;
+        // Restore auto-scaling for subsequent single runs
+        vcMainChart.options.scales.vcyCurrent.min = undefined;
+        vcMainChart.options.scales.vcyCurrent.max = undefined;
       }
-    };
-    if (runs.length) showSweep(0);
+    }, 500);
   }
 
   vcApplyChartUpdate();
@@ -1980,17 +1861,12 @@ function vcRunSimulation(){
 }
 
 el('vc-btnRun').addEventListener('click', vcRunSimulation);
-el('vc-chk-colormatch').addEventListener('change', () => { vcApplyChartUpdate(); });
-function vcShowIV(){
-  const on = el('vc-chk-iv').checked;
-  el('vc-iv-panel').style.display = on ? 'block' : 'none';
-  el('vc-iv-empty').style.display = vcFamilyRuns ? 'none' : '';
-  if (on) vcIVChart.resize();
-}
-el('vc-chk-iv').addEventListener('change', vcShowIV);
-el('vc-chk-family').addEventListener('change', vcShowIV);
-el('vc-btnClear').addEventListener('click', () => { vcOverlayDatasets = []; vcRunSimulation(); });
-// Variables-to-plot checkboxes are read only when a run starts (see vcPlotVars), so toggling them changes the next run.
+el('vc-btnClear').addEventListener('click', () => {
+  if (vcFamilyTimer){ clearInterval(vcFamilyTimer); vcFamilyTimer = null; }
+  vcOverlayDatasets = [];
+  vcRunSimulation();
+});
+// Variable and display checkboxes take effect on the next Run — no instant redraw
 
 /* ---------- digital readout / hover / right-click picking ----------
    Finds the specific dataset (curve) nearest the cursor in both X and Y —
@@ -2018,8 +1894,6 @@ function vcUpdateReadoutFromRun(run, index){
 }
 
 function vcUpdateHoverMarker(hit){
-  vcCursorT = hit ? hit.x : null;
-  vcProtocolChart.draw();
   vcMainChart.data.datasets = vcMainChart.data.datasets.filter(ds => ds.label !== 'Cursor');
   if (hit){
     vcMainChart.data.datasets.push({
@@ -2032,14 +1906,14 @@ function vcUpdateHoverMarker(hit){
 }
 
 let vcLastHoverKey = null;
-document.getElementById('vcMainChart').addEventListener('pointermove', (evt) => {
+document.getElementById('vcMainChart').addEventListener('mousemove', (evt) => {
   const hit = vcFindNearestPoint(evt);
   if (!hit) return;
   vcUpdateReadoutFromRun(hit.run, hit.index);
   const key = hit.run.time[hit.index] + '|' + hit.key;
   if (key !== vcLastHoverKey){ vcLastHoverKey = key; vcUpdateHoverMarker(hit); }
 });
-document.getElementById('vcMainChart').addEventListener('pointerleave', () => {
+document.getElementById('vcMainChart').addEventListener('mouseleave', () => {
   vcLastHoverKey = null;
   vcUpdateHoverMarker(null);
 });
@@ -2060,7 +1934,7 @@ function vcActivePickedColumns(){
   const cols = [{ key: 'time', label: 't (ms)', dec: 3 }, { key: 'Vm', label: 'Vm (mV)', dec: 3 }];
   VC_VAR_CONFIG.forEach(cfg => {
     if (cfg.key === 'Vm') return;
-    if (vcVarOn(cfg)){
+    if (el(cfg.chk).checked){
       const dec = (cfg.axis === 'vcyGate') ? 3 : (cfg.axis === 'vcyCond' ? 2 : 4);
       cols.push({ key: cfg.key, label: cfg.label, dec });
     }
@@ -2113,7 +1987,7 @@ function vcAxisValue(p, i, key){
   return key === 'index' ? (i + 1) : p[key];
 }
 
-const vcPickedPlotChart = new Chart(document.getElementById('vc-pickedPlotChart').getContext('2d', CANVAS_OPTS), {
+const vcPickedPlotChart = new Chart(document.getElementById('vc-pickedPlotChart').getContext('2d'), {
   type: 'scatter',
   data: { datasets: [{
     label: 'Picked points', data: [], showLine: false,
@@ -2130,7 +2004,6 @@ const vcPickedPlotChart = new Chart(document.getElementById('vc-pickedPlotChart'
   }
 });
 
-const VC_CURRENT_KEYS = new Set(['INa', 'IK', 'IL', 'Ii']);
 function vcUpdatePickedPlot(){
   if (!el('vc-chk-plotPicked').checked) return;
   const xField = VC_AXIS_FIELDS.find(f => f.key === el('vc-selPlotX').value) || VC_AXIS_FIELDS[0];
@@ -2140,15 +2013,6 @@ function vcUpdatePickedPlot(){
   }));
   vcPickedPlotChart.options.scales.x.title.text = xField.label;
   vcPickedPlotChart.options.scales.y.title.text = yField.label;
-  // 0-current reference: always inside the range and drawn as a thick line
-  [['x', xField], ['y', yField]].forEach(([ax, f]) => {
-    const isI = VC_CURRENT_KEYS.has(f.key), sc = vcPickedPlotChart.options.scales[ax];
-    sc.beginAtZero = isI;
-    sc.grid = {
-      color: c => (isI && c.tick && c.tick.value === 0) ? 'rgba(244,236,216,0.85)' : 'rgba(77,255,160,0.16)',
-      lineWidth: c => (isI && c.tick && c.tick.value === 0) ? 2.5 : 1
-    };
-  });
   vcPickedPlotChart.update();
 }
 
@@ -2171,7 +2035,7 @@ const VC_GATE_CONFIG = [
   { chk: 'vc-chk-gate-h', key: 'h', label: 'h', color: '#e85d9e' }
 ];
 
-const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getContext('2d', CANVAS_OPTS), {
+const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getContext('2d'), {
   type: 'line',
   data: { datasets: [] },
   options: {
@@ -2188,7 +2052,7 @@ const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getCon
             chart.data.datasets.forEach((ds, i) => {
               if (seen.has(ds.label)) return;
               seen.add(ds.label);
-              items.push({ text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor, fontColor: '#b8ae95', lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false });
+              items.push({ text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor, lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false });
             });
             return items;
           }
@@ -2204,26 +2068,19 @@ const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getCon
 });
 
 function vcRenderGatingChart(){
-  // Families: show only the sweep just acquired (the last one once acquisition ends)
-  const run = vcCurrentRuns[vcCurrentRuns.length - 1];
+  const n = vcCurrentRuns.length;
   const datasets = [];
-  if (run){
+  vcCurrentRuns.forEach((run, i) => {
+    const opacity = n > 1 ? 0.35 + 0.65 * (i / (n - 1)) : 1;
     VC_GATE_CONFIG.forEach(cfg => {
       if (!el(cfg.chk).checked) return;
       datasets.push({
-        label: cfg.label, borderColor: cfg.color, backgroundColor: 'transparent',
-        borderWidth: 1.6, pointRadius: 0,
+        label: cfg.label, borderColor: vcAxisColor(cfg.color, opacity), backgroundColor: 'transparent',
+        borderWidth: 2.5, pointRadius: 0,
         data: run.time.map((t, k) => ({ x: t, y: run[cfg.key][k] }))
       });
     });
-  }
-  vcGatingChart.options.scales.x.min = 0;
-  vcGatingChart.options.scales.x.max = run ? run.time[run.time.length - 1] : undefined;
-  const fam = run && run.familyTotal > 1;
-  vcGatingChart.options.plugins.title = {
-    display: !!fam, color: '#b8ae95', font: { size: 11, weight: 'normal' }, padding: { bottom: 2 },
-    text: fam ? `Sweep ${run.familyIndex + 1} / ${run.familyTotal}  ·  Vtest = ${run.Vtest > 0 ? '+' : ''}${run.Vtest} mV` : ''
-  };
+  });
   vcGatingChart.data.datasets = datasets;
   vcGatingChart.update();
 }
@@ -2319,8 +2176,6 @@ document.querySelectorAll('#tabBar button').forEach(btn => {
     }
     if (btn.dataset.tab === 'vc'){
       vcMainChart.resize();
-      vcProtocolChart.resize();
-      vcIVChart.resize();
       vcGatingChart.resize();
       if (!vcInitialized){ vcInitialized = true; vcRunSimulation(); }
     }
@@ -2328,21 +2183,11 @@ document.querySelectorAll('#tabBar button').forEach(btn => {
 });
 
 /* ---------- boot ---------- */
-// Browsers (Firefox especially) restore checkbox states on reload; re-sync the dependent UI.
-el('vc-chk-family').dispatchEvent(new Event('change'));
 updateStimPreview();
 runSimulation();
-// If the page opens on the Voltage Clamp tab, run it now instead of waiting for a tab click.
-if (document.getElementById('view-vc').classList.contains('active')){
-  vcInitialized = true;
-  vcRunSimulation();
-}
-// Boot reached the end: remove the "code has not run" notice.
-(function(){ var b = document.getElementById('boot-check'); if (b) b.remove(); })();
 </script>
 <!-- lab-foot:start -->
-<div class="lab-nav lab-nav--foot"><a href="https://neurofisio-usach.cl/index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
 <!-- lab-foot:end -->
-
-
-</body></html>
+</body>
+</html>
