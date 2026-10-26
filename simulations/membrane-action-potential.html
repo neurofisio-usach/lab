@@ -47,6 +47,8 @@
     --font-mono:'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     --font-serif:'Source Serif 4', Georgia, 'Times New Roman', serif;
   }
+  /* Change this single value to rescale every font (1 = original, 1.3 = projector) */
+  :root{ --font-scale:1.5; }
   *{box-sizing:border-box;}
   input[type=checkbox], input[type=radio]{ accent-color:var(--accent); }
   html,body{margin:0;padding:0;background:var(--bg);color:var(--panel-text);font-family:var(--font-ui);}
@@ -59,14 +61,14 @@
     background:var(--panel);
   }
   header.app-head h1{
-    font-family:var(--font-serif); font-size:19px; font-weight:600; letter-spacing:0; margin:0;
+    font-family:var(--font-serif); font-size:calc(19px * var(--font-scale)); font-weight:600; letter-spacing:0; margin:0;
     color:var(--panel-text); white-space:nowrap;
   }
-  header.app-head h1 span{ font-family:var(--font-ui); font-size:13px; color:var(--panel-text-dim); font-weight:400; }
+  header.app-head h1 span{ font-family:var(--font-ui); font-size:calc(13px * var(--font-scale)); color:var(--panel-text-dim); font-weight:400; }
 
   nav.tabs{ display:flex; gap:2px; flex-wrap:wrap; }
   nav.tabs button{
-    font-family:var(--font-mono); font-size:12px; font-weight:500;
+    font-family:var(--font-mono); font-size:calc(12px * var(--font-scale)); font-weight:500;
     padding:9px 14px; border:1px solid transparent; border-radius:6px;
     background:transparent; color:var(--panel-text-dim); cursor:pointer;
     transition:background .15s, color .15s;
@@ -78,7 +80,7 @@
   nav.tabs button:disabled{ opacity:.38; cursor:default; }
 
   /* ---------- layout ---------- */
-  .layout{ display:grid; grid-template-columns:320px 1fr; min-height:calc(100vh - 57px); }
+  .layout{ display:grid; grid-template-columns:calc(320px * var(--font-scale)) minmax(0,1fr); min-height:calc(100vh - 57px); }
 
   aside.controls{
     background:var(--panel); border-right:1px solid var(--panel-border);
@@ -92,30 +94,30 @@
     background:#171310; overflow:hidden;
   }
   details.panel > summary{
-    list-style:none; cursor:pointer; padding:10px 12px; font-size:11.5px;
+    list-style:none; cursor:pointer; padding:10px 12px; font-size:calc(11.5px * var(--font-scale));
     font-family:var(--font-mono); font-weight:600; letter-spacing:.04em; text-transform:uppercase;
     color:var(--panel-text);
     display:flex; align-items:center; justify-content:space-between;
   }
   details.panel > summary::-webkit-details-marker{ display:none; }
   details.panel > summary::after{
-    content:"+"; color:var(--panel-text-dim); font-size:15px; font-weight:400;
+    content:"+"; color:var(--panel-text-dim); font-size:calc(15px * var(--font-scale)); font-weight:400;
   }
   details.panel[open] > summary::after{ content:"–"; }
   details.panel .panel-body{ padding:4px 12px 14px; }
 
   .field-row{ display:flex; align-items:center; gap:8px; margin:7px 0; }
-  .field-row label{ flex:1; font-size:12px; color:var(--panel-text-dim); }
+  .field-row label{ flex:1; font-size:calc(12px * var(--font-scale)); color:var(--panel-text-dim); }
   .field-row input[type=number]{
-    width:64px; background:#0d0a07; border:1px solid var(--panel-border); border-radius:5px;
-    color:var(--panel-text); font-family:var(--font-mono); font-size:12px; padding:5px 6px;
+    width:calc(64px * var(--font-scale)); background:#0d0a07; border:1px solid var(--panel-border); border-radius:5px;
+    color:var(--panel-text); font-family:var(--font-mono); font-size:calc(12px * var(--font-scale)); padding:5px 6px;
   }
   .field-row input[type=number]:focus{ outline:none; border-color:var(--accent); }
-  .field-row .unit{ font-size:10.5px; color:var(--panel-text-dim); width:44px; }
+  .field-row .unit{ font-size:calc(10.5px * var(--font-scale)); color:var(--panel-text-dim); width:calc(44px * var(--font-scale)); }
 
   .reset-btn{
     width:20px; height:20px; flex:none; border:none; border-radius:5px; background:transparent;
-    color:#ff8c1a; cursor:pointer; font-size:14px; font-weight:700; line-height:1;
+    color:#ff8c1a; cursor:pointer; font-size:calc(14px * var(--font-scale)); font-weight:700; line-height:1;
     display:flex; align-items:center; justify-content:center;
   }
   .reset-btn:hover{ background:#241f18; color:#ffb366; }
@@ -126,19 +128,19 @@
      so every value lines up under its "Pulse n" header and the ↺ buttons
      sit in the same right-hand column as the Delay / Total time ones. */
   .pulse-grid{
-    display:grid; grid-template-columns:minmax(0,1fr) repeat(3, 50px) 20px;
+    display:grid; grid-template-columns:minmax(0,1fr) repeat(3, calc(50px * var(--font-scale))) 20px;
     align-items:center; gap:6px 6px; margin:6px 0 10px;
   }
-  .pulse-grid .col-head{ font-size:10px; color:var(--panel-text-dim); text-align:center; }
+  .pulse-grid .col-head{ font-size:calc(10px * var(--font-scale)); color:var(--panel-text-dim); text-align:center; }
   .pulse-label{
     display:flex; flex-direction:column; line-height:1.15;
-    font-size:12px; color:var(--panel-text-dim); white-space:nowrap;
+    font-size:calc(12px * var(--font-scale)); color:var(--panel-text-dim); white-space:nowrap;
   }
-  .pulse-label span{ font-size:9.5px; opacity:.8; }
+  .pulse-label span{ font-size:calc(9.5px * var(--font-scale)); opacity:.8; }
   .pulse-grid input[type=number]{
     width:100%; min-width:0; box-sizing:border-box; background:#0d0a07;
     border:1px solid var(--panel-border); border-radius:5px; color:var(--panel-text);
-    font-family:var(--font-mono); font-size:12px; padding:5px 2px; text-align:center;
+    font-family:var(--font-mono); font-size:calc(12px * var(--font-scale)); padding:5px 2px; text-align:center;
     -moz-appearance:textfield; appearance:textfield;
   }
   .pulse-grid input[type=number]::-webkit-inner-spin-button,
@@ -146,62 +148,62 @@
   .pulse-grid input[type=number]:focus{ outline:none; border-color:var(--accent); }
   .row-label{
     display:flex; align-items:center; justify-content:space-between; gap:4px;
-    font-size:10px; color:var(--panel-text-dim); white-space:nowrap;
+    font-size:calc(10px * var(--font-scale)); color:var(--panel-text-dim); white-space:nowrap;
   }
 
   .subgrid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px 10px; margin:6px 0 10px; }
-  .subgrid .col-head{ font-size:10px; text-transform:none; color:var(--panel-text-dim); text-align:center; }
+  .subgrid .col-head{ font-size:calc(10px * var(--font-scale)); text-transform:none; color:var(--panel-text-dim); text-align:center; }
   .conc-cell{ display:flex; align-items:center; gap:2px; }
   .conc-cell input[type=number]{ flex:1; min-width:0; }
-  .conc-cell .unit{ font-size:9px; color:var(--panel-text-dim); flex-shrink:0; }
+  .conc-cell .unit{ font-size:calc(9px * var(--font-scale)); color:var(--panel-text-dim); flex-shrink:0; }
   .conc-cell .reset-btn{ flex-shrink:0; }
   .subgrid input[type=number]{
     width:100%; background:#0d0a07; border:1px solid var(--panel-border); border-radius:5px;
-    color:var(--panel-text); font-family:var(--font-mono); font-size:12px; padding:5px 4px; text-align:center;
+    color:var(--panel-text); font-family:var(--font-mono); font-size:calc(12px * var(--font-scale)); padding:5px 4px; text-align:center;
   }
 
-  .radio-row{ display:flex; gap:14px; margin:8px 0; font-size:12px; color:var(--panel-text-dim); }
+  .radio-row{ display:flex; gap:14px; margin:8px 0; font-size:calc(12px * var(--font-scale)); color:var(--panel-text-dim); }
   .radio-row label{ display:flex; align-items:center; gap:5px; cursor:pointer; }
 
   .readout-mini{
     display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; margin-top:10px;
     padding:9px 10px; background:#0d0a07; border-radius:6px; border:1px solid var(--panel-border);
-    font-family:var(--font-mono); font-size:11.5px;
+    font-family:var(--font-mono); font-size:calc(11.5px * var(--font-scale));
   }
   .readout-mini div{ color:var(--panel-text-dim); }
   .readout-mini strong{ color:var(--panel-text); font-weight:600; }
 
   .checklist{ display:flex; flex-direction:column; gap:7px; margin:6px 0; }
   .checklist label{
-    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--panel-text); cursor:pointer;
+    display:flex; align-items:center; gap:8px; font-size:calc(12.5px * var(--font-scale)); color:var(--panel-text); cursor:pointer;
   }
   .swatch{ width:10px; height:10px; border-radius:2px; flex:none; }
 
-  .axis-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--panel-text-dim); margin:12px 0 4px; }
+  .axis-label{ font-size:calc(10.5px * var(--font-scale)); text-transform:uppercase; letter-spacing:.06em; color:var(--panel-text-dim); margin:12px 0 4px; }
 
 
   button.run-btn{
     width:100%; margin-top:6px; padding:11px; border:none; border-radius:7px;
     background:var(--accent); color:#1c1408; font-family:var(--font-mono); font-weight:600;
-    font-size:12.5px; cursor:pointer; letter-spacing:.01em;
+    font-size:calc(12.5px * var(--font-scale)); cursor:pointer; letter-spacing:.01em;
   }
   button.run-btn:hover{ background:#f0b455; }
   button.ghost-btn{
     width:100%; margin-top:8px; padding:9px; border:1px solid var(--panel-border); border-radius:7px;
-    background:transparent; color:var(--panel-text-dim); font-family:var(--font-mono); font-size:11.5px; cursor:pointer;
+    background:transparent; color:var(--panel-text-dim); font-family:var(--font-mono); font-size:calc(11.5px * var(--font-scale)); cursor:pointer;
   }
   button.ghost-btn:hover{ color:var(--panel-text); border-color:var(--panel-text-dim); }
 
-  .toggle-row{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:var(--panel-text-dim); }
+  .toggle-row{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:calc(12px * var(--font-scale)); color:var(--panel-text-dim); }
 
   /* ---------- main stage ---------- */
   .stage-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
-  .stage-head h2{ font-size:14px; font-family:var(--font-mono); letter-spacing:.03em; text-transform:uppercase; margin:0; color:#f4ecd8; font-weight:600; }
-  .stage-head p{ margin:4px 0 0; font-size:12.5px; color:#b8ae95; }
+  .stage-head h2{ font-size:calc(14px * var(--font-scale)); font-family:var(--font-mono); letter-spacing:.03em; text-transform:uppercase; margin:0; color:#f4ecd8; font-weight:600; }
+  .stage-head p{ margin:4px 0 0; font-size:calc(12.5px * var(--font-scale)); color:#b8ae95; }
 
   .digital-readout{
     display:flex; gap:22px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--panel-border);
-    border-radius:8px; padding:10px 16px; margin-bottom:14px; font-family:var(--font-mono); font-size:12.5px;
+    border-radius:8px; padding:10px 16px; margin-bottom:14px; font-family:var(--font-mono); font-size:calc(12.5px * var(--font-scale));
   }
   .digital-readout div span.k{ color:var(--panel-text-dim); margin-right:6px; }
   .digital-readout div span.v{ color:#4dffa0; font-weight:600; }
@@ -211,11 +213,11 @@
   }
   .scope-canvas-wrap{ position:relative; width:100%; height:520px; }
   .scope-hint{
-    margin:8px 2px 0; font-size:11.5px; color:var(--panel-text-dim); text-align:center; line-height:1.5;
+    margin:8px 2px 0; font-size:calc(11.5px * var(--font-scale)); color:var(--panel-text-dim); text-align:center; line-height:1.5;
   }
   .scope-hint .mouse-key{
     display:inline-block; padding:0 6px; border:1px solid var(--panel-border); border-radius:4px;
-    background:#0d0a07; color:#ff8c1a; font-family:var(--font-mono); font-size:11px;
+    background:#0d0a07; color:#ff8c1a; font-family:var(--font-mono); font-size:calc(11px * var(--font-scale));
   }
   .vc-protocol-wrap{ position:relative; width:100%; height:72px; background:var(--scope-bg); border-radius:6px 6px 0 0; border-bottom:1px solid #2c2820; overflow:hidden; margin-bottom:0; }
 
@@ -223,12 +225,12 @@
 
   .picked-panel{ margin-top:18px; }
   .picked-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
-  .picked-head h3{ margin:0 0 2px; font-size:12px; font-family:var(--font-mono); letter-spacing:.04em; text-transform:uppercase; color:#f4ecd8; font-weight:600; }
-  .picked-head p{ margin:0; font-size:11.5px; color:#b8ae95; }
+  .picked-head h3{ margin:0 0 2px; font-size:calc(12px * var(--font-scale)); font-family:var(--font-mono); letter-spacing:.04em; text-transform:uppercase; color:#f4ecd8; font-weight:600; }
+  .picked-head p{ margin:0; font-size:calc(11.5px * var(--font-scale)); color:#b8ae95; }
   .picked-actions{ display:flex; gap:8px; flex:none; }
   .picked-actions button{
     padding:7px 12px; border-radius:6px; border:1px solid var(--panel-border); background:var(--panel);
-    color:var(--panel-text); font-family:var(--font-mono); font-size:11.5px; cursor:pointer;
+    color:var(--panel-text); font-family:var(--font-mono); font-size:calc(11.5px * var(--font-scale)); cursor:pointer;
   }
   .picked-actions button:hover{ border-color:var(--accent); color:#f0c37a; }
   .picked-actions button.primary{ background:var(--accent); border-color:var(--accent); color:#1c1408; }
@@ -240,16 +242,16 @@
     padding:12px 14px; display:flex; flex-direction:column;
   }
   .side-plot-head{ display:flex; flex-direction:column; gap:8px; margin-bottom:6px; }
-  .side-plot-toggle{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); cursor:pointer; }
-  .axis-selectors{ display:flex; align-items:center; gap:8px; font-size:12px; color:#b8ae95; }
+  .side-plot-toggle{ display:flex; align-items:center; gap:8px; font-size:calc(12.5px * var(--font-scale)); color:var(--ink); cursor:pointer; }
+  .axis-selectors{ display:flex; align-items:center; gap:8px; font-size:calc(12px * var(--font-scale)); color:#b8ae95; }
   .axis-selectors select{
     flex:1; min-width:0; background:#0d0a07; color:var(--ink); border:1px solid #2c2820; border-radius:6px;
-    font-family:var(--font-mono); font-size:11.5px; padding:5px 6px;
+    font-family:var(--font-mono); font-size:calc(11.5px * var(--font-scale)); padding:5px 6px;
   }
   .picked-plot-wrap{ position:relative; width:100%; flex:1; height:460px; margin-top:6px; }
   .side-column{ flex:1; min-width:0; display:flex; flex-direction:column; gap:16px; }
   .side-column .side-plot-panel{ flex:none; }
-  .side-column .picked-plot-wrap{ height:242px; }
+  .side-column .picked-plot-wrap{ flex:none; height:calc(200px * var(--font-scale)); }
 
   @media (max-width:1000px){
     .sim-row{ flex-direction:column; }
@@ -262,11 +264,11 @@
   .table-controls .left{ display:flex; align-items:center; gap:10px; }
   .table-controls select{
     background:var(--panel); color:var(--panel-text); border:1px solid var(--panel-border);
-    border-radius:6px; font-family:var(--font-mono); font-size:11.5px; padding:6px 8px;
+    border-radius:6px; font-family:var(--font-mono); font-size:calc(11.5px * var(--font-scale)); padding:6px 8px;
   }
   .table-controls button{
     padding:7px 12px; border-radius:6px; border:1px solid var(--panel-border); background:var(--panel);
-    color:var(--panel-text); font-family:var(--font-mono); font-size:11.5px; cursor:pointer;
+    color:var(--panel-text); font-family:var(--font-mono); font-size:calc(11.5px * var(--font-scale)); cursor:pointer;
   }
   .table-controls button:hover{ border-color:var(--accent); color:#f0c37a; }
   .table-controls button.primary{ background:var(--accent); border-color:var(--accent); color:#1c1408; }
@@ -276,7 +278,7 @@
     max-height:360px; overflow:auto; border:1px solid var(--panel-border); border-radius:8px;
     background:var(--scope-bg);
   }
-  table.data-table{ border-collapse:collapse; width:100%; font-family:var(--font-mono); font-size:11.5px; }
+  table.data-table{ border-collapse:collapse; width:100%; font-family:var(--font-mono); font-size:calc(11.5px * var(--font-scale)); }
   table.data-table thead th{
     position:sticky; top:0; background:#1c1914; color:var(--ink); text-align:right; padding:7px 10px;
     border-bottom:1px solid #2c2820; font-weight:600; white-space:nowrap;
@@ -285,7 +287,7 @@
   table.data-table td{ text-align:right; padding:4px 10px; color:#dff5e8; border-bottom:1px solid #2c2820; white-space:nowrap; }
   table.data-table tbody tr:hover{ background:#201b14; }
 
-  footer.note{ margin:22px 0 10px; font-size:11px; color:#b8ae95; line-height:1.6; max-width:760px; }
+  footer.note{ margin:22px 0 10px; font-size:calc(11px * var(--font-scale)); color:#b8ae95; line-height:1.6; max-width:760px; }
   footer.note code{ font-family:var(--font-mono); background:rgba(77,255,160,0.08); color:var(--phosphor); padding:1px 5px; border-radius:4px; }
 
   @media (max-width:860px){
@@ -297,13 +299,13 @@
   .tab-view{ display:none; }
   .tab-view.active{ display:grid; }
 
-  .family-note{ font-size:11px; color:#b8ae95; margin-top:6px; }
+  .family-note{ font-size:calc(11px * var(--font-scale)); color:#b8ae95; margin-top:6px; }
 </style>
 </head>
 <body>
 <!-- lab-nav:start -->
 <style>
-.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav{font:calc(12px * var(--font-scale))/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
 .lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
 .lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
 .lab-nav--foot{text-align:left;padding:18px 28px 24px}
@@ -1081,6 +1083,12 @@ const AXIS_COLORS = { na: '#e8a53d', k: '#4dc9ff', leak: '#b8ae95', stim: '#d969
 
 /* ---------- main chart ---------- */
 const mainCtx = document.getElementById('mainChart').getContext('2d');
+// Font scale shared with the CSS (--font-scale on :root)
+const FONT_SCALE = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale')) || 1;
+Chart.defaults.font.size = Math.round(12 * FONT_SCALE);
+// Trace thickness multiplier (1 = original). Applies to all traces, legend swatches and data points.
+const LINE_SCALE = 1.6;
+
 const mainChart = new Chart(mainCtx, {
   type: 'line',
   data: { datasets: [] },
@@ -1094,7 +1102,7 @@ const mainChart = new Chart(mainCtx, {
       legend: {
         display: true, position: 'top',
         labels: {
-          color: '#b8ae95', font: { size: 12 },
+          color: '#b8ae95', font: { size: Math.round(12 * FONT_SCALE) },
           generateLabels(chart){
             const seen = new Set();
             const items = [];
@@ -1104,7 +1112,7 @@ const mainChart = new Chart(mainCtx, {
               seen.add(ds.label);
               items.push({
                 text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor,
-                lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false
+                lineWidth: 2 * LINE_SCALE, pointStyle: 'line', datasetIndex: i, hidden: false, fontColor: '#f4ecd8'
               });
             });
             return items;
@@ -1127,13 +1135,13 @@ const mainChart = new Chart(mainCtx, {
 const stimCtx = document.getElementById('stimPreview').getContext('2d');
 const stimChart = new Chart(stimCtx, {
   type: 'line',
-  data: { datasets: [{ data: [], borderColor: '#d9694f', borderWidth: 2.5, pointRadius: 0, stepped: false }] },
+  data: { datasets: [{ data: [], borderColor: '#d9694f', borderWidth: 2.5 * LINE_SCALE, pointRadius: 0, stepped: false }] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { enabled: false } },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'ms', color: '#b8ae95', font: { size: 9 } }, ticks: { color: '#b8ae95', font: { size: 9 } }, grid: { color: 'rgba(77,255,160,0.16)' } },
-      y: { title: { display: true, text: 'µA', color: '#b8ae95', font: { size: 9 } }, ticks: { color: '#b8ae95', font: { size: 9 } }, grid: { color: 'rgba(77,255,160,0.16)' } }
+      x: { type: 'linear', title: { display: true, text: 'ms', color: '#b8ae95', font: { size: Math.round(9 * FONT_SCALE) } }, ticks: { color: '#b8ae95', font: { size: Math.round(9 * FONT_SCALE) } }, grid: { color: 'rgba(77,255,160,0.16)' } },
+      y: { title: { display: true, text: 'µA', color: '#b8ae95', font: { size: Math.round(9 * FONT_SCALE) } }, ticks: { color: '#b8ae95', font: { size: Math.round(9 * FONT_SCALE) } }, grid: { color: 'rgba(77,255,160,0.16)' } }
     }
   }
 });
@@ -1177,7 +1185,7 @@ function buildDatasets(run, opacity){
 
   datasets.push({
     label: 'Vm', yAxisID: 'yVm', borderColor: a(AXIS_COLORS.vm, opacity), backgroundColor: 'transparent',
-    borderWidth: 3, pointRadius: 0, sourceRun: run, sourceKey: 'Vm',
+    borderWidth: 3 * LINE_SCALE, pointRadius: 0, sourceRun: run, sourceKey: 'Vm',
     data: run.time.map((t,i) => ({ x: t, y: run.Vm[i] }))
   });
 
@@ -1187,7 +1195,7 @@ function buildDatasets(run, opacity){
       activeAxes.add(cfg.axis);
       datasets.push({
         label: cfg.label, yAxisID: cfg.axis, borderColor: a(cfg.color, opacity), backgroundColor: 'transparent',
-        borderWidth: 2.2, pointRadius: 0, sourceRun: run, sourceKey: cfg.key,
+        borderWidth: 2.2 * LINE_SCALE, pointRadius: 0, sourceRun: run, sourceKey: cfg.key,
         data: run.time.map((t,i) => ({ x: t, y: run[cfg.key][i] }))
       });
     }
@@ -1195,9 +1203,9 @@ function buildDatasets(run, opacity){
 
   if (el('chk-Erefs').checked){
     activeAxes.add('yVm');
-    datasets.push({ label: 'ENa', yAxisID: 'yVm', borderColor: a('#e8a53d', opacity), borderDash: [5,4], borderWidth: 1.8, pointRadius: 0,
+    datasets.push({ label: 'ENa', yAxisID: 'yVm', borderColor: a('#e8a53d', opacity), borderDash: [5 * LINE_SCALE, 4 * LINE_SCALE], borderWidth: 1.8 * LINE_SCALE, pointRadius: 0,
       data: [{ x: run.time[0], y: run.ENa }, { x: run.time[run.time.length-1], y: run.ENa }] });
-    datasets.push({ label: 'EK', yAxisID: 'yVm', borderColor: a('#4dc9ff', opacity), borderDash: [5,4], borderWidth: 1.8, pointRadius: 0,
+    datasets.push({ label: 'EK', yAxisID: 'yVm', borderColor: a('#4dc9ff', opacity), borderDash: [5 * LINE_SCALE, 4 * LINE_SCALE], borderWidth: 1.8 * LINE_SCALE, pointRadius: 0,
       data: [{ x: run.time[0], y: run.EK }, { x: run.time[run.time.length-1], y: run.EK }] });
   }
 
@@ -1276,7 +1284,7 @@ function runSimulation(){
   else if (mainChart.data.datasets.length){
     // dim the previous run's real traces and keep them (skip helper markers)
     const prevReal = mainChart.data.datasets.filter(ds => ds.label !== 'Cursor' && ds.label !== 'Picked points');
-    overlayDatasets.push(prevReal.map(ds => ({ ...ds, borderWidth: Math.max(1, ds.borderWidth - 0.4) })));
+    overlayDatasets.push(prevReal.map(ds => ({ ...ds, borderWidth: Math.max(LINE_SCALE, ds.borderWidth - 0.4 * LINE_SCALE) })));
     const MAX_OVERLAYS = 6; // keeps redraws (and every click/hover) fast no matter how many times Run is pressed
     if (overlayDatasets.length > MAX_OVERLAYS) overlayDatasets = overlayDatasets.slice(-MAX_OVERLAYS);
   }
@@ -1365,7 +1373,7 @@ function updateHoverMarker(hit){
   if (hit){
     mainChart.data.datasets.push({
       label: 'Cursor', yAxisID: hit.yAxisID, showLine: false,
-      pointRadius: 5, pointBackgroundColor: '#d9694f', pointBorderColor: '#f4ecd8', pointBorderWidth: 1.5,
+      pointRadius: 5 * LINE_SCALE, pointBackgroundColor: '#d9694f', pointBorderColor: '#f4ecd8', pointBorderWidth: 1.5,
       data: [{ x: hit.x, y: hit.y }]
     });
   }
@@ -1452,7 +1460,7 @@ function refreshPickedOverlay(){
   Object.keys(byAxis).forEach(axis => {
     mainChart.data.datasets.push({
       label: 'Picked points', yAxisID: axis, showLine: false, isPickedOverlay: true,
-      pointRadius: 5, pointHoverRadius: 6, pointBackgroundColor: '#f4ecd8',
+      pointRadius: 5 * LINE_SCALE, pointHoverRadius: 6 * LINE_SCALE, pointBackgroundColor: '#f4ecd8',
       pointBorderColor: '#e8a53d', pointBorderWidth: 2,
       data: byAxis[axis]
     });
@@ -1535,8 +1543,8 @@ const pickedPlotChart = new Chart(document.getElementById('pickedPlotChart').get
   type: 'scatter',
   data: { datasets: [{
     label: 'Picked points', data: [], showLine: false,
-    pointStyle: 'circle', pointRadius: 5, pointHoverRadius: 6,
-    backgroundColor: '#4dffa0', borderColor: '#4dffa0', borderWidth: 1
+    pointStyle: 'circle', pointRadius: 5 * LINE_SCALE, pointHoverRadius: 6 * LINE_SCALE,
+    backgroundColor: '#4dffa0', borderColor: '#4dffa0', borderWidth: 1 * LINE_SCALE
   }] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
@@ -1699,7 +1707,7 @@ const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext(
       legend: {
         display: true, position: 'top',
         labels: {
-          color: '#b8ae95', font: { size: 12 },
+          color: '#b8ae95', font: { size: Math.round(12 * FONT_SCALE) },
           generateLabels(chart){
             const seen = new Set();
             const items = [];
@@ -1707,7 +1715,7 @@ const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext(
               if (ds.label === 'Cursor' || ds.label === 'Picked points') return;
               if (seen.has(ds.label)) return;
               seen.add(ds.label);
-              items.push({ text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor, lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false });
+              items.push({ text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor, lineWidth: 2 * LINE_SCALE, pointStyle: 'line', datasetIndex: i, hidden: false, fontColor: '#f4ecd8' });
             });
             return items;
           }
@@ -1736,8 +1744,8 @@ const vcProtocolChartInst = new Chart(document.getElementById('vcProtocolChart')
       x: { type: 'linear', display: false },
       y: {
         position: 'left',
-        title: { display: true, text: 'Vm (mV)', color: '#4dffa0', font: { size: 9 } },
-        ticks: { color: '#4dffa0', font: { size: 9 }, maxTicksLimit: 3 },
+        title: { display: true, text: 'Vm (mV)', color: '#4dffa0', font: { size: Math.round(9 * FONT_SCALE) } },
+        ticks: { color: '#4dffa0', font: { size: Math.round(9 * FONT_SCALE) }, maxTicksLimit: 3 },
         grid: { color: 'rgba(77,255,160,0.10)' }
       }
     }
@@ -1761,7 +1769,7 @@ function vcBuildDatasets(run, opacity, labelSuffix, sweepColor = null){
         : vcAxisColor(cfg.color, opacity);
       datasets.push({
         label: cfg.label + labelSuffix, yAxisID: cfg.axis, borderColor: color,
-        backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0,
+        backgroundColor: 'transparent', borderWidth: 2.5 * LINE_SCALE, pointRadius: 0,
         sourceRun: run, sourceKey: cfg.key, // lets picking trace a click back to the exact run + variable + axis
         data: run.time.map((t,i) => ({ x: t, y: run[cfg.key][i] }))
       });
@@ -1812,7 +1820,7 @@ function vcApplyChartUpdate(){
       : vcAxisColor('#4dffa0', 1);
     protocolDatasets.push({
       data: run.time.map((t, k) => ({ x: t, y: run.Vm[k] })),
-      borderColor: protoColor, borderWidth: 1.8, pointRadius: 0, stepped: true
+      borderColor: protoColor, borderWidth: 1.8 * LINE_SCALE, pointRadius: 0, stepped: true
     });
   });
 
@@ -1837,7 +1845,7 @@ function vcRunSimulation(){
   if (!keepOverlay){ vcOverlayDatasets = []; }
   else if (vcMainChart.data.datasets.length){
     const prevReal = vcMainChart.data.datasets.filter(ds => ds.label !== 'Cursor' && !ds.isPickedOverlay);
-    vcOverlayDatasets.push(prevReal.map(ds => ({ ...ds, borderWidth: Math.max(1, ds.borderWidth - 0.4) })));
+    vcOverlayDatasets.push(prevReal.map(ds => ({ ...ds, borderWidth: Math.max(LINE_SCALE, ds.borderWidth - 0.4 * LINE_SCALE) })));
     if (vcOverlayDatasets.length > 6) vcOverlayDatasets = vcOverlayDatasets.slice(-6);
   }
 
@@ -1964,7 +1972,7 @@ function vcUpdateHoverMarker(hit){
   if (hit){
     vcMainChart.data.datasets.push({
       label: 'Cursor', yAxisID: hit.yAxisID, showLine: false,
-      pointRadius: 5, pointBackgroundColor: '#d9694f', pointBorderColor: '#f4ecd8', pointBorderWidth: 1.5,
+      pointRadius: 5 * LINE_SCALE, pointBackgroundColor: '#d9694f', pointBorderColor: '#f4ecd8', pointBorderWidth: 1.5,
       data: [{ x: hit.x, y: hit.y }]
     });
   }
@@ -2057,8 +2065,8 @@ const vcPickedPlotChart = new Chart(document.getElementById('vc-pickedPlotChart'
   type: 'scatter',
   data: { datasets: [{
     label: 'Picked points', data: [], showLine: false,
-    pointStyle: 'circle', pointRadius: 5, pointHoverRadius: 6,
-    backgroundColor: '#4dffa0', borderColor: '#4dffa0', borderWidth: 1
+    pointStyle: 'circle', pointRadius: 5 * LINE_SCALE, pointHoverRadius: 6 * LINE_SCALE,
+    backgroundColor: '#4dffa0', borderColor: '#4dffa0', borderWidth: 1 * LINE_SCALE
   }] },
   options: {
     animation: false, responsive: true, maintainAspectRatio: false,
@@ -2111,14 +2119,14 @@ const vcGatingChart = new Chart(document.getElementById('vc-gatingChart').getCon
       legend: {
         display: true, position: 'top',
         labels: {
-          color: '#b8ae95', font: { size: 11 },
+          color: '#b8ae95', font: { size: Math.round(11 * FONT_SCALE) },
           generateLabels(chart){
             const seen = new Set();
             const items = [];
             chart.data.datasets.forEach((ds, i) => {
               if (seen.has(ds.label)) return;
               seen.add(ds.label);
-              items.push({ text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor, lineWidth: 2, pointStyle: 'line', datasetIndex: i, hidden: false });
+              items.push({ text: ds.label, strokeStyle: ds.borderColor, fillStyle: ds.borderColor, lineWidth: 2 * LINE_SCALE, pointStyle: 'line', datasetIndex: i, hidden: false, fontColor: '#f4ecd8' });
             });
             return items;
           }
@@ -2142,7 +2150,7 @@ function vcRenderGatingChart(){
       if (!el(cfg.chk).checked) return;
       datasets.push({
         label: cfg.label, borderColor: vcAxisColor(cfg.color, opacity), backgroundColor: 'transparent',
-        borderWidth: 2.5, pointRadius: 0,
+        borderWidth: 2.5 * LINE_SCALE, pointRadius: 0,
         data: run.time.map((t, k) => ({ x: t, y: run[cfg.key][k] }))
       });
     });
@@ -2158,7 +2166,7 @@ function vcRefreshPickedOverlay(){
   Object.keys(byAxis).forEach(axis => {
     vcMainChart.data.datasets.push({
       label: 'Picked points', yAxisID: axis, showLine: false, isPickedOverlay: true,
-      pointRadius: 5, pointHoverRadius: 6, pointBackgroundColor: '#f4ecd8',
+      pointRadius: 5 * LINE_SCALE, pointHoverRadius: 6 * LINE_SCALE, pointBackgroundColor: '#f4ecd8',
       pointBorderColor: '#e8a53d', pointBorderWidth: 2,
       data: byAxis[axis]
     });
