@@ -115,12 +115,35 @@
 
   .reset-btn{
     width:20px; height:20px; flex:none; border:none; border-radius:5px; background:transparent;
-    color:var(--panel-text-dim); cursor:pointer; font-size:13px; line-height:1;
+    color:#ff8c1a; cursor:pointer; font-size:14px; font-weight:700; line-height:1;
     display:flex; align-items:center; justify-content:center;
   }
-  .reset-btn:hover{ background:#241f18; color:#f0c37a; }
+  .reset-btn:hover{ background:#241f18; color:#ffb366; }
 
   .subgrid.subgrid-4{ grid-template-columns:1.7fr 1fr 1fr 1fr; }
+
+  /* Stimulus pulse table: label | P1 | P2 | P3 | reset — fixed equal columns
+     so every value lines up under its "Pulse n" header and the ↺ buttons
+     sit in the same right-hand column as the Delay / Total time ones. */
+  .pulse-grid{
+    display:grid; grid-template-columns:minmax(0,1fr) repeat(3, 50px) 20px;
+    align-items:center; gap:6px 6px; margin:6px 0 10px;
+  }
+  .pulse-grid .col-head{ font-size:10px; color:var(--panel-text-dim); text-align:center; }
+  .pulse-label{
+    display:flex; flex-direction:column; line-height:1.15;
+    font-size:12px; color:var(--panel-text-dim); white-space:nowrap;
+  }
+  .pulse-label span{ font-size:9.5px; opacity:.8; }
+  .pulse-grid input[type=number]{
+    width:100%; min-width:0; box-sizing:border-box; background:#0d0a07;
+    border:1px solid var(--panel-border); border-radius:5px; color:var(--panel-text);
+    font-family:var(--font-mono); font-size:12px; padding:5px 2px; text-align:center;
+    -moz-appearance:textfield; appearance:textfield;
+  }
+  .pulse-grid input[type=number]::-webkit-inner-spin-button,
+  .pulse-grid input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  .pulse-grid input[type=number]:focus{ outline:none; border-color:var(--accent); }
   .row-label{
     display:flex; align-items:center; justify-content:space-between; gap:4px;
     font-size:10px; color:var(--panel-text-dim); white-space:nowrap;
@@ -187,6 +210,13 @@
     background:var(--scope-bg); border-radius:10px; padding:14px 18px 6px; border:1px solid #2c2820;
   }
   .scope-canvas-wrap{ position:relative; width:100%; height:520px; }
+  .scope-hint{
+    margin:8px 2px 0; font-size:11.5px; color:var(--panel-text-dim); text-align:center; line-height:1.5;
+  }
+  .scope-hint .mouse-key{
+    display:inline-block; padding:0 6px; border:1px solid var(--panel-border); border-radius:4px;
+    background:#0d0a07; color:#ff8c1a; font-family:var(--font-mono); font-size:11px;
+  }
   .vc-protocol-wrap{ position:relative; width:100%; height:72px; background:var(--scope-bg); border-radius:6px 6px 0 0; border-bottom:1px solid #2c2820; overflow:hidden; margin-bottom:0; }
 
   .stim-preview-wrap{ position:relative; width:100%; height:130px; background:var(--scope-bg); border-radius:6px; margin-top:8px; overflow:hidden; }
@@ -307,21 +337,22 @@ header.app-head{padding-left:28px;padding-right:28px}
           <span class="unit">ms</span>
           <button class="reset-btn" data-reset="in-delay" title="Reset to default">↺</button>
         </div>
-        <div class="subgrid subgrid-4">
-          <div class="col-head"></div>
+        <div class="pulse-grid">
+          <div></div>
           <div class="col-head">Pulse 1</div><div class="col-head">Pulse 2</div><div class="col-head">Pulse 3</div>
-        </div>
-        <div class="subgrid subgrid-4">
-          <div class="row-label">Amplitude (µA)<button class="reset-btn" data-reset="in-a1,in-a2,in-a3" title="Reset amplitudes to default">↺</button></div>
+          <div></div>
+
+          <div class="pulse-label">Amplitude<span>µA</span></div>
           <input type="number" id="in-a1" step="0.5" value="10">
           <input type="number" id="in-a2" step="0.5" value="0">
           <input type="number" id="in-a3" step="0.5" value="0">
-        </div>
-        <div class="subgrid subgrid-4">
-          <div class="row-label">Duration (ms)<button class="reset-btn" data-reset="in-d1,in-d2,in-d3" title="Reset durations to default">↺</button></div>
+          <button class="reset-btn" data-reset="in-a1,in-a2,in-a3" title="Reset amplitudes to default">↺</button>
+
+          <div class="pulse-label">Duration<span>ms</span></div>
           <input type="number" id="in-d1" step="0.05" value="0.25">
           <input type="number" id="in-d2" step="0.05" value="6.25">
-          <input type="number" id="in-d3" step="0.05" value="0.5">
+          <input type="number" id="in-d3" step="0.05" value="0.25">
+          <button class="reset-btn" data-reset="in-d1,in-d2,in-d3" title="Reset durations to default">↺</button>
         </div>
         <div class="field-row">
           <label>Total time</label>
@@ -434,6 +465,7 @@ header.app-head{padding-left:28px;padding-right:28px}
     <div class="sim-row">
       <div class="scope">
         <div class="scope-canvas-wrap"><canvas id="mainChart"></canvas></div>
+        <p class="scope-hint"><span class="mouse-key">Right-click</span> on a trace adds a point to the table · <span class="mouse-key">Left-click</span> on the plot removes the last point</p>
       </div>
       <div class="side-plot-panel">
         <div class="side-plot-head">
@@ -457,7 +489,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="picked-head">
         <div>
           <h3>Picked points</h3>
-          <p>Right-click anywhere on the plot to record the time and voltage under the cursor.</p>
+          <p>Right-click anywhere on the plot to record the time and voltage under the cursor. Left-click on the plot to undo the last point.</p>
         </div>
         <div class="picked-actions">
           <button id="btnCopyPicked" class="primary">Copy table</button>
@@ -677,6 +709,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="scope">
         <div class="vc-protocol-wrap"><canvas id="vcProtocolChart"></canvas></div>
         <div class="scope-canvas-wrap"><canvas id="vcMainChart"></canvas></div>
+        <p class="scope-hint"><span class="mouse-key">Right-click</span> on a trace adds a point to the table · <span class="mouse-key">Left-click</span> on the plot removes the last point</p>
       </div>
       <div class="side-column">
         <div class="side-plot-panel">
@@ -716,7 +749,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="picked-head">
         <div>
           <h3>Picked points</h3>
-          <p>Right-click any trace — including family runs and overlaid runs — to record its exact values at that point.</p>
+          <p>Right-click any trace — including family runs and overlaid runs — to record its exact values at that point. Left-click on the plot to undo the last point.</p>
         </div>
         <div class="picked-actions">
           <button id="vc-btnCopyPicked" class="primary">Copy table</button>
@@ -1024,7 +1057,7 @@ let apProgressTimer = null; // progressive trace-drawing timer for AP tab
 /* ---------- default values + reset-to-default wiring ---------- */
 const DEFAULTS = {
   'in-delay': 0.25, 'in-a1': 10, 'in-a2': 0, 'in-a3': 0,
-  'in-d1': 0.25, 'in-d2': 6.25, 'in-d3': 0.5, 'in-tend': 10,
+  'in-d1': 0.25, 'in-d2': 6.25, 'in-d3': 0.25, 'in-tend': 10,
   'in-gk': 36, 'in-gna': 120, 'in-gl': 0.3, 'in-radius': 238, 'in-temp': 6.3,
   'in-nao': 440, 'in-nai': 50, 'in-ko': 10, 'in-ki': 440, 'in-ttx': 0, 'in-pronase': 0
 };
@@ -1040,6 +1073,7 @@ document.querySelectorAll('.reset-btn[data-reset]').forEach(btn => {
 });
 el('btnResetAll').addEventListener('click', () => {
   el('in-nonideal').checked = true;
+  pickedPoints = [];          // table, mini plot and oscilloscope markers
   resetFields(Object.keys(DEFAULTS));
 });
 
@@ -1361,6 +1395,21 @@ document.getElementById('mainChart').addEventListener('contextmenu', (evt) => {
   }
 });
 
+/* Left-click inside the plotting area undoes the most recent right-click pick
+   (table row, mini-plot point and oscilloscope marker). Clicks on the legend
+   or axes are ignored so toggling a trace never removes a point. */
+function isInChartArea(chart, evt){
+  const rect = chart.canvas.getBoundingClientRect();
+  const x = evt.clientX - rect.left, y = evt.clientY - rect.top;
+  const a = chart.chartArea;
+  return !!a && x >= a.left && x <= a.right && y >= a.top && y <= a.bottom;
+}
+document.getElementById('mainChart').addEventListener('click', (evt) => {
+  if (evt.button !== 0 || !pickedPoints.length) return;
+  if (!isInChartArea(mainChart, evt)) return;
+  undoLastPickedPoint();
+});
+
 /* ---------- picked points (right-click capture) ---------- */
 let pickedPoints = [];
 
@@ -1399,7 +1448,7 @@ function renderPickedTable(){
 function refreshPickedOverlay(){
   mainChart.data.datasets = mainChart.data.datasets.filter(ds => !ds.isPickedOverlay);
   const byAxis = {};
-  pickedPoints.forEach(p => { (byAxis[p.markerAxis] = byAxis[p.markerAxis] || []).push({ x: p.time, y: p.markerY }); });
+  pickedPoints.forEach(p => { if (p.markerHidden) return; (byAxis[p.markerAxis] = byAxis[p.markerAxis] || []).push({ x: p.time, y: p.markerY }); });
   Object.keys(byAxis).forEach(axis => {
     mainChart.data.datasets.push({
       label: 'Picked points', yAxisID: axis, showLine: false, isPickedOverlay: true,
@@ -1426,6 +1475,20 @@ function addPickedPoint(hit){
 function clearPickedPoints(){
   pickedPoints = [];
   renderPickedTable();
+  refreshPickedOverlay();
+}
+
+function undoLastPickedPoint(){
+  if (!pickedPoints.length) return;
+  pickedPoints.pop();
+  renderPickedTable();
+  refreshPickedOverlay();
+}
+
+/* Removes the picked-point markers from the oscilloscope only; the table rows
+   and the mini plot keep their values. */
+function hidePickedMarkers(){
+  pickedPoints.forEach(p => { p.markerHidden = true; });
   refreshPickedOverlay();
 }
 
@@ -1547,6 +1610,7 @@ el('btnRun').addEventListener('click', runSimulation);
 el('btnClear').addEventListener('click', () => {
   if (apProgressTimer){ clearInterval(apProgressTimer); apProgressTimer = null; }
   overlayDatasets = [];
+  hidePickedMarkers();
   runSimulation();
 });
 el('btnCsv').addEventListener('click', downloadCsv);
@@ -1576,6 +1640,7 @@ document.querySelectorAll('.reset-btn[data-reset-vc]').forEach(btn => {
   btn.addEventListener('click', () => vcResetFields(btn.dataset.resetVc.split(',')));
 });
 el('vc-btnResetAll').addEventListener('click', () => {
+  vcPickedPoints = [];        // table, mini plot and oscilloscope markers
   el('vc-in-nonideal').checked = true;
   el('vc-chk-family').checked = false;
   el('vc-single-block').style.display = '';
@@ -1864,6 +1929,7 @@ el('vc-btnRun').addEventListener('click', vcRunSimulation);
 el('vc-btnClear').addEventListener('click', () => {
   if (vcFamilyTimer){ clearInterval(vcFamilyTimer); vcFamilyTimer = null; }
   vcOverlayDatasets = [];
+  vcHidePickedMarkers();
   vcRunSimulation();
 });
 // Variable and display checkboxes take effect on the next Run — no instant redraw
@@ -2088,7 +2154,7 @@ VC_GATE_CONFIG.forEach(cfg => { el(cfg.chk).addEventListener('change', vcRenderG
 function vcRefreshPickedOverlay(){
   vcMainChart.data.datasets = vcMainChart.data.datasets.filter(ds => !ds.isPickedOverlay);
   const byAxis = {};
-  vcPickedPoints.forEach(p => { (byAxis[p.markerAxis] = byAxis[p.markerAxis] || []).push({ x: p.time, y: p.markerY }); });
+  vcPickedPoints.forEach(p => { if (p.markerHidden) return; (byAxis[p.markerAxis] = byAxis[p.markerAxis] || []).push({ x: p.time, y: p.markerY }); });
   Object.keys(byAxis).forEach(axis => {
     vcMainChart.data.datasets.push({
       label: 'Picked points', yAxisID: axis, showLine: false, isPickedOverlay: true,
@@ -2111,6 +2177,22 @@ function vcAddPickedPoint(hit){
   vcRefreshPickedOverlay();
 }
 el('vc-btnClearPicked').addEventListener('click', () => { vcPickedPoints = []; vcRenderPickedTable(); vcRefreshPickedOverlay(); });
+
+function vcUndoLastPickedPoint(){
+  if (!vcPickedPoints.length) return;
+  vcPickedPoints.pop();
+  vcRenderPickedTable();
+  vcRefreshPickedOverlay();
+}
+function vcHidePickedMarkers(){
+  vcPickedPoints.forEach(p => { p.markerHidden = true; });
+  vcRefreshPickedOverlay();
+}
+document.getElementById('vcMainChart').addEventListener('click', (evt) => {
+  if (evt.button !== 0 || !vcPickedPoints.length) return;
+  if (!isInChartArea(vcMainChart, evt)) return;
+  vcUndoLastPickedPoint();
+});
 el('vc-btnCopyPicked').addEventListener('click', () => {
   if (!vcPickedPoints.length) return;
   const cols = vcActivePickedColumns();
