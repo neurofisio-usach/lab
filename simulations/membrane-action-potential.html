@@ -336,7 +336,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="panel-body">
         <div class="field-row">
           <label>Delay</label>
-          <input type="number" id="in-delay" step="0.05" min="0" max="20" value="0.25">
+          <input autocomplete="off" type="number" id="in-delay" step="0.05" min="0" max="20" value="0.25">
           <span class="unit">ms</span>
           <button class="reset-btn" data-reset="in-delay" title="Reset to default">↺</button>
         </div>
@@ -346,20 +346,20 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div></div>
 
           <div class="pulse-label">Amplitude<span>µA</span></div>
-          <input type="number" id="in-a1" step="0.5" value="10">
-          <input type="number" id="in-a2" step="0.5" value="0">
-          <input type="number" id="in-a3" step="0.5" value="0">
+          <input autocomplete="off" type="number" id="in-a1" step="0.5" value="10">
+          <input autocomplete="off" type="number" id="in-a2" step="0.5" value="0">
+          <input autocomplete="off" type="number" id="in-a3" step="0.5" value="0">
           <button class="reset-btn" data-reset="in-a1,in-a2,in-a3" title="Reset amplitudes to default">↺</button>
 
           <div class="pulse-label">Duration<span>ms</span></div>
-          <input type="number" id="in-d1" step="0.05" value="0.25">
-          <input type="number" id="in-d2" step="0.05" value="6.25">
-          <input type="number" id="in-d3" step="0.05" value="0.25">
+          <input autocomplete="off" type="number" id="in-d1" step="0.05" value="0.25">
+          <input autocomplete="off" type="number" id="in-d2" step="0.05" value="6.25">
+          <input autocomplete="off" type="number" id="in-d3" step="0.05" value="0.25">
           <button class="reset-btn" data-reset="in-d1,in-d2,in-d3" title="Reset durations to default">↺</button>
         </div>
         <div class="field-row">
           <label>Total time</label>
-          <input type="number" id="in-tend" step="0.5" min="1" max="50" value="10">
+          <input autocomplete="off" type="number" id="in-tend" step="0.5" min="1" max="50" value="10">
           <span class="unit">ms</span>
           <button class="reset-btn" data-reset="in-tend" title="Reset to default">↺</button>
         </div>
@@ -372,16 +372,16 @@ header.app-head{padding-left:28px;padding-right:28px}
     <details class="panel">
       <summary>Axon parameters</summary>
       <div class="panel-body">
-        <div class="field-row"><label>gK</label><input type="number" id="in-gk" step="1" value="36"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset="in-gk" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>gNa</label><input type="number" id="in-gna" step="1" value="120"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset="in-gna" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>gL</label><input type="number" id="in-gl" step="0.05" value="0.3"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset="in-gl" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Radius</label><input type="number" id="in-radius" step="1" value="238"><span class="unit">µm</span><button class="reset-btn" data-reset="in-radius" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Temperature</label><input type="number" id="in-temp" step="1" value="6.3"><span class="unit">°C</span><button class="reset-btn" data-reset="in-temp" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>gK</label><input autocomplete="off" type="number" id="in-gk" step="1" value="36"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset="in-gk" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>gNa</label><input autocomplete="off" type="number" id="in-gna" step="1" value="120"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset="in-gna" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>gL</label><input autocomplete="off" type="number" id="in-gl" step="0.05" value="0.3"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset="in-gl" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>Radius</label><input autocomplete="off" type="number" id="in-radius" step="1" value="238"><span class="unit">µm</span><button class="reset-btn" data-reset="in-radius" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>Temperature</label><input autocomplete="off" type="number" id="in-temp" step="1" value="6.3"><span class="unit">°C</span><button class="reset-btn" data-reset="in-temp" title="Reset to default">↺</button></div>
         <div class="radio-row">
-          <label><input type="radio" name="channelType" id="in-nonideal" checked> Non-ideal (HH) channels</label>
+          <label><input autocomplete="off" type="radio" name="channelType" id="in-nonideal" checked> Non-ideal (HH) channels</label>
         </div>
         <div class="radio-row" style="margin-top:-6px;">
-          <label><input type="radio" name="channelType" id="in-ideal"> Ideal (perfectly selective) channels</label>
+          <label><input autocomplete="off" type="radio" name="channelType" id="in-ideal"> Ideal (perfectly selective) channels</label>
         </div>
       </div>
     </details>
@@ -394,14 +394,14 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div class="col-head">Na⁺</div>
           <div class="col-head">K⁺</div>
           <div class="row-label">External</div>
-          <div class="conc-cell"><input type="number" id="in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nao" title="Reset to default">↺</button></div>
-          <div class="conc-cell"><input type="number" id="in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ko" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nao" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ko" title="Reset to default">↺</button></div>
           <div class="row-label">Internal</div>
-          <div class="conc-cell"><input type="number" id="in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nai" title="Reset to default">↺</button></div>
-          <div class="conc-cell"><input type="number" id="in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ki" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset="in-nai" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset="in-ki" title="Reset to default">↺</button></div>
         </div>
-        <div class="field-row"><label>TTX</label><input type="number" id="in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset="in-ttx" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Pronase</label><input type="number" id="in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset="in-pronase" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>TTX</label><input autocomplete="off" type="number" id="in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset="in-ttx" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>Pronase</label><input autocomplete="off" type="number" id="in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset="in-pronase" title="Reset to default">↺</button></div>
         <div class="readout-mini">
           <div>E<sub>Na</sub> <strong id="out-ena">—</strong> mV</div>
           <div>E<sub>K</sub> <strong id="out-ek">—</strong> mV</div>
@@ -416,31 +416,31 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="panel-body">
         <div class="axis-label">Current (mA/cm²)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:var(--stim)"></span><input type="checkbox" id="chk-Im" checked> I<sub>m</sub> — stimulus</label>
-          <label><span class="swatch" style="background:#7fae8f"></span><input type="checkbox" id="chk-Ii"> I<sub>i</sub> — total ionic</label>
-          <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="chk-IK"> I<sub>K</sub></label>
-          <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="chk-INa"> I<sub>Na</sub></label>
+          <label><span class="swatch" style="background:var(--stim)"></span><input autocomplete="off" type="checkbox" id="chk-Im" checked> I<sub>m</sub> — stimulus</label>
+          <label><span class="swatch" style="background:#7fae8f"></span><input autocomplete="off" type="checkbox" id="chk-Ii"> I<sub>i</sub> — total ionic</label>
+          <label><span class="swatch" style="background:var(--k)"></span><input autocomplete="off" type="checkbox" id="chk-IK"> I<sub>K</sub></label>
+          <label><span class="swatch" style="background:var(--na)"></span><input autocomplete="off" type="checkbox" id="chk-INa"> I<sub>Na</sub></label>
         </div>
         <div class="axis-label">Gating variables (0–1)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:#b98dfa"></span><input type="checkbox" id="chk-n"> n</label>
-          <label><span class="swatch" style="background:#d4c24d"></span><input type="checkbox" id="chk-m"> m</label>
-          <label><span class="swatch" style="background:#e85d9e"></span><input type="checkbox" id="chk-h"> h</label>
+          <label><span class="swatch" style="background:#b98dfa"></span><input autocomplete="off" type="checkbox" id="chk-n"> n</label>
+          <label><span class="swatch" style="background:#d4c24d"></span><input autocomplete="off" type="checkbox" id="chk-m"> m</label>
+          <label><span class="swatch" style="background:#e85d9e"></span><input autocomplete="off" type="checkbox" id="chk-h"> h</label>
         </div>
         <div class="axis-label">Conductance (mS/cm²)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="chk-gK"> g<sub>K</sub></label>
-          <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="chk-gNa"> g<sub>Na</sub></label>
+          <label><span class="swatch" style="background:var(--k)"></span><input autocomplete="off" type="checkbox" id="chk-gK"> g<sub>K</sub></label>
+          <label><span class="swatch" style="background:var(--na)"></span><input autocomplete="off" type="checkbox" id="chk-gNa"> g<sub>Na</sub></label>
         </div>
         <div class="toggle-row">
-          <input type="checkbox" id="chk-Erefs">
+          <input autocomplete="off" type="checkbox" id="chk-Erefs">
           <label for="chk-Erefs">Show E<sub>Na</sub> / E<sub>K</sub> reference lines</label>
         </div>
       </div>
     </details>
 
     <div class="toggle-row">
-      <input type="checkbox" id="chk-overlay">
+      <input autocomplete="off" type="checkbox" id="chk-overlay">
       <label for="chk-overlay">Keep previous trace (overlay)</label>
     </div>
     <button class="ghost-btn" id="btnClear">Clear overlays</button>
@@ -473,7 +473,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="side-plot-panel">
         <div class="side-plot-head">
           <label class="side-plot-toggle">
-            <input type="checkbox" id="chk-plotPicked">
+            <input autocomplete="off" type="checkbox" id="chk-plotPicked">
             Plot picked points
           </label>
           <div class="axis-selectors">
@@ -553,13 +553,13 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="panel-body">
         <div class="field-row">
           <label>Holding potential</label>
-          <input type="number" id="vc-in-hp" step="1" value="-70">
+          <input autocomplete="off" type="number" id="vc-in-hp" step="1" value="-70">
           <span class="unit">mV</span>
           <button class="reset-btn" data-reset-vc="vc-in-hp" title="Reset to default">↺</button>
         </div>
         <div class="field-row">
           <label>Delay</label>
-          <input type="number" id="vc-in-delay" step="0.1" min="0" value="1">
+          <input autocomplete="off" type="number" id="vc-in-delay" step="0.1" min="0" value="1">
           <span class="unit">ms</span>
           <button class="reset-btn" data-reset-vc="vc-in-delay" title="Reset to default">↺</button>
         </div>
@@ -569,20 +569,20 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div></div>
 
           <div class="pulse-label">Potential<span>mV</span></div>
-          <input type="number" id="vc-in-vtest" step="5" value="-30">
-          <input type="number" id="vc-in-v2" step="5" value="-70">
-          <input type="number" id="vc-in-v3" step="5" value="-70">
+          <input autocomplete="off" type="number" id="vc-in-vtest" step="5" value="-30">
+          <input autocomplete="off" type="number" id="vc-in-v2" step="5" value="-70">
+          <input autocomplete="off" type="number" id="vc-in-v3" step="5" value="-70">
           <button class="reset-btn" data-reset-vc="vc-in-vtest,vc-in-v2,vc-in-v3" title="Reset potentials to default">↺</button>
 
           <div class="pulse-label">Duration<span>ms</span></div>
-          <input type="number" id="vc-in-pulsedur" step="0.5" min="0" value="8">
-          <input type="number" id="vc-in-d2" step="0.5" min="0" value="0">
-          <input type="number" id="vc-in-d3" step="0.5" min="0" value="0">
+          <input autocomplete="off" type="number" id="vc-in-pulsedur" step="0.5" min="0" value="8">
+          <input autocomplete="off" type="number" id="vc-in-d2" step="0.5" min="0" value="0">
+          <input autocomplete="off" type="number" id="vc-in-d3" step="0.5" min="0" value="0">
           <button class="reset-btn" data-reset-vc="vc-in-pulsedur,vc-in-d2,vc-in-d3" title="Reset durations to default">↺</button>
         </div>
         <p class="family-note">Pulses run back to back; a pulse with duration 0 is skipped. For paired pulses, set Pulse 2 to the holding potential as the interpulse interval.</p>
         <div class="toggle-row" style="margin-top:2px;">
-          <input type="checkbox" id="vc-chk-family">
+          <input autocomplete="off" type="checkbox" id="vc-chk-family">
           <label for="vc-chk-family">Family of Pulse 1 potentials</label>
         </div>
         <div id="vc-family-block" style="display:none;">
@@ -590,21 +590,21 @@ header.app-head{padding-left:28px;padding-right:28px}
             <div class="col-head">From</div><div class="col-head">To</div><div class="col-head">Step</div><div class="col-head"></div>
           </div>
           <div class="subgrid subgrid-4">
-            <input type="number" id="vc-in-vfrom" step="5" value="-40">
-            <input type="number" id="vc-in-vto" step="5" value="60">
-            <input type="number" id="vc-in-vstep" step="5" value="10">
+            <input autocomplete="off" type="number" id="vc-in-vfrom" step="5" value="-40">
+            <input autocomplete="off" type="number" id="vc-in-vto" step="5" value="60">
+            <input autocomplete="off" type="number" id="vc-in-vstep" step="5" value="10">
             <button class="reset-btn" data-reset-vc="vc-in-vfrom,vc-in-vto,vc-in-vstep" title="Reset to default">↺</button>
           </div>
           <p class="family-note">Runs one clamp per Pulse 1 potential and overlays them; Pulses 2 and 3 stay fixed.</p>
         </div>
 
         <div class="toggle-row" style="display:none;">
-          <input type="checkbox" id="vc-chk-tail" checked>
+          <input autocomplete="off" type="checkbox" id="vc-chk-tail" checked>
           <label for="vc-chk-tail">Return to holding potential (tail)</label>
         </div>
         <div class="field-row">
           <label>Tail duration</label>
-          <input type="number" id="vc-in-taildur" step="0.5" min="0.1" value="4">
+          <input autocomplete="off" type="number" id="vc-in-taildur" step="0.5" min="0.1" value="4">
           <span class="unit">ms</span>
           <button class="reset-btn" data-reset-vc="vc-in-taildur" title="Reset to default">↺</button>
         </div>
@@ -616,15 +616,15 @@ header.app-head{padding-left:28px;padding-right:28px}
     <details class="panel">
       <summary>Axon parameters</summary>
       <div class="panel-body">
-        <div class="field-row"><label>gK</label><input type="number" id="vc-in-gk" step="1" value="36"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset-vc="vc-in-gk" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>gNa</label><input type="number" id="vc-in-gna" step="1" value="120"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset-vc="vc-in-gna" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>gL</label><input type="number" id="vc-in-gl" step="0.05" value="0.3"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset-vc="vc-in-gl" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Temperature</label><input type="number" id="vc-in-temp" step="1" value="6.3"><span class="unit">°C</span><button class="reset-btn" data-reset-vc="vc-in-temp" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>gK</label><input autocomplete="off" type="number" id="vc-in-gk" step="1" value="36"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset-vc="vc-in-gk" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>gNa</label><input autocomplete="off" type="number" id="vc-in-gna" step="1" value="120"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset-vc="vc-in-gna" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>gL</label><input autocomplete="off" type="number" id="vc-in-gl" step="0.05" value="0.3"><span class="unit">mS/cm²</span><button class="reset-btn" data-reset-vc="vc-in-gl" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>Temperature</label><input autocomplete="off" type="number" id="vc-in-temp" step="1" value="6.3"><span class="unit">°C</span><button class="reset-btn" data-reset-vc="vc-in-temp" title="Reset to default">↺</button></div>
         <div class="radio-row">
-          <label><input type="radio" name="vc-channelType" id="vc-in-nonideal" checked> Non-ideal (HH) channels</label>
+          <label><input autocomplete="off" type="radio" name="vc-channelType" id="vc-in-nonideal" checked> Non-ideal (HH) channels</label>
         </div>
         <div class="radio-row" style="margin-top:-6px;">
-          <label><input type="radio" name="vc-channelType" id="vc-in-ideal"> Ideal (perfectly selective) channels</label>
+          <label><input autocomplete="off" type="radio" name="vc-channelType" id="vc-in-ideal"> Ideal (perfectly selective) channels</label>
         </div>
       </div>
     </details>
@@ -637,14 +637,14 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div class="col-head">Na⁺</div>
           <div class="col-head">K⁺</div>
           <div class="row-label">External</div>
-          <div class="conc-cell"><input type="number" id="vc-in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nao" title="Reset to default">↺</button></div>
-          <div class="conc-cell"><input type="number" id="vc-in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ko" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="vc-in-nao" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nao" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="vc-in-ko" step="1" value="10"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ko" title="Reset to default">↺</button></div>
           <div class="row-label">Internal</div>
-          <div class="conc-cell"><input type="number" id="vc-in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nai" title="Reset to default">↺</button></div>
-          <div class="conc-cell"><input type="number" id="vc-in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ki" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="vc-in-nai" step="10" value="50"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-nai" title="Reset to default">↺</button></div>
+          <div class="conc-cell"><input autocomplete="off" type="number" id="vc-in-ki" step="10" value="440"><span class="unit">mM</span><button class="reset-btn" data-reset-vc="vc-in-ki" title="Reset to default">↺</button></div>
         </div>
-        <div class="field-row"><label>TTX</label><input type="number" id="vc-in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset-vc="vc-in-ttx" title="Reset to default">↺</button></div>
-        <div class="field-row"><label>Pronase</label><input type="number" id="vc-in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset-vc="vc-in-pronase" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>TTX</label><input autocomplete="off" type="number" id="vc-in-ttx" step="1" min="0" value="0"><span class="unit">nM</span><button class="reset-btn" data-reset-vc="vc-in-ttx" title="Reset to default">↺</button></div>
+        <div class="field-row"><label>Pronase</label><input autocomplete="off" type="number" id="vc-in-pronase" step="0.05" min="0" max="1" value="0"><span class="unit">frac</span><button class="reset-btn" data-reset-vc="vc-in-pronase" title="Reset to default">↺</button></div>
         <div class="readout-mini">
           <div>E<sub>Na</sub> <strong id="vc-out-ena">—</strong> mV</div>
           <div>E<sub>K</sub> <strong id="vc-out-ek">—</strong> mV</div>
@@ -659,35 +659,35 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="panel-body">
         <div class="axis-label">Command potential</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:var(--vm)"></span><input type="checkbox" id="vc-chk-Vm"> V<sub>m</sub> — command</label>
+          <label><span class="swatch" style="background:var(--vm)"></span><input autocomplete="off" type="checkbox" id="vc-chk-Vm"> V<sub>m</sub> — command</label>
         </div>
         <div class="axis-label">Current (mA/cm²)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="vc-chk-INa"> I<sub>Na</sub></label>
-          <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="vc-chk-IK"> I<sub>K</sub></label>
-          <label><span class="swatch" style="background:#7fae8f"></span><input type="checkbox" id="vc-chk-IL"> I<sub>L</sub></label>
-          <label><span class="swatch" style="background:#a89a7f"></span><input type="checkbox" id="vc-chk-Ii" checked> I<sub>i</sub> — total ionic</label>
+          <label><span class="swatch" style="background:var(--na)"></span><input autocomplete="off" type="checkbox" id="vc-chk-INa"> I<sub>Na</sub></label>
+          <label><span class="swatch" style="background:var(--k)"></span><input autocomplete="off" type="checkbox" id="vc-chk-IK"> I<sub>K</sub></label>
+          <label><span class="swatch" style="background:#7fae8f"></span><input autocomplete="off" type="checkbox" id="vc-chk-IL"> I<sub>L</sub></label>
+          <label><span class="swatch" style="background:#a89a7f"></span><input autocomplete="off" type="checkbox" id="vc-chk-Ii" checked> I<sub>i</sub> — total ionic</label>
         </div>
         <div class="axis-label">Gating variables (0–1)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:#b98dfa"></span><input type="checkbox" id="vc-chk-n"> n</label>
-          <label><span class="swatch" style="background:#d4c24d"></span><input type="checkbox" id="vc-chk-m"> m</label>
-          <label><span class="swatch" style="background:#e85d9e"></span><input type="checkbox" id="vc-chk-h"> h</label>
+          <label><span class="swatch" style="background:#b98dfa"></span><input autocomplete="off" type="checkbox" id="vc-chk-n"> n</label>
+          <label><span class="swatch" style="background:#d4c24d"></span><input autocomplete="off" type="checkbox" id="vc-chk-m"> m</label>
+          <label><span class="swatch" style="background:#e85d9e"></span><input autocomplete="off" type="checkbox" id="vc-chk-h"> h</label>
         </div>
         <div class="axis-label">Conductance (mS/cm²)</div>
         <div class="checklist">
-          <label><span class="swatch" style="background:var(--k)"></span><input type="checkbox" id="vc-chk-gK"> g<sub>K</sub></label>
-          <label><span class="swatch" style="background:var(--na)"></span><input type="checkbox" id="vc-chk-gNa"> g<sub>Na</sub></label>
+          <label><span class="swatch" style="background:var(--k)"></span><input autocomplete="off" type="checkbox" id="vc-chk-gK"> g<sub>K</sub></label>
+          <label><span class="swatch" style="background:var(--na)"></span><input autocomplete="off" type="checkbox" id="vc-chk-gNa"> g<sub>Na</sub></label>
         </div>
       </div>
     </details>
 
     <div class="toggle-row">
-      <input type="checkbox" id="vc-chk-overlay">
+      <input autocomplete="off" type="checkbox" id="vc-chk-overlay">
       <label for="vc-chk-overlay">Keep previous run (overlay)</label>
     </div>
     <div class="toggle-row">
-      <input type="checkbox" id="vc-chk-rainbow">
+      <input autocomplete="off" type="checkbox" id="vc-chk-rainbow">
       <label for="vc-chk-rainbow">Color sweeps by voltage step</label>
     </div>
     <button class="ghost-btn" id="vc-btnClear">Clear overlays</button>
@@ -721,7 +721,7 @@ header.app-head{padding-left:28px;padding-right:28px}
         <div class="side-plot-panel">
           <div class="side-plot-head">
             <label class="side-plot-toggle">
-              <input type="checkbox" id="vc-chk-plotPicked">
+              <input autocomplete="off" type="checkbox" id="vc-chk-plotPicked">
               Plot picked points
             </label>
             <div class="axis-selectors">
@@ -739,9 +739,9 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div class="side-plot-head">
             <div class="side-plot-toggle" style="cursor:default;">Gating particles</div>
             <div class="axis-selectors">
-              <label><input type="checkbox" id="vc-chk-gate-n"> n</label>
-              <label><input type="checkbox" id="vc-chk-gate-m"> m</label>
-              <label><input type="checkbox" id="vc-chk-gate-h"> h</label>
+              <label><input autocomplete="off" type="checkbox" id="vc-chk-gate-n"> n</label>
+              <label><input autocomplete="off" type="checkbox" id="vc-chk-gate-m"> m</label>
+              <label><input autocomplete="off" type="checkbox" id="vc-chk-gate-h"> h</label>
             </div>
           </div>
           <div class="picked-plot-wrap">
@@ -1718,8 +1718,26 @@ const VC_VAR_CONFIG = [
   { chk: 'vc-chk-gNa', key: 'gNa', label: 'gNa', axis: 'vcyCond', color: AXIS_COLORS.na }
 ];
 
+/* Keeps the protocol strip's plot area horizontally aligned with the oscilloscope:
+   after the main chart lays out, its left/right axis bands are copied to the strip,
+   so the same time sits at the same pixel column in both charts. */
+const vcAlign = { left: 0, right: 0 };
+const vcAlignPlugin = {
+  id: 'vcAlignProtocol',
+  afterLayout(chart){
+    const left = chart.chartArea.left, right = chart.width - chart.chartArea.right;
+    if (Math.abs(left - vcAlign.left) < 0.5 && Math.abs(right - vcAlign.right) < 0.5) return;
+    vcAlign.left = left; vcAlign.right = right;
+    if (typeof vcProtocolChartInst !== 'undefined'){
+      vcProtocolChartInst.options.layout.padding.right = right;
+      vcProtocolChartInst.update('none');
+    }
+  }
+};
+
 const vcMainChart = new Chart(document.getElementById('vcMainChart').getContext('2d'), {
   type: 'line',
+  plugins: [vcAlignPlugin],
   data: { datasets: [] },
   options: {
     animation: false, parsing: false, responsive: true, maintainAspectRatio: false,
@@ -1761,10 +1779,12 @@ const vcProtocolChartInst = new Chart(document.getElementById('vcProtocolChart')
   options: {
     animation: false, parsing: false, responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    layout: { padding: { left: 0, right: 0, top: 4, bottom: 4 } },
     scales: {
       x: { type: 'linear', display: false },
       y: {
         position: 'left',
+        afterFit(scale){ if (vcAlign.left > 0) scale.width = vcAlign.left; },
         title: { display: true, text: 'Vm (mV)', color: '#4dffa0', font: { size: Math.round(9 * FONT_SCALE) } },
         ticks: { color: '#4dffa0', font: { size: Math.round(9 * FONT_SCALE) }, maxTicksLimit: 3 },
         grid: { color: 'rgba(77,255,160,0.10)' }
@@ -1849,8 +1869,14 @@ function vcApplyChartUpdate(){
   vcOverlayDatasets.forEach(group => { allDatasets = allDatasets.concat(group); });
   vcMainChart.data.datasets = allDatasets;
 
-  // Update protocol chart
-  const tEnd = vcCurrentRuns[0].time[vcCurrentRuns[0].time.length - 1];
+  // Same time window for the oscilloscope and the protocol strip
+  let tEnd = 0;
+  vcCurrentRuns.forEach(r => { tEnd = Math.max(tEnd, r.time[r.time.length - 1]); });
+  vcOverlayDatasets.forEach(group => group.forEach(ds => {
+    if (ds.data && ds.data.length) tEnd = Math.max(tEnd, ds.data[ds.data.length - 1].x);
+  }));
+  vcMainChart.options.scales.x.min = 0;
+  vcMainChart.options.scales.x.max = tEnd;
   vcProtocolChartInst.options.scales.x.min = 0;
   vcProtocolChartInst.options.scales.x.max = tEnd;
   vcProtocolChartInst.data.datasets = protocolDatasets;
@@ -1875,6 +1901,10 @@ function vcRunSimulation(){
   }
 
   let lastFamilyRun = null;
+
+  // A single run must also stop a family that is still revealing traces;
+  // otherwise its timer keeps pushing old sweeps (and its axis lock) onto the plot.
+  if (vcFamilyTimer){ clearInterval(vcFamilyTimer); vcFamilyTimer = null; }
 
   if (!family){
     // Clear any axis locks left by a previous family run
