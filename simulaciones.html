@@ -10,6 +10,8 @@
 <style>
   .card h3 a { color: inherit; text-decoration: none; }
   .card h3 a:hover { color: var(--trace-dim); text-decoration: underline; }
+  .sim-list { grid-template-columns: 1fr; }
+  .sim-list .card p:last-child { margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -53,7 +55,7 @@
       <p>Las simulaciones siguen el recorrido clásico de un curso de electrofisiología: primero la generación y propagación del potencial de acción, luego el canal iónico individual que lo hace posible, y finalmente la transmisión sináptica — cuántica, central y plástica, tanto de corto como de largo plazo. Cada simulador corre directamente en el navegador.</p>
     </div>
 
-    <div class="grid-3" style="grid-template-columns: 1fr; max-width: 760px;">
+    <div class="grid-3 sim-list">
       <article class="card">
         <h3><a href="simulations/rc-membrane-simulator.html">La membrana como circuito RC</a></h3>
         <p>Tres pestañas sobre la membrana como circuito RC: carga y descarga bajo un pulso de corriente, cómo la capacitancia escala con el tamaño de la célula, y cuánta carga (Q = CV) se necesita para cambiar el potencial de membrana.</p>
