@@ -553,7 +553,7 @@ header.app-head{padding-left:28px;padding-right:28px}
       <div class="panel-body">
         <div class="field-row">
           <label>Holding potential</label>
-          <input autocomplete="off" type="number" id="vc-in-hp" step="1" value="-70">
+          <input autocomplete="off" type="number" id="vc-in-hp" max="70" step="1" value="-70">
           <span class="unit">mV</span>
           <button class="reset-btn" data-reset-vc="vc-in-hp" title="Reset to default">↺</button>
         </div>
@@ -569,9 +569,9 @@ header.app-head{padding-left:28px;padding-right:28px}
           <div></div>
 
           <div class="pulse-label">Potential<span>mV</span></div>
-          <input autocomplete="off" type="number" id="vc-in-vtest" step="5" value="-30">
-          <input autocomplete="off" type="number" id="vc-in-v2" step="5" value="-70">
-          <input autocomplete="off" type="number" id="vc-in-v3" step="5" value="-70">
+          <input autocomplete="off" type="number" id="vc-in-vtest" max="70" step="5" value="-30">
+          <input autocomplete="off" type="number" id="vc-in-v2" max="70" step="5" value="-70">
+          <input autocomplete="off" type="number" id="vc-in-v3" max="70" step="5" value="-70">
           <button class="reset-btn" data-reset-vc="vc-in-vtest,vc-in-v2,vc-in-v3" title="Reset potentials to default">↺</button>
 
           <div class="pulse-label">Duration<span>ms</span></div>
@@ -590,8 +590,8 @@ header.app-head{padding-left:28px;padding-right:28px}
             <div class="col-head">From</div><div class="col-head">To</div><div class="col-head">Step</div><div class="col-head"></div>
           </div>
           <div class="subgrid subgrid-4">
-            <input autocomplete="off" type="number" id="vc-in-vfrom" step="5" value="-40">
-            <input autocomplete="off" type="number" id="vc-in-vto" step="5" value="60">
+            <input autocomplete="off" type="number" id="vc-in-vfrom" max="70" step="5" value="-40">
+            <input autocomplete="off" type="number" id="vc-in-vto" max="70" step="5" value="60">
             <input autocomplete="off" type="number" id="vc-in-vstep" step="5" value="10">
             <button class="reset-btn" data-reset-vc="vc-in-vfrom,vc-in-vto,vc-in-vstep" title="Reset to default">↺</button>
           </div>
@@ -1281,7 +1281,9 @@ function applyChartUpdate(progressive = false){
   }, INTERVAL_MS);
 }
 
-function runSimulation(){
+/* fresh: true when called from "Clear overlays" — the plot restarts empty even if
+   overlay is on, instead of pushing the trace being cleared back in as an overlay. */
+function runSimulation({ fresh = false } = {}){
   const p = deriveTS23(readParams());
   const run = HH.simulateMembraneAP(p);
   lastRun = run;
@@ -1297,7 +1299,7 @@ function runSimulation(){
     // previous traces are gone, so their markers go too (values stay in the table)
     pickedPoints.forEach(pt => { pt.markerHidden = true; });
   }
-  else if (mainChart.data.datasets.length){
+  else if (!fresh && mainChart.data.datasets.length){
     // dim the previous run's real traces and keep them (skip helper markers)
     const prevReal = mainChart.data.datasets.filter(ds => ds.label !== 'Cursor' && ds.label !== 'Picked points');
     overlayDatasets.push(prevReal.map(ds => ({ ...ds, borderWidth: Math.max(LINE_SCALE, ds.borderWidth - 0.4 * LINE_SCALE) })));
@@ -1630,12 +1632,12 @@ el('btnClearPicked').addEventListener('click', clearPickedPoints);
   el(id).addEventListener('input', updateStimPreview);
 });
 
-el('btnRun').addEventListener('click', runSimulation);
+el('btnRun').addEventListener('click', () => runSimulation());
 el('btnClear').addEventListener('click', () => {
   if (apProgressTimer){ clearInterval(apProgressTimer); apProgressTimer = null; }
   overlayDatasets = [];
   hidePickedMarkers();
-  runSimulation();
+  runSimulation({ fresh: true });
 });
 el('btnCsv').addEventListener('click', downloadCsv);
 el('selResolution').addEventListener('change', renderTable);
@@ -1679,15 +1681,24 @@ el('vc-chk-family').addEventListener('change', () => {
   el('vc-family-block').style.display = fam ? '' : 'none';
 });
 
+/* Largest command potential the amplifier will apply. Values above it are clipped
+   (and the field is rewritten) so students see what was actually applied. */
+const VC_VMAX = 70;
+function vcVolt(id){
+  const v = numOr(id, VC_DEFAULTS[id]);
+  if (v > VC_VMAX){ el(id).value = VC_VMAX; return VC_VMAX; }
+  return v;
+}
+
 function vcReadParams(){
   const d = VC_DEFAULTS, n = (id) => numOr(id, d[id]);
   return {
-    HP: n('vc-in-hp'),
+    HP: vcVolt('vc-in-hp'),
     delay: n('vc-in-delay'),
     pulseDur: n('vc-in-pulsedur'),
     pulses: [
-      { V: n('vc-in-v2'), dur: n('vc-in-d2') },
-      { V: n('vc-in-v3'), dur: n('vc-in-d3') }
+      { V: vcVolt('vc-in-v2'), dur: n('vc-in-d2') },
+      { V: vcVolt('vc-in-v3'), dur: n('vc-in-d3') }
     ],
     tail: true,
     tailDur: n('vc-in-taildur'),
@@ -1837,6 +1848,66 @@ let vcFamilyTimer = null;   // progressive family-trace reveal timer
 
 const VC_MAX_FAMILY_STEPS = 25; // guards against a tiny/zero step spawning huge numbers of traces
 
+/* ---------- fixed y-axis for single pulses ----------
+   Before a single pulse is drawn, the same protocol is simulated silently for
+   every Pulse-1 potential from VC_SWEEP_VMIN up to VC_VMAX (+70 mV). The extremes
+   of those hidden sweeps set the current (and conductance) axes, so the axes
+   already have room for any pulse a student can apply and overlaid traces never
+   rescale. With overlay on, the lock only grows (union with the previous lock),
+   so a parameter change (e.g. TTX) never clips traces that are still on screen. */
+const VC_SWEEP_VMIN = -120, VC_SWEEP_STEP = 5;
+const VC_LOCKED_AXES = ['vcyCurrent', 'vcyCond'];
+let vcYLock = {};           // axis id -> { min, max } (unpadded data range)
+
+function vcEnvelope(runs){
+  const env = {};
+  VC_VAR_CONFIG.forEach(cfg => {
+    if (!VC_LOCKED_AXES.includes(cfg.axis) || !el(cfg.chk).checked) return;
+    const e = env[cfg.axis] || (env[cfg.axis] = { min: Infinity, max: -Infinity });
+    runs.forEach(run => {
+      for (const v of run[cfg.key]){
+        if (isFinite(v)){ if (v < e.min) e.min = v; if (v > e.max) e.max = v; }
+      }
+    });
+  });
+  return env;
+}
+
+function vcSweepEnvelope(p, Vtest){
+  const vs = [];
+  for (let v = VC_SWEEP_VMIN; v <= VC_VMAX + 1e-9; v += VC_SWEEP_STEP) vs.push(v);
+  if (!vs.includes(Vtest)) vs.push(Vtest); // exact peak of the pulse actually applied
+  return vcEnvelope(vs.map(V => HH.simulateVoltageClamp(p, V)));
+}
+
+function vcApplyYLock(env, keepOverlay){
+  const next = {};
+  VC_LOCKED_AXES.forEach(ax => {
+    const e = env[ax], prev = keepOverlay ? vcYLock[ax] : null;
+    if (e && isFinite(e.min) && isFinite(e.max)){
+      next[ax] = prev ? { min: Math.min(prev.min, e.min), max: Math.max(prev.max, e.max) } : { min: e.min, max: e.max };
+    } else if (prev){
+      next[ax] = prev;
+    }
+    const sc = vcMainChart.options.scales[ax];
+    if (next[ax]){
+      // pad 3 % and round outward to a "nice" tick step so the end labels read cleanly
+      const span = Math.max(next[ax].max - next[ax].min, 1e-6);
+      const raw = span / 6, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+      const step = [1, 2, 2.5, 5, 10].find(f => f * mag >= raw) * mag;
+      sc.min = Math.floor((next[ax].min - 0.03 * span) / step) * step;
+      sc.max = Math.ceil((next[ax].max + 0.03 * span) / step) * step;
+    } else {
+      sc.min = undefined;
+      sc.max = undefined;
+    }
+  });
+  // gating axis keeps its fixed 0–1 range
+  vcMainChart.options.scales.vcyGate.min = 0;
+  vcMainChart.options.scales.vcyGate.max = 1;
+  vcYLock = next;
+}
+
 /* Rebuilds the chart's datasets from vcCurrentRuns + current checkbox state +
    any dimmed overlay runs, without re-simulating. Used both after a fresh run
    and whenever a "variables to plot" checkbox is toggled, so a display-only
@@ -1885,7 +1956,8 @@ function vcApplyChartUpdate(){
   vcRefreshPickedOverlay();
 }
 
-function vcRunSimulation(){
+/* fresh: see runSimulation — used by "Clear overlays". */
+function vcRunSimulation({ fresh = false } = {}){
   const p = vcReadParams();
   const family = el('vc-chk-family').checked;
   const keepOverlay = el('vc-chk-overlay').checked;
@@ -1894,7 +1966,7 @@ function vcRunSimulation(){
     // previous traces are gone, so their markers go too (values stay in the table)
     vcPickedPoints.forEach(pt => { pt.markerHidden = true; });
   }
-  else if (vcMainChart.data.datasets.length){
+  else if (!fresh && vcMainChart.data.datasets.length){
     const prevReal = vcMainChart.data.datasets.filter(ds => ds.label !== 'Cursor' && !ds.isPickedOverlay);
     vcOverlayDatasets.push(prevReal.map(ds => ({ ...ds, borderWidth: Math.max(LINE_SCALE, ds.borderWidth - 0.4 * LINE_SCALE) })));
     if (vcOverlayDatasets.length > 6) vcOverlayDatasets = vcOverlayDatasets.slice(-6);
@@ -1907,10 +1979,9 @@ function vcRunSimulation(){
   if (vcFamilyTimer){ clearInterval(vcFamilyTimer); vcFamilyTimer = null; }
 
   if (!family){
-    // Clear any axis locks left by a previous family run
-    vcMainChart.options.scales.vcyCurrent.min = undefined;
-    vcMainChart.options.scales.vcyCurrent.max = undefined;
-    const Vtest = numOr('vc-in-vtest', VC_DEFAULTS['vc-in-vtest']);
+    const Vtest = vcVolt('vc-in-vtest');
+    // Fix the y-axes from the full -120…+70 mV sweep before drawing anything
+    vcApplyYLock(vcSweepEnvelope(p, Vtest), keepOverlay);
     const run = HH.simulateVoltageClamp(p, Vtest);
     vcLastRun = run;
     vcCurrentRuns = [run];
@@ -1922,7 +1993,7 @@ function vcRunSimulation(){
     vcRenderTable(run);
   } else {
     vcLastRun = null;
-    const from = numOr('vc-in-vfrom', VC_DEFAULTS['vc-in-vfrom']), to = numOr('vc-in-vto', VC_DEFAULTS['vc-in-vto']);
+    const from = vcVolt('vc-in-vfrom'), to = vcVolt('vc-in-vto');
     let step = Math.abs(numOr('vc-in-vstep', VC_DEFAULTS['vc-in-vstep'])) || 1;
     const range = Math.abs(to - from);
     if (step > 0 && range / step + 1 > VC_MAX_FAMILY_STEPS){
@@ -1944,22 +2015,9 @@ function vcRunSimulation(){
     el('vc-table-note').style.display = '';
     if (runs.length) vcRenderTable(runs[runs.length - 1]);
 
-    // Pre-compute global current-axis range across ALL family runs so the
-    // y-axis stays fixed while traces are added one by one
-    let cMin = Infinity, cMax = -Infinity;
-    runs.forEach(run => {
-      VC_VAR_CONFIG.filter(cfg => cfg.axis === 'vcyCurrent' && el(cfg.chk).checked)
-        .forEach(cfg => {
-          run[cfg.key].forEach(v => {
-            if (isFinite(v)){ if (v < cMin) cMin = v; if (v > cMax) cMax = v; }
-          });
-        });
-    });
-    if (isFinite(cMin) && isFinite(cMax)){
-      const pad = Math.abs(cMax - cMin) * 0.05;
-      vcMainChart.options.scales.vcyCurrent.min = cMin - pad;
-      vcMainChart.options.scales.vcyCurrent.max = cMax + pad;
-    }
+    // Pre-compute the axis range across ALL family runs so the y-axes stay
+    // fixed while traces are added one by one (grows with overlay, as for singles)
+    vcApplyYLock(vcEnvelope(runs), keepOverlay);
 
     // Progressive reveal: add one trace every 500 ms
     if (vcFamilyTimer){ clearInterval(vcFamilyTimer); vcFamilyTimer = null; }
@@ -1973,9 +2031,6 @@ function vcRunSimulation(){
       if (famIdx >= runs.length){
         clearInterval(vcFamilyTimer);
         vcFamilyTimer = null;
-        // Restore auto-scaling for subsequent single runs
-        vcMainChart.options.scales.vcyCurrent.min = undefined;
-        vcMainChart.options.scales.vcyCurrent.max = undefined;
       }
     }, 500);
   }
@@ -1988,12 +2043,13 @@ function vcRunSimulation(){
   vcRenderGatingChart();
 }
 
-el('vc-btnRun').addEventListener('click', vcRunSimulation);
+el('vc-btnRun').addEventListener('click', () => vcRunSimulation());
 el('vc-btnClear').addEventListener('click', () => {
   if (vcFamilyTimer){ clearInterval(vcFamilyTimer); vcFamilyTimer = null; }
   vcOverlayDatasets = [];
+  vcYLock = {};
   vcHidePickedMarkers();
-  vcRunSimulation();
+  vcRunSimulation({ fresh: true });
 });
 // Variable and display checkboxes take effect on the next Run — no instant redraw
 
