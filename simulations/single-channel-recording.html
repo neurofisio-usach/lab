@@ -126,6 +126,8 @@ button.channel-btn.active{ background:var(--accent-soft); color:#e8a53d; border-
 .chart-box canvas{ width:100% !important; height:100% !important; }
 .two-col .chart-box{ height:360px; }
 .chart-box-tall{ height:504px; }
+select.axis-sel{ background:#100c08; border:1px solid var(--panel-border); border-radius:6px; color:var(--panel-text);
+  font-family:var(--font-mono); font-size:11.5px; padding:5px 6px; }
 
 .table-controls{ display:flex; align-items:center; justify-content:space-between; margin:16px 0 8px; flex-wrap:wrap; gap:10px;}
 .table-controls .left{ display:flex; align-items:center; gap:10px; }
@@ -369,13 +371,19 @@ open-time histogram multi-exponential.</div>
             <div><button id="copySingleBtn">Copy table</button></div>
           </div>
           <div class="table-wrap"><table class="data-table" id="tblSingleIV">
-            <thead><tr><th>#</th><th>Test V (mV)</th><th>ΔI (pA)</th></tr></thead>
+            <thead><tr><th>#</th><th>Test V (mV)</th><th>ΔI (pA)</th><th>Open time (ms)</th><th>Po</th></tr></thead>
             <tbody></tbody>
           </table></div>
         </div>
         <div>
-          <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">I–V plot</b></div><div></div></div>
-          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV1" style="display: block; box-sizing: border-box; height: 300px; width: 969px;" width="775" height="240"></canvas></div></div>
+          <div class="table-controls" style="margin-top:0;">
+            <div class="left"><b style="font-size:12.5px;">Plot</b>
+              <select id="selIV1Y" class="axis-sel"></select><span style="color:var(--panel-text-dim); font-size:12px;">vs</span><select id="selIV1X" class="axis-sel"></select>
+            </div>
+            <div><button id="fitIV1Btn">Linear fit</button></div>
+          </div>
+          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV1"></canvas></div></div>
+          <div class="note" id="fitIV1Results" style="display:none;"></div>
         </div>
       </div>
     </div>
@@ -388,8 +396,7 @@ open-time histogram multi-exponential.</div>
           <p>The same channel, repeated trials at the same test 
 potential — trial-to-trial variability in latency, opening count and 
 duration. As on a real rig, one sweep is acquired every 500 ms and each 
-new sweep is drawn below the previous one. Right-click any trace to drop
- a marker and log its (voltage, current) into the table.</p>
+new sweep is drawn below the previous one.</p>
         </div>
         <div class="field" style="width:160px;">
           <label for="nSweeps">Number of sweeps</label>
@@ -405,32 +412,36 @@ The number of sweeps locks while a run is in progress — press <b>Reset</b> to 
         <button class="ghost-btn" id="resetSweepsBtn" style="max-width:140px;">Reset</button>
         <span class="v" id="sweepsProgress" style="font-family:var(--font-mono); font-size:12.5px;">Sweep 0 / 20</span>
       </div>
-      <div class="scope"><div class="chart-box chart-box-tall"><canvas id="chartSweeps" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
+      <div class="scope"><div class="chart-box chart-box-tall"><canvas id="chartSweeps"></canvas></div></div>
+      <div class="note" style="margin-top:10px;">After a run, press <b>Add mean Po to plot</b> to store the mean open probability of all sweeps recorded at this test potential. Change the test potential, run again and add another point — repeat to build the <b>Po–V curve</b> and see how channel opening depends on voltage. Error bars are ± SEM across sweeps.</div>
+      <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+        <button class="run-btn" id="addPoVBtn" style="max-width:220px; background:#6fb8ff; color:#0a0f08;">Add mean Po to plot</button>
+        <button class="ghost-btn" id="clearPoVBtn" style="max-width:160px;">Clear Po–V data</button>
+      </div>
+      <div class="two-col" style="margin-top:16px; align-items:start;">
+        <div>
+          <div class="table-controls" style="margin-top:0;">
+            <div class="left"><b style="font-size:12.5px;">Mean Po per test potential</b></div>
+            <div><button id="copyPoVBtn">Copy table</button></div>
+          </div>
+          <div class="table-wrap"><table class="data-table" id="tblPoV">
+            <thead><tr><th>#</th><th>Test V (mV)</th><th>Sweeps (n)</th><th>Mean Po</th><th>SD</th><th>SEM</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <div>
+          <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">Po–V plot</b></div><div></div></div>
+          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartPoV"></canvas></div></div>
+        </div>
+      </div>
       <div class="table-controls">
         <div class="left"><b style="font-size:12.5px;">Per-sweep summary</b></div>
         <div><button id="copySweepsSummaryBtn">Copy table</button></div>
       </div>
       <div class="table-wrap"><table class="data-table" id="tblSweeps">
-        <thead><tr><th>Sweep</th><th>First latency (ms)</th><th># openings</th><th>Total open time (ms)</th><th>Po</th></tr></thead>
+        <thead><tr><th>Sweep</th><th>First latency (ms)</th><th># openings</th><th>Total open time (ms)</th><th>Total closed time (ms)</th><th>Po</th></tr></thead>
         <tbody></tbody>
       </table></div>
-      <div style="margin-top:16px;"><button class="ghost-btn" id="clearPointsTab2Btn" style="max-width:160px;">Clear points table</button></div>
-      <div class="two-col" style="margin-top:16px; align-items:start;">
-        <div>
-          <div class="table-controls" style="margin-top:0;">
-            <div class="left"><b style="font-size:12.5px;">Picked points</b></div>
-            <div><button id="copySweepsBtn">Copy table</button></div>
-          </div>
-          <div class="table-wrap"><table class="data-table" id="tblSweepsPoints">
-            <thead><tr><th>#</th><th>Sweep</th><th>Time (ms)</th><th>Voltage (mV)</th><th>I (pA)</th></tr></thead>
-            <tbody></tbody>
-          </table></div>
-        </div>
-        <div>
-          <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">I–V plot</b></div><div></div></div>
-          <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartIV2" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
-        </div>
-      </div>
     </div>
 
     <!-- TAB 3: ENSEMBLE AVERAGE -->
@@ -441,8 +452,8 @@ The number of sweeps locks while a run is in progress — press <b>Reset</b> to 
           <p>Average many independent channels (or repeated sweeps) and 
 the noisy single-channel flickers become the smooth macroscopic current 
 students recognize from whole-cell recordings. Sweeps are acquired one 
-every 500 ms and overlaid; when the last one arrives the average is 
-computed and drawn on top. Right-click the bold average trace to log its
+every 500 ms and overlaid (bottom panel); the running average of all sweeps so far is 
+redrawn in the top panel after every sweep. Right-click the average trace to log its
  (voltage, current) into the table.</p>
         </div>
         <div class="field" style="width:160px;">
@@ -459,12 +470,11 @@ locks while a run is in progress — press <b>Reset</b> to change it.</div>
         <button class="ghost-btn" id="resetEnsembleBtn" style="max-width:140px;">Reset</button>
         <span class="v" id="ensembleProgress" style="font-family:var(--font-mono); font-size:12.5px;">Sweep 0 / 150</span>
       </div>
-      <div class="scope"><div class="chart-box"><canvas id="chartEnsemble" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
-      <div class="note" style="margin:12px 0;">The bright trace is the 
-sweep just recorded; earlier sweeps fade into the background. The bold 
-line, drawn after the last sweep, is the average of all N sweeps — i × 
-Po(t), which scaled by the number of channels in a cell is exactly what 
-the whole-cell macroscopic current represents.</div>
+      <div class="scope">
+        <div class="chart-box" style="height:136px;"><canvas id="chartEnsemble"></canvas></div>
+        <div class="chart-box" style="height:410px; margin-top:4px;"><canvas id="chartEnsembleSweeps"></canvas></div>
+      </div>
+      <div class="note" style="margin:12px 0;"><b>Top:</b> running ensemble average of all sweeps acquired so far, updated after every sweep — watch the recording noise shrink (as 1/√n) and the smooth macroscopic time course emerge. <b>Bottom:</b> each sweep as it arrives (bright), earlier sweeps fading into the background. The final average is i × Po(t); multiplied by the number of channels in a cell, it is the whole-cell macroscopic current.</div>
       <div style="margin-top:10px;"><button class="ghost-btn" id="clearPointsTab3Btn" style="max-width:160px;">Clear table</button></div>
       <div class="two-col" style="margin-top:16px; align-items:start;">
         <div>
@@ -518,7 +528,8 @@ at pulse end are excluded, to avoid bias).</p>
       <div class="two-col" style="margin-top:16px; align-items:start;">
         <div>
           <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">Closed times</b></div><div class="v" id="histStatsClosed" style="font-family:var(--font-mono); font-size:11.5px; color:var(--panel-text-dim);">n=0</div></div>
-          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartClosedHist" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
+          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartClosedHist"></canvas></div></div>
+          <div class="scope" style="margin-top:6px; padding-top:8px; padding-bottom:8px;"><div class="chart-box" style="height:150px;"><canvas id="chartClosedResid"></canvas></div></div>
           <div style="display:flex; gap:8px; align-items:center; margin:10px 0 0; flex-wrap:wrap;">
             <label for="fitClosedN" style="font-size:11.5px; color:var(--panel-text-dim);">Components:</label>
             <select id="fitClosedN" style="background:#100c08;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
@@ -530,7 +541,8 @@ at pulse end are excluded, to avoid bias).</p>
         </div>
         <div>
           <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">Open times</b></div><div class="v" id="histStatsOpen" style="font-family:var(--font-mono); font-size:11.5px; color:var(--panel-text-dim);">n=0</div></div>
-          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartOpenHist" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" height="0" width="0"></canvas></div></div>
+          <div class="scope"><div class="chart-box" style="height:320px;"><canvas id="chartOpenHist"></canvas></div></div>
+          <div class="scope" style="margin-top:6px; padding-top:8px; padding-bottom:8px;"><div class="chart-box" style="height:150px;"><canvas id="chartOpenResid"></canvas></div></div>
           <div style="display:flex; gap:8px; align-items:center; margin:10px 0 0; flex-wrap:wrap;">
             <label for="fitOpenN" style="font-size:11.5px; color:var(--panel-text-dim);">Components:</label>
             <select id="fitOpenN" style="background:#100c08;border:1px solid var(--panel-border);border-radius:6px;color:var(--panel-text);font-family:var(--font-mono);font-size:12px;padding:5px 8px;">
@@ -914,8 +926,7 @@ function applyChannelDefaults(type){
   // Switching channel invalidates any measurements collected for the other
   // channel, so clear all three tabs' recorded points and their markers.
   pointsTab1 = []; renderPointsTab1();
-  pointsSweeps = []; renderPointsSweeps();
-  if (sweepMarkerIdx!==null && chartSweeps.data.datasets[sweepMarkerIdx]){ chartSweeps.data.datasets[sweepMarkerIdx].data = []; }
+  poVPoints = []; renderPoV();
   pointsEnsemble = []; renderPointsEnsemble();
   if (ensembleMarkerIdx!==null && chartEnsemble.data.datasets[ensembleMarkerIdx]){ chartEnsemble.data.datasets[ensembleMarkerIdx].data = []; }
   resetHistRun();
@@ -962,7 +973,7 @@ const pulseMarkerPlugin = {
     const {ctx, chartArea, scales} = chart;
     if (!chartArea || !scales.x) return;
     ctx.save();
-    ctx.setLineDash([6,4]); ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(244,236,216,0.75)';
+    ctx.setLineDash([5,4]); ctx.lineWidth = 1.3; ctx.strokeStyle = '#e8a53d'; // same style as the Dwell-Time scope
     [opts.start, opts.end].forEach(v=>{
       const px = scales.x.getPixelForValue(v);
       if (px>=chartArea.left-0.5 && px<=chartArea.right+0.5){
@@ -1074,7 +1085,7 @@ function resetCursorsToDefaults(){
 // Real-time acquisition state for the Multiple Sweeps and Ensemble tabs.
 // Declared before the charts because the sweeps y-axis tick callbacks read it.
 const SWEEP_INTERVAL_MS = 500; // inter-sweep interval, as on a real rig
-let sweepsRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, step:1, plannedOffsets:[] };
+let sweepsRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, step:1, plannedOffsets:[], pos:[] };
 let ensRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, sumI:null, timeRef:null, stride:3 };
 
 const chartSweeps = new Chart(document.getElementById('chartSweeps'), {
@@ -1091,21 +1102,39 @@ const chartSweeps = new Chart(document.getElementById('chartSweeps'), {
     }
   }
 });
-let sweepMarkerIdx = null, sweepOffsets = [], sweepTestV = null;
 
+// Ensemble tab: one oscilloscope split in two stacked panels sharing the time axis.
+// Top quarter (chartEnsemble) = running average; bottom 3/4 = individual sweeps.
+// Fixed y-axis width on both so their time axes line up exactly.
+const ENS_Y_AXIS_WIDTH = 64;
 const chartEnsemble = new Chart(document.getElementById('chartEnsemble'), {
+  type:'line',
+  plugins:[pulseMarkerPlugin],
+  data:{ datasets:[
+    { label:'Ensemble mean', data:[], borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:2.2, pointRadius:0, order:1 },
+    { label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5, order:0 }
+  ]},
+  options:{ animation:false, responsive:true, maintainAspectRatio:false,
+    plugins:{ pulseMarkers:{start:null,end:null}, legend:{display:false}, tooltip:{enabled:true, filter:(item)=>item.datasetIndex===0} },
+    scales:{
+      x:{ type:'linear', ticks:{display:false}, grid:{color:'#0f3a22'} },
+      y:{ title:{display:true,text:'Mean (pA)',color:'#e8a53d'}, ticks:{color:'#b8ae95', maxTicksLimit:4, includeBounds:false}, grid:{color:'#0f3a22'}, afterFit:(s)=>{ s.width = ENS_Y_AXIS_WIDTH; } }
+    }
+  }
+});
+const chartEnsembleSweeps = new Chart(document.getElementById('chartEnsembleSweeps'), {
   type:'line',
   plugins:[pulseMarkerPlugin],
   data:{ datasets:[] },
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
-    plugins:{ pulseMarkers:{start:null,end:null}, legend:{display:true,position:'top',labels:{color:'#b8ae95',font:{size:11}, filter:(item)=>item.text==='Ensemble mean'}}, tooltip:{enabled:true} },
+    plugins:{ pulseMarkers:{start:null,end:null}, legend:{display:false}, tooltip:{enabled:false} },
     scales:{
       x:{ type:'linear', title:{display:true,text:'Time (ms)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
-      y:{ title:{display:true,text:'Current (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
+      y:{ title:{display:true,text:'Single sweeps (pA)',color:'#b8ae95'}, ticks:{color:'#b8ae95', includeBounds:false}, grid:{color:'#0f3a22'}, afterFit:(s)=>{ s.width = ENS_Y_AXIS_WIDTH; } }
     }
   }
 });
-let ensembleMeanIdx = null, ensembleMarkerIdx = null, ensembleTestV = null;
+let ensembleMeanIdx = 0, ensembleMarkerIdx = 1, ensembleTestV = null;
 
 const ivChartOptions = (xlabel,ylabel)=>({ animation:false, responsive:true, maintainAspectRatio:false,
   plugins:{ legend:{display:false}, tooltip:{enabled:true} },
@@ -1116,13 +1145,11 @@ const ivChartOptions = (xlabel,ylabel)=>({ animation:false, responsive:true, mai
 });
 const chartIV1 = new Chart(document.getElementById('chartIV1'), {
   type:'scatter',
-  data:{ datasets:[{ label:'Measured', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8' }] },
+  data:{ datasets:[
+    { label:'Measured', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8', order:1 },
+    { label:'Linear fit', data:[], showLine:true, borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:2, pointRadius:0, order:0 }
+  ] },
   options: ivChartOptions('Test potential (mV)','ΔI (pA)')
-});
-const chartIV2 = new Chart(document.getElementById('chartIV2'), {
-  type:'scatter',
-  data:{ datasets:[{ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8' }] },
-  options: ivChartOptions('Test potential (mV)','I (pA)')
 });
 const chartIV3 = new Chart(document.getElementById('chartIV3'), {
   type:'scatter',
@@ -1407,10 +1434,29 @@ document.getElementById('skipBtn').addEventListener('click', finishPlayback);
 
 /* ================= TAB 1: SINGLE TRACE ================= */
 let pointsTab1 = [];
+let lastSingle = null; // {p, res} of the trace currently on the scope
+// Quantities that can be plotted against each other from the measurements table
+const IV1_FIELDS = [
+  { key:'idx',      label:'Point #',        unit:'' },
+  { key:'V',        label:'Test V (mV)',    unit:'mV' },
+  { key:'dI',       label:'ΔI (pA)',        unit:'pA' },
+  { key:'openTime', label:'Open time (ms)', unit:'ms' },
+  { key:'po',       label:'Po',             unit:'' }
+];
+[['selIV1X','V'], ['selIV1Y','dI']].forEach(([id, def])=>{
+  IV1_FIELDS.forEach(f=>{
+    const o = document.createElement('option'); o.value = f.key; o.textContent = f.label;
+    if (f.key===def) o.selected = true;
+    document.getElementById(id).appendChild(o);
+  });
+});
+function iv1Field(id){ return IV1_FIELDS.find(f=>f.key===val(id)) || IV1_FIELDS[1]; }
+function iv1Value(pt, i, key){ return key==='idx' ? i+1 : pt[key]; }
 function runSingle(){
   const p = readParams();
   const rng = mulberry32(p.seed);
   const res = simulateSweep(p, rng);
+  lastSingle = {p, res};
   const noisy = addNoise(res.idealI, rng, p.noiseSD);
   PLAYBACK.t = 0;
   chartSingle.data.datasets[0].data = Array.from(res.time).map((t,i)=>({x:+t.toFixed(3), y:+noisy[i].toFixed(4)}));
@@ -1435,18 +1481,74 @@ function renderPointsTab1(){
   tbody.innerHTML = '';
   pointsTab1.forEach((pt,i)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${pt.V}</td><td>${pt.dI.toFixed(3)}</td>`;
+    tr.innerHTML = `<td>${i+1}</td><td>${pt.V}</td><td>${pt.dI.toFixed(3)}</td><td>${pt.openTime.toFixed(3)}</td><td>${pt.po.toFixed(4)}</td>`;
     tbody.appendChild(tr);
   });
-  chartIV1.data.datasets[0].data = pointsTab1.map(pt=>({x:pt.V, y:pt.dI}));
+  const fx = iv1Field('selIV1X'), fy = iv1Field('selIV1Y');
+  chartIV1.data.datasets[0].data = pointsTab1.map((pt,i)=>({x:iv1Value(pt,i,fx.key), y:iv1Value(pt,i,fy.key)}));
+  chartIV1.options.scales.x.title.text = fx.label;
+  chartIV1.options.scales.y.title.text = fy.label;
+  // data changed → any previous regression line is stale; student must re-fit
+  chartIV1.data.datasets[1].data = [];
+  document.getElementById('fitIV1Results').style.display = 'none';
   chartIV1.update();
 }
+// Ordinary least-squares line y = slope·x + intercept, with R².
+function linearRegression(xs, ys){
+  const n = xs.length;
+  const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+  let sxx=0, sxy=0, syy=0;
+  for (let i=0;i<n;i++){ const dx=xs[i]-mx, dy=ys[i]-my; sxx+=dx*dx; sxy+=dx*dy; syy+=dy*dy; }
+  if (sxx===0) return null;
+  const slope = sxy/sxx, intercept = my - slope*mx;
+  let ssRes = 0;
+  for (let i=0;i<n;i++){ const r = ys[i]-(slope*xs[i]+intercept); ssRes += r*r; }
+  const r2 = syy>0 ? 1 - ssRes/syy : 1;
+  return {slope, intercept, r2, n};
+}
+document.getElementById('fitIV1Btn').addEventListener('click', ()=>{
+  const out = document.getElementById('fitIV1Results');
+  out.style.display = 'block';
+  const fx = iv1Field('selIV1X'), fy = iv1Field('selIV1Y');
+  const xs = pointsTab1.map((pt,i)=>iv1Value(pt,i,fx.key)), ys = pointsTab1.map((pt,i)=>iv1Value(pt,i,fy.key));
+  const fit = pointsTab1.length>=2 ? linearRegression(xs, ys) : null;
+  if (!fit){
+    chartIV1.data.datasets[1].data = []; chartIV1.update();
+    out.textContent = `Record two or more points with different values of ${fx.label} before fitting.`;
+    return;
+  }
+  const xMin = Math.min(...xs), xMax = Math.max(...xs), pad = 0.05*(xMax-xMin);
+  chartIV1.data.datasets[1].data = [
+    {x:xMin-pad, y:fit.slope*(xMin-pad)+fit.intercept},
+    {x:xMax+pad, y:fit.slope*(xMax+pad)+fit.intercept}
+  ];
+  chartIV1.update();
+  const xInt = fit.slope!==0 ? -fit.intercept/fit.slope : NaN;
+  let body;
+  if (fx.key==='V' && fy.key==='dI'){
+    // slope is pA/mV = nS → ×1000 gives pS (the unitary conductance γ)
+    body = `Slope = <b style="color:#e8a53d;">${(fit.slope*1000).toFixed(2)} pS</b> (unitary conductance γ)<br>`
+      + `R² = <b>${fit.r2.toFixed(4)}</b><br>`
+      + `Intercept = ${fit.intercept.toFixed(3)} pA · x-intercept (reversal potential) = ${isFinite(xInt)?xInt.toFixed(1):'—'} mV`;
+  } else {
+    const su = (fy.unit && fx.unit) ? ` ${fy.unit}/${fx.unit}` : fy.unit ? ` ${fy.unit}` : fx.unit ? ` 1/${fx.unit}` : '';
+    body = `Slope = <b style="color:#e8a53d;">${fit.slope.toPrecision(4)}${su}</b><br>`
+      + `R² = <b>${fit.r2.toFixed(4)}</b><br>`
+      + `Intercept = ${fit.intercept.toPrecision(4)}${fy.unit?' '+fy.unit:''}`;
+  }
+  out.innerHTML = `<b>Linear fit: ${fy.label} vs ${fx.label} (n = ${fit.n} points)</b><br>` + body
+    + (fit.n===2 ? `<br><span style="color:var(--panel-text-dim);">With only 2 points the line passes through both exactly, so R² = 1 is trivial — record more points.</span>` : '');
+});
 document.getElementById('recordPointBtn').addEventListener('click', ()=>{
-  const V = +val('testV');
+  if (!lastSingle) return;
+  // voltage, open time and Po all belong to the trace on the scope (not to
+  // whatever the side-panel field shows now, in case it was edited without re-running)
+  const V = lastSingle.p.testV;
   const dI = cursorOpenVal - cursorClosedVal;
-  pointsTab1.push({V, dI});
+  pointsTab1.push({V, dI, openTime:lastSingle.res.openTimeInPulse, po:lastSingle.res.po});
   renderPointsTab1();
 });
+['selIV1X','selIV1Y'].forEach(id=>document.getElementById(id).addEventListener('change', renderPointsTab1));
 document.getElementById('clearPointsTab1Btn').addEventListener('click', ()=>{
   pointsTab1 = [];
   renderPointsTab1();
@@ -1463,12 +1565,10 @@ function updateSweepsProgress(){
   document.getElementById('sweepsProgress').textContent = `Sweep ${sweepsRun.index} / ${n}`;
 }
 function setSweepsButtons(){
+  if (typeof updateAddPoVBtn==='function') updateAddPoVBtn();
   document.getElementById('startSweepsBtn').disabled = sweepsRun.running;
   document.getElementById('stopSweepsBtn').disabled = !sweepsRun.running;
   document.getElementById('nSweeps').disabled = sweepsRun.index>0 && !sweepsFinished();
-}
-function sweepMarkerDataset(){
-  return { label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5, order:-1 };
 }
 function prepareSweepsRun(){
   const p = readParams();
@@ -1480,9 +1580,8 @@ function prepareSweepsRun(){
   sweepsRun.p = p; sweepsRun.n = n; sweepsRun.index = 0; sweepsRun.step = step;
   sweepsRun.rng = mulberry32(p.seed);
   sweepsRun.plannedOffsets = Array.from({length:n}, (_,s)=>-s*step);
-  sweepOffsets = []; sweepTestV = p.testV;
-  chartSweeps.data.datasets = [sweepMarkerDataset()];
-  sweepMarkerIdx = 0;
+  sweepsRun.pos = [];
+  chartSweeps.data.datasets = [];
   // Fix the axes for the whole run so the display does not rescale as sweeps arrive.
   const xs = chartSweeps.options.scales.x, ys = chartSweeps.options.scales.y;
   xs.min = 0; xs.max = total;
@@ -1499,17 +1598,18 @@ function sweepsTick(){
   const res = simulateSweep(p, sweepsRun.rng);
   const noisy = addNoise(res.idealI, sweepsRun.rng, p.noiseSD);
   const offset = -s*sweepsRun.step;
-  sweepOffsets.push(offset);
-  // Sweeps occupy dataset indices 0..k-1; the marker dataset always stays last.
-  chartSweeps.data.datasets.splice(sweepMarkerIdx, 0, {
+  chartSweeps.data.datasets.push({
     data: Array.from(res.time).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+(noisy[i2]+offset).toFixed(4)}; }),
     borderColor:'#4dffa0', backgroundColor:'transparent', borderWidth:1, pointRadius:0
   });
-  sweepMarkerIdx++;
   chartSweeps.update('none');
 
+  // closed time = time during the pulse NOT spent in a conducting state
+  // (for the Naᵥ models this includes time spent inactivated)
+  const closedTime = p.tPulse - res.openTimeInPulse;
+  sweepsRun.pos.push(res.po);
   const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${s+1}</td><td>${res.firstOpenLatency!==null?res.firstOpenLatency.toFixed(3):'—'}</td><td>${res.events.length}</td><td>${res.openTimeInPulse.toFixed(3)}</td><td>${res.po.toFixed(4)}</td>`;
+  tr.innerHTML = `<td>${s+1}</td><td>${res.firstOpenLatency!==null?res.firstOpenLatency.toFixed(3):'—'}</td><td>${res.events.length}</td><td>${res.openTimeInPulse.toFixed(3)}</td><td>${closedTime.toFixed(3)}</td><td>${res.po.toFixed(4)}</td>`;
   document.querySelector('#tblSweeps tbody').appendChild(tr);
 
   sweepsRun.index++;
@@ -1531,11 +1631,9 @@ function stopSweepsRun(){
 }
 function resetSweepsRun(){
   stopSweepsRun();
-  sweepsRun.index = 0; sweepsRun.n = 0; sweepsRun.plannedOffsets = [];
-  sweepOffsets = [];
+  sweepsRun.index = 0; sweepsRun.n = 0; sweepsRun.plannedOffsets = []; sweepsRun.pos = [];
   chartSweeps.data.datasets = [];
   chartSweeps.options.plugins.pulseMarkers = { start:null, end:null };
-  sweepMarkerIdx = null;
   chartSweeps.update('none');
   document.querySelector('#tblSweeps tbody').innerHTML = '';
   updateSweepsProgress();
@@ -1547,57 +1645,89 @@ document.getElementById('resetSweepsBtn').addEventListener('click', resetSweepsR
 document.getElementById('nSweeps').addEventListener('input', ()=>{ if (sweepsRun.index===0) updateSweepsProgress(); });
 setSweepsButtons();
 
-let pointsSweeps = [];
-function renderPointsSweeps(){
-  const tbody = document.querySelector('#tblSweepsPoints tbody');
+/* --- Po–V curve built from the mean Po of each multiple-sweeps run --- */
+// Vertical ± SEM error bars drawn by a small plugin (Chart.js has none built in).
+const errorBarsPlugin = {
+  id:'errorBars',
+  afterDatasetsDraw(chart){
+    const ds = chart.data.datasets[0], meta = chart.getDatasetMeta(0), ys = chart.scales.y, ctx = chart.ctx;
+    ctx.save(); ctx.strokeStyle = '#f4ecd8'; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+    ds.data.forEach((pt,i)=>{
+      const el = meta.data[i]; if (!el || !pt.sem) return;
+      const x = el.x, y1 = ys.getPixelForValue(pt.y - pt.sem), y2 = ys.getPixelForValue(pt.y + pt.sem);
+      ctx.beginPath(); ctx.moveTo(x,y1); ctx.lineTo(x,y2);
+      ctx.moveTo(x-4,y1); ctx.lineTo(x+4,y1); ctx.moveTo(x-4,y2); ctx.lineTo(x+4,y2); ctx.stroke();
+    });
+    ctx.restore();
+  }
+};
+const chartPoV = new Chart(document.getElementById('chartPoV'), {
+  type:'scatter',
+  data:{ datasets:[{ label:'Mean Po', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8' }] },
+  options:{ animation:false, responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{enabled:true, callbacks:{ label:(c)=>`V = ${c.raw.x} mV · Po = ${c.raw.y.toFixed(4)} ± ${c.raw.sem.toFixed(4)} (n = ${c.raw.n})` }} },
+    scales:{
+      x:{ type:'linear', title:{display:true,text:'Test potential (mV)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
+      y:{ title:{display:true,text:'Mean Po',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'}, beginAtZero:true }
+    }
+  },
+  plugins:[errorBarsPlugin]
+});
+let poVPoints = [];
+function renderPoV(){
+  const tbody = document.querySelector('#tblPoV tbody');
   tbody.innerHTML = '';
-  pointsSweeps.forEach((pt,i)=>{
+  poVPoints.forEach((pt,i)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${pt.source}</td><td>${pt.t.toFixed(3)}</td><td>${pt.V}</td><td>${pt.I.toFixed(3)}</td>`;
+    tr.innerHTML = `<td>${i+1}</td><td>${pt.V}</td><td>${pt.n}</td><td>${pt.mean.toFixed(4)}</td><td>${pt.sd.toFixed(4)}</td><td>${pt.sem.toFixed(4)}</td>`;
     tbody.appendChild(tr);
   });
-  chartIV2.data.datasets[0].data = pointsSweeps.map(pt=>({x:pt.V, y:pt.I}));
-  chartIV2.update();
+  chartPoV.data.datasets[0].data = poVPoints.map(pt=>({x:pt.V, y:pt.mean, sem:pt.sem, n:pt.n}));
+  chartPoV.update();
 }
-document.getElementById('clearPointsTab2Btn').addEventListener('click', ()=>{
-  pointsSweeps = [];
-  renderPointsSweeps();
-  if (sweepMarkerIdx!==null && chartSweeps.data.datasets[sweepMarkerIdx]){
-    chartSweeps.data.datasets[sweepMarkerIdx].data = [];
-    chartSweeps.update('none');
-  }
+function updateAddPoVBtn(){
+  document.getElementById('addPoVBtn').disabled = sweepsRun.running || sweepsRun.pos.length===0;
+}
+document.getElementById('addPoVBtn').addEventListener('click', ()=>{
+  const pos = sweepsRun.pos, n = pos.length;
+  if (!n || sweepsRun.running) return;
+  const mean = pos.reduce((a,b)=>a+b,0)/n;
+  const sd = n>1 ? Math.sqrt(pos.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(n-1)) : 0;
+  poVPoints.push({ V: sweepsRun.p.testV, n, mean, sd, sem: sd/Math.sqrt(n) });
+  renderPoV();
 });
-chartSweeps.canvas.addEventListener('contextmenu', (e)=>{
-  e.preventDefault();
-  if (sweepMarkerIdx===null) return;
-  const pts = chartSweeps.getElementsAtEventForMode(e, 'nearest', {intersect:false}, true);
-  if (!pts.length) return;
-  const {datasetIndex, index} = pts[0];
-  if (datasetIndex === sweepMarkerIdx) return;
-  const dp = chartSweeps.data.datasets[datasetIndex].data[index];
-  const trueI = dp.y - (sweepOffsets[datasetIndex]||0);
-  chartSweeps.data.datasets[sweepMarkerIdx].data.push({x:dp.x, y:dp.y});
-  chartSweeps.update('none');
-  pointsSweeps.push({t:dp.x, V:sweepTestV, I:trueI, source:'Sweep '+(datasetIndex+1)});
-  renderPointsSweeps();
-});
+document.getElementById('clearPoVBtn').addEventListener('click', ()=>{ poVPoints = []; renderPoV(); });
+updateAddPoVBtn();
 
 /* ================= TAB 3: ENSEMBLE AVERAGE (real-time acquisition) ================= */
-// One sweep every SWEEP_INTERVAL_MS, overlaid on the previous ones. The newest
-// sweep is bright, older ones fade into the background. After the last sweep
-// the ensemble average (of the noise-free currents) is drawn on top.
+// One sweep every SWEEP_INTERVAL_MS. Bottom panel: sweeps overlaid, newest bright,
+// older ones fading. Top panel: running average of all (noisy) sweeps so far,
+// redrawn after every sweep, so the noise visibly shrinks as 1/√n.
 const ENS_FAINT = 'rgba(77,255,160,0.14)', ENS_BRIGHT = '#4dffa0';
+let ensYLim = null;
 function getNEnsemble(){ return Math.max(2, Math.round(+val('nEnsemble')) || 150); }
 function ensembleFinished(){ return ensRun.index>0 && ensRun.index>=ensRun.n; }
 function updateEnsembleProgress(){
   const n = ensRun.index>0 ? ensRun.n : getNEnsemble();
   document.getElementById('ensembleProgress').textContent =
-    ensembleFinished() ? `Sweep ${ensRun.index} / ${n} — average of ${n} sweeps shown` : `Sweep ${ensRun.index} / ${n}`;
+    ensRun.index>0 ? `Sweep ${ensRun.index} / ${n} — average of ${ensRun.index} sweep${ensRun.index>1?'s':''} shown` : `Sweep 0 / ${n}`;
 }
 function setEnsembleButtons(){
   document.getElementById('startEnsembleBtn').disabled = ensRun.running;
   document.getElementById('stopEnsembleBtn').disabled = !ensRun.running;
   document.getElementById('nEnsemble').disabled = ensRun.index>0 && !ensembleFinished();
+}
+// The lower panel reserves space on the right for its last time-tick label; give
+// the upper panel the same right padding so both plot areas line up exactly.
+function alignEnsemblePanels(){
+  const a = chartEnsemble.chartArea, b = chartEnsembleSweeps.chartArea;
+  if (!a || !b) return;
+  const diff = a.right - b.right;
+  if (Math.abs(diff) > 0.5){
+    const pad = chartEnsemble.options.layout.padding;
+    chartEnsemble.options.layout.padding = { ...(typeof pad==='object'?pad:{}), right: Math.max(0, ((pad&&pad.right)||0) + diff) };
+    chartEnsemble.update('none');
+  }
 }
 function prepareEnsembleRun(){
   const p = readParams();
@@ -1608,17 +1738,22 @@ function prepareEnsembleRun(){
   ensRun.sumI = new Float64Array(nSteps);
   ensRun.timeRef = null;
   ensRun.stride = Math.max(3, Math.ceil(nSteps/700)); // keep up to ~N×700 points drawable
-  ensembleMeanIdx = null; ensembleMarkerIdx = null; ensembleTestV = p.testV;
-  chartEnsemble.data.datasets = [];
+  ensYLim = null; ensembleTestV = p.testV;
+  chartEnsemble.data.datasets[ensembleMeanIdx].data = [];
+  chartEnsemble.data.datasets[ensembleMarkerIdx].data = []; // markers belonged to the previous trace (table is kept)
+  chartEnsembleSweeps.data.datasets = [];
   const iUnit = p.gamma*(p.testV-p.Erev)*1e-3;
-  const margin = Math.max(Math.abs(iUnit)*0.6, 4*p.noiseSD*0.6 + 0.2);
-  const xs = chartEnsemble.options.scales.x, ys = chartEnsemble.options.scales.y;
-  xs.min = 0; xs.max = total;
-  chartEnsemble.options.plugins.pulseMarkers = { start:p.tPre, end:p.tPre+p.tPulse };
+  const margin = Math.max(Math.abs(iUnit)*0.35, 4*p.noiseSD, 0.3);
+  const ys = chartEnsembleSweeps.options.scales.y;
   // Round the limits outward to clean 0.5 pA values so the axis reads well.
   ys.min = Math.floor((Math.min(0, iUnit) - margin)*2)/2;
   ys.max = Math.ceil((Math.max(0, iUnit) + margin)*2)/2;
-  chartEnsemble.update('none');
+  chartEnsemble.options.scales.y.min = undefined; chartEnsemble.options.scales.y.max = undefined;
+  [chartEnsemble, chartEnsembleSweeps].forEach(c=>{
+    c.options.scales.x.min = 0; c.options.scales.x.max = total;
+    c.options.plugins.pulseMarkers = { start:p.tPre, end:p.tPre+p.tPulse };
+    c.update('none');
+  });
   advanceSeedIfUnlocked();
 }
 function ensembleTick(){
@@ -1626,33 +1761,37 @@ function ensembleTick(){
   const p = ensRun.p, k = ensRun.stride;
   const res = simulateSweep(p, ensRun.rng);
   if (!ensRun.timeRef) ensRun.timeRef = res.time;
-  for (let i=0;i<ensRun.sumI.length;i++) ensRun.sumI[i] += res.idealI[i];
-  const noisy = addNoise(res.idealI, ensRun.rng, p.noiseSD*0.6);
-  const ds = chartEnsemble.data.datasets;
-  if (ds.length){ ds[ds.length-1].borderColor = ENS_FAINT; ds[ds.length-1].order = 1; } // previous sweep fades
+  const noisy = addNoise(res.idealI, ensRun.rng, p.noiseSD);
+  for (let i=0;i<ensRun.sumI.length;i++) ensRun.sumI[i] += noisy[i];
+  ensRun.index++;
+
+  // bottom: previous sweep fades, newest is bright
+  const ds = chartEnsembleSweeps.data.datasets;
+  if (ds.length){ ds[ds.length-1].borderColor = ENS_FAINT; ds[ds.length-1].order = 1; }
   ds.push({
     data: Array.from(res.time).filter((_,i)=>i%k===0).map((t,idx)=>{ const i2=idx*k; return {x:+t.toFixed(3), y:+noisy[i2].toFixed(4)}; }),
     borderColor:ENS_BRIGHT, backgroundColor:'transparent', borderWidth:1, pointRadius:0, order:0
   });
-  ensRun.index++;
-  if (ensRun.index >= ensRun.n) finishEnsembleRun();
-  else chartEnsemble.update('none');
-  updateEnsembleProgress();
-}
-function finishEnsembleRun(){
-  const n = ensRun.n, timeRef = ensRun.timeRef;
-  const meanI = Array.from(ensRun.sumI).map(v=>v/n);
-  const ds = chartEnsemble.data.datasets;
-  if (ds.length){ ds[ds.length-1].borderColor = ENS_FAINT; ds[ds.length-1].order = 1; }
-  ensembleMeanIdx = ds.length;
-  ds.push({
-    label:'Ensemble mean', data: Array.from(timeRef).filter((_,i)=>i%3===0).map((t,idx)=>{ const i2=idx*3; return {x:+t.toFixed(3), y:+meanI[i2].toFixed(4)}; }),
-    borderColor:'#e8a53d', backgroundColor:'transparent', borderWidth:2.4, pointRadius:0, order:-1
-  });
-  ensembleMarkerIdx = ds.length;
-  ds.push({ label:'Picked', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#e8a53d', pointBorderColor:'#a97a2c', borderWidth:1.5, order:-2 });
+  chartEnsembleSweeps.update('none');
+
+  // top: running average of everything acquired so far
+  const tr = ensRun.timeRef, sum = ensRun.sumI, n = ensRun.index, pts = [];
+  let lo = 0, hi = 0;
+  for (let i=0;i<sum.length;i++){ const m = sum[i]/n; if (m<lo) lo=m; if (m>hi) hi=m; if (i%3===0) pts.push({x:+tr[i].toFixed(3), y:+m.toFixed(4)}); }
+  chartEnsemble.data.datasets[ensembleMeanIdx].data = pts;
+  // y-limits glide toward the current range (instead of jumping every sweep),
+  // so the panel smoothly zooms in as the averaged noise shrinks
+  const pad = 0.12*Math.max(hi-lo, 1e-3);
+  const target = {lo: lo-pad, hi: hi+pad};
+  if (!ensYLim || n >= ensRun.n) ensYLim = {...target};
+  else { ensYLim.lo += 0.3*(target.lo-ensYLim.lo); ensYLim.hi += 0.3*(target.hi-ensYLim.hi); }
+  chartEnsemble.options.scales.y.min = Math.min(ensYLim.lo, target.lo);
+  chartEnsemble.options.scales.y.max = Math.max(ensYLim.hi, target.hi);
   chartEnsemble.update('none');
-  stopEnsembleRun();
+  alignEnsemblePanels();
+
+  updateEnsembleProgress();
+  if (ensRun.index >= ensRun.n) stopEnsembleRun();
 }
 function startEnsembleRun(){
   if (ensRun.running) return;
@@ -1671,10 +1810,10 @@ function stopEnsembleRun(){
 function resetEnsembleRun(){
   stopEnsembleRun();
   ensRun.index = 0; ensRun.n = 0; ensRun.sumI = null; ensRun.timeRef = null;
-  ensembleMeanIdx = null; ensembleMarkerIdx = null;
-  chartEnsemble.data.datasets = [];
-  chartEnsemble.options.plugins.pulseMarkers = { start:null, end:null };
-  chartEnsemble.update('none');
+  chartEnsemble.data.datasets[ensembleMeanIdx].data = [];
+  chartEnsemble.data.datasets[ensembleMarkerIdx].data = [];
+  chartEnsembleSweeps.data.datasets = [];
+  [chartEnsemble, chartEnsembleSweeps].forEach(c=>{ c.options.plugins.pulseMarkers = { start:null, end:null }; c.update('none'); });
   updateEnsembleProgress();
   setEnsembleButtons();
 }
@@ -1706,7 +1845,7 @@ document.getElementById('clearPointsTab3Btn').addEventListener('click', ()=>{
 });
 chartEnsemble.canvas.addEventListener('contextmenu', (e)=>{
   e.preventDefault();
-  if (ensembleMeanIdx===null) return;
+  if (!chartEnsemble.data.datasets[ensembleMeanIdx].data.length) return;
   const pts = chartEnsemble.getElementsAtEventForMode(e, 'nearest', {intersect:false}, true);
   if (!pts.length) return;
   const {datasetIndex, index} = pts[0];
@@ -1734,8 +1873,20 @@ const chartHistScope = new Chart(document.getElementById('chartHistScope'), {
     }
   }
 });
+// One dashed overlay per exponential component (up to 4), drawn on top of the bars
+// together with their sum ("Total fit"). Datasets 2..5 of each histogram chart.
+const FIT_COMP_COLORS = ['#ff5c8a','#b388ff','#4dd0e1','#fff176'];
+const FIT_COMPONENT_DATASETS = ()=>FIT_COMP_COLORS.map((c,k)=>({
+  type:'line', label:'', data:[], borderColor:c, backgroundColor:'transparent', borderWidth:1.6,
+  borderDash:[5,3], pointRadius:0, tension:0.3, order:3+k
+}));
+function clearFitOverlays(chart){
+  for (let d=1; d<chart.data.datasets.length; d++) chart.data.datasets[d].data = [];
+}
 const histBarOptions = (xlabel)=>({ animation:false, responsive:true, maintainAspectRatio:false,
-  plugins:{ legend:{display:false}, tooltip:{enabled:true} },
+  plugins:{ legend:{display:true, position:'top', labels:{color:'#b8ae95', font:{size:10.5}, boxWidth:18, boxHeight:2,
+      filter:(item, data)=>!!item.text && (data.datasets[item.datasetIndex].data||[]).length>0 }, onClick:()=>{} },
+    tooltip:{enabled:true} },
   scales:{
     x:{ title:{display:true,text:xlabel,color:'#b8ae95'}, ticks:{color:'#b8ae95', maxRotation:60, minRotation:60, autoSkip:true, maxTicksLimit:9}, grid:{display:false} },
     y:{ title:{display:true,text:'Count',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} }
@@ -1744,15 +1895,92 @@ const histBarOptions = (xlabel)=>({ animation:false, responsive:true, maintainAs
 const chartClosedHist = new Chart(document.getElementById('chartClosedHist'), {
   data:{ labels:[], datasets:[
     { type:'bar', data:[], backgroundColor:'#e8a53d', order:1 },
-    { type:'line', data:[], borderColor:'#f4ecd8', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 }
+    { type:'line', label:'Total fit', data:[], borderColor:'#f4ecd8', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 },
+    ...FIT_COMPONENT_DATASETS()
   ]}, options: histBarOptions('Closed time (ms, log bins)')
 });
 const chartOpenHist = new Chart(document.getElementById('chartOpenHist'), {
   data:{ labels:[], datasets:[
     { type:'bar', data:[], backgroundColor:'#6fb8ff', order:1 },
-    { type:'line', data:[], borderColor:'#f4ecd8', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 }
+    { type:'line', label:'Total fit', data:[], borderColor:'#f4ecd8', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.3, order:2 },
+    ...FIT_COMPONENT_DATASETS()
   ]}, options: histBarOptions('Open time (ms, log bins)')
 });
+
+/* --- goodness of fit: residual panels + χ² test --- */
+// Pearson residual per bin: r = (O − E)/√E. If the model is right these scatter
+// randomly around 0 with |r| mostly < 2; runs of same-sign residuals = misfit.
+const residOptions = (xlabel)=>({ animation:false, responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{display:false}, tooltip:{enabled:true, filter:(it)=>it.datasetIndex===0,
+    callbacks:{ label:(c)=>`residual = ${(+c.raw).toFixed(2)}` }} },
+  scales:{
+    x:{ ticks:{display:false}, grid:{display:false}, title:{display:true,text:xlabel,color:'#b8ae95',font:{size:10.5}} },
+    y:{ title:{display:true,text:'(O−E)/√E',color:'#b8ae95'}, ticks:{color:'#b8ae95', stepSize:2}, grid:{color:'#0f3a22'}, suggestedMin:-3, suggestedMax:3 }
+  }
+});
+function makeResidChart(id, xlabel){
+  return new Chart(document.getElementById(id), {
+    data:{ labels:[], datasets:[
+      { type:'bar', data:[], backgroundColor:[], order:2 },
+      { type:'line', data:[], borderColor:'#b8ae95', borderWidth:1, borderDash:[4,4], pointRadius:0, order:1 },
+      { type:'line', data:[], borderColor:'#b8ae95', borderWidth:1, borderDash:[4,4], pointRadius:0, order:1 }
+    ]}, options: residOptions(xlabel)
+  });
+}
+const chartClosedResid = makeResidChart('chartClosedResid', 'Residuals of the selected fit (same bins as above) — dashed lines at ±2');
+const chartOpenResid   = makeResidChart('chartOpenResid',   'Residuals of the selected fit (same bins as above) — dashed lines at ±2');
+function clearResiduals(rc){
+  rc.data.labels = []; rc.data.datasets.forEach(d=>d.data=[]); rc.data.datasets[0].backgroundColor=[]; rc.update('none');
+}
+function showResiduals(rc, labels, obs, exp){
+  const r = obs.map((o,i)=> exp[i]>1e-9 ? (o-exp[i])/Math.sqrt(exp[i]) : 0);
+  rc.data.labels = labels;
+  rc.data.datasets[0].data = r;
+  rc.data.datasets[0].backgroundColor = r.map(v=> Math.abs(v)>2 ? '#ff5c8a' : '#8a8272');
+  rc.data.datasets[1].data = labels.map(()=>2);
+  rc.data.datasets[2].data = labels.map(()=>-2);
+  const lim = Math.max(4, 2*Math.ceil(Math.max(...r.map(Math.abs))/2)); // even limit so ticks land on ±2
+  rc.options.scales.y.min = -lim; rc.options.scales.y.max = lim;
+  rc.update('none');
+}
+// log Γ (Lanczos) and the regularized upper incomplete gamma Q(a,x), for χ² p-values
+function logGamma(z){
+  const g=7, c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if (z<0.5) return Math.log(Math.PI/Math.sin(Math.PI*z)) - logGamma(1-z);
+  z -= 1; let x=c[0]; for (let i=1;i<g+2;i++) x += c[i]/(z+i);
+  const t = z+g+0.5;
+  return 0.5*Math.log(2*Math.PI) + (z+0.5)*Math.log(t) - t + Math.log(x);
+}
+function gammaQ(a, x){
+  if (x<=0) return 1;
+  if (x < a+1){ // series for P, return 1−P
+    let sum=1/a, del=sum, ap=a;
+    for (let n=0;n<500;n++){ ap+=1; del*=x/ap; sum+=del; if (Math.abs(del)<Math.abs(sum)*1e-14) break; }
+    return Math.max(0, 1 - sum*Math.exp(-x + a*Math.log(x) - logGamma(a)));
+  }
+  // continued fraction for Q (Lentz)
+  let b=x+1-a, c=1/1e-300, d=1/b, h=d;
+  for (let i=1;i<500;i++){
+    const an=-i*(i-a); b+=2;
+    d=an*d+b; if (Math.abs(d)<1e-300) d=1e-300;
+    c=b+an/c; if (Math.abs(c)<1e-300) c=1e-300;
+    d=1/d; const del=d*c; h*=del; if (Math.abs(del-1)<1e-14) break;
+  }
+  return Math.exp(-x + a*Math.log(x) - logGamma(a))*h;
+}
+// Pearson χ² on the displayed bins; adjacent bins are pooled until each group has
+// an expected count ≥ 5 (standard validity rule). df = groups − 1 − k fitted params.
+function chiSquareGOF(obs, exp, k){
+  const groups = []; let O=0, E=0;
+  for (let i=0;i<obs.length;i++){ O+=obs[i]; E+=exp[i]; if (E>=5){ groups.push([O,E]); O=0; E=0; } }
+  if (E>0 || O>0){ if (groups.length) { groups[groups.length-1][0]+=O; groups[groups.length-1][1]+=E; } else groups.push([O,E]); }
+  const chi2 = groups.reduce((acc,[o,e])=> acc + (e>0 ? (o-e)*(o-e)/e : 0), 0);
+  const df = groups.length - 1 - k;
+  if (df < 1) return {chi2, df, ratio:NaN, p:NaN, groups:groups.length};
+  return {chi2, df, ratio: chi2/df, p: gammaQ(df/2, chi2/2), groups:groups.length};
+}
+function fmtP(p){ return !isFinite(p) ? '—' : (p<0.001 ? '<0.001' : p.toFixed(3)); }
+
 
 // Extracts complete open/closed dwell-time sojourns from a simulated sweep,
 // restricted to the pulse window. The first segment (latency to first event)
@@ -1809,11 +2037,12 @@ function renderHistograms(){
   const labels = edges.slice(0,-1).map((e,i)=>Math.sqrt(e*edges[i+1]).toFixed(2));
   chartClosedHist.data.labels = labels;
   chartClosedHist.data.datasets[0].data = binCounts(closedTimesAll, edges);
-  chartClosedHist.data.datasets[1].data = []; // clear stale fit overlay — data changed, re-fit needed
+  clearFitOverlays(chartClosedHist); // clear stale fit overlays — data changed, re-fit needed
+  clearResiduals(chartClosedResid); clearResiduals(chartOpenResid);
   chartClosedHist.update('none');
   chartOpenHist.data.labels = labels;
   chartOpenHist.data.datasets[0].data = binCounts(openTimesAll, edges);
-  chartOpenHist.data.datasets[1].data = [];
+  clearFitOverlays(chartOpenHist);
   chartOpenHist.update('none');
   document.getElementById('histStatsClosed').textContent = `n=${closedTimesAll.length}, mean=${meanOf(closedTimesAll).toFixed(3)} ms`;
   document.getElementById('histStatsOpen').textContent = `n=${openTimesAll.length}, mean=${meanOf(openTimesAll).toFixed(3)} ms`;
@@ -1900,8 +2129,9 @@ function resetHistRun(){
   chartHistScope.data.datasets[1].data = [];
   chartHistScope.data.datasets[2].data = [];
   chartHistScope.update();
-  chartClosedHist.data.labels = []; chartClosedHist.data.datasets[0].data = []; chartClosedHist.data.datasets[1].data = []; chartClosedHist.update();
-  chartOpenHist.data.labels = []; chartOpenHist.data.datasets[0].data = []; chartOpenHist.data.datasets[1].data = []; chartOpenHist.update();
+  chartClosedHist.data.labels = []; chartClosedHist.data.datasets[0].data = []; clearFitOverlays(chartClosedHist); chartClosedHist.update();
+  chartOpenHist.data.labels = []; chartOpenHist.data.datasets[0].data = []; clearFitOverlays(chartOpenHist); chartOpenHist.update();
+  clearResiduals(chartClosedResid); clearResiduals(chartOpenResid);
   document.getElementById('histStatsClosed').textContent = 'n=0';
   document.getElementById('histStatsOpen').textContent = 'n=0';
   document.getElementById('fitClosedResults').style.display = 'none';
@@ -1970,7 +2200,7 @@ function expectedCountsForFit(fit, edges){
   const nBins = edges.length-1;
   const counts = new Array(nBins).fill(0);
   for (let i=0;i<nBins;i++){
-    const a=edges[i], b=edges[i+1];
+    const a = i===0 ? 0 : edges[i], b=edges[i+1]; // bin 0 also holds dwells < first edge (see binCounts)
     let p=0;
     for (let k=0;k<fit.m;k++) p += fit.weights[k]*(Math.exp(-fit.lambdas[k]*a) - Math.exp(-fit.lambdas[k]*b));
     counts[i] = fit.n*p;
@@ -1980,6 +2210,7 @@ function expectedCountsForFit(fit, edges){
 function runFit(which){
   const data = which==='closed' ? closedTimesAll : openTimesAll;
   const chart = which==='closed' ? chartClosedHist : chartOpenHist;
+  const residChart = which==='closed' ? chartClosedResid : chartOpenResid;
   const resultsEl = document.getElementById(which==='closed'?'fitClosedResults':'fitOpenResults');
   const selectedM = +val(which==='closed'?'fitClosedN':'fitOpenN');
   if (data.length < 6){
@@ -2002,8 +2233,25 @@ function runFit(which){
   const edges = logBinEdges(HIST_N_BINS, HIST_T_MIN, lastHistTPulse);
   const labels = edges.slice(0,-1).map((e,i)=>Math.sqrt(e*edges[i+1]).toFixed(2));
   chart.data.labels = labels;
+  clearFitOverlays(chart);
   chart.data.datasets[1].data = expectedCountsForFit(selectedFit, edges);
+  chart.data.datasets[1].label = `Total fit (${selectedM} comp.)`;
+  // each component on its own: expected counts = n · w_k · (e^(−a/τ_k) − e^(−b/τ_k)) per bin
+  if (selectedM > 1){
+    for (let k=0; k<selectedM; k++){
+      const single = {m:1, weights:[selectedFit.weights[k]], lambdas:[selectedFit.lambdas[k]], n:selectedFit.n};
+      const ds = chart.data.datasets[2+k];
+      ds.data = expectedCountsForFit(single, edges);
+      ds.label = `τ${'₁₂₃₄'[k]} = ${selectedFit.tau[k].toFixed(2)} ms (${(selectedFit.weights[k]*100).toFixed(0)}%)`;
+    }
+  }
   chart.update('none');
+
+  // goodness of fit for every m on the displayed bins, residuals for the selected one
+  const obs = binCounts(data, edges);
+  const gof = {};
+  [1,2,3,4].forEach(m=>{ if (fits[m]) gof[m] = chiSquareGOF(obs, expectedCountsForFit(fits[m], edges), 2*m-1); });
+  showResiduals(residChart, labels, obs, chart.data.datasets[1].data);
 
   // comparison table across component counts actually fit (some m may be null if not enough data)
   const validMs = [1,2,3,4].filter(m=>fits[m]);
@@ -2011,20 +2259,33 @@ function runFit(which){
   const bestBicM = validMs.reduce((a,b)=> fits[b].bic<fits[a].bic ? b:a);
   let html = `<b>Model comparison (n=${data.length} events)</b><br>`;
   html += `<table style="width:100%; border-collapse:collapse; margin-top:4px;">`;
-  html += `<tr style="color:var(--panel-text-dim);"><td>m</td><td>logL</td><td>AIC</td><td>BIC</td></tr>`;
+  html += `<tr style="color:var(--panel-text-dim);"><td>m</td><td>logL</td><td>AIC</td><td>BIC</td><td>χ²/df</td><td>p</td></tr>`;
   validMs.forEach(m=>{
     const f = fits[m];
     const aicMark = m===bestAicM ? ' ◀ lowest AIC' : '';
     const bicMark = m===bestBicM ? ' ◀ lowest BIC' : '';
     const rowStyle = m===selectedM ? 'color:#e8a53d;' : '';
-    html += `<tr style="${rowStyle}"><td>${m}</td><td>${f.logL.toFixed(1)}</td><td>${f.aic.toFixed(1)}${aicMark}</td><td>${f.bic.toFixed(1)}${bicMark}</td></tr>`;
+    const g = gof[m];
+    html += `<tr style="${rowStyle}"><td>${m}</td><td>${f.logL.toFixed(1)}</td><td>${f.aic.toFixed(1)}${aicMark}</td><td>${f.bic.toFixed(1)}${bicMark}</td><td>${isFinite(g.ratio)?g.ratio.toFixed(2):'—'}</td><td>${fmtP(g.p)}</td></tr>`;
   });
   html += `</table>`;
   html += `<div style="margin-top:8px;"><b>Selected fit (m=${selectedM}):</b><br>`;
   selectedFit.tau.forEach((tau,i)=>{
-    html += `component ${i+1}: τ = ${tau.toFixed(3)} ms, weight = ${(selectedFit.weights[i]*100).toFixed(1)}%<br>`;
+    const sw = selectedM>1 ? `<span style="display:inline-block;width:14px;border-top:2px dashed ${FIT_COMP_COLORS[i]};vertical-align:middle;margin-right:6px;"></span>` : '';
+    html += `${sw}component ${i+1}: τ = ${tau.toFixed(3)} ms, weight = ${(selectedFit.weights[i]*100).toFixed(1)}%<br>`;
   });
   html += `</div>`;
+  // absolute goodness of fit of the selected model
+  const gs = gof[selectedM];
+  let verdict, col;
+  if (!isFinite(gs.p)){ verdict = 'too few populated bins to test — run more pulses'; col = 'var(--panel-text-dim)'; }
+  else if (gs.p >= 0.05){ verdict = 'good — the deviations are what random sampling would produce'; col = '#4dffa0'; }
+  else if (gs.p >= 0.001){ verdict = 'marginal — look at the residuals for a systematic pattern'; col = '#e8a53d'; }
+  else { verdict = 'poor — the model does not describe the histogram (check the residuals; try another m)'; col = '#ff5c8a'; }
+  html += `<div style="margin-top:8px;"><b>Goodness of fit (m=${selectedM}):</b> `
+    + `χ² = ${gs.chi2.toFixed(1)}, df = ${gs.df}, χ²/df = ${isFinite(gs.ratio)?gs.ratio.toFixed(2):'—'}, p ${gs.p<0.001?'< 0.001':'= '+fmtP(gs.p)}<br>`
+    + `<span style="color:${col};">● ${verdict}</span></div>`;
+  html += `<div style="margin-top:6px;">logL, AIC and BIC only <i>compare</i> models fitted to this same histogram (lower AIC/BIC = better trade-off between fit and number of parameters). χ²/df and the residual panel tell you whether the chosen model actually fits: χ²/df ≈ 1 and residuals scattered randomly within ±2 mean a good fit. (χ² uses the displayed bins, pooled so each has ≥5 expected events.)</div>`;
   if (bestAicM !== bestBicM){
     html += `<div style="margin-top:6px;">AIC and BIC disagree here (AIC favors m=${bestAicM}, BIC favors m=${bestBicM}) — BIC penalizes extra parameters more heavily, so it's usually the more conservative choice when the two differ.</div>`;
   }
@@ -2052,7 +2313,7 @@ function wireCopy(btnId, tableId){
 }
 wireCopy('copySingleBtn','tblSingleIV');
 wireCopy('copySweepsSummaryBtn','tblSweeps');
-wireCopy('copySweepsBtn','tblSweepsPoints');
+wireCopy('copyPoVBtn','tblPoV');
 wireCopy('copyEnsembleBtn','tblEnsemblePoints');
 
 /* ================= RUN BUTTONS ================= */
@@ -2074,20 +2335,4 @@ resetCursorsToDefaults();
 <!-- lab-foot:end -->
 
 
-<script>mendeleyWebImporter = {
-  downloadPdfs(e,t) { return this._call('downloadPdfs', [e,t]); },
-  open() { return this._call('open', []); },
-  setLoginToken(e) { return this._call('setLoginToken', [e]); },
-  _call(methodName, methodArgs) {
-    const id = Math.random();
-    window.postMessage({ id, token: '0.18331861519049752', methodName, methodArgs }, 'https://neurofisio-usach.cl');
-    return new Promise(resolve => {
-      const listener = window.addEventListener('message', event => {
-        const data = event.data;
-        if (typeof data !== 'object' || !('result' in data) || data.id !== id) return;
-        window.removeEventListener('message', listener);
-        resolve(data.result);
-      });
-    });
-  }
-};</script></body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>
+</body></html>
