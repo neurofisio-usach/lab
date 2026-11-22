@@ -395,7 +395,7 @@ open-time histogram multi-exponential.</div>
           <h2>Multiple sweeps</h2>
           <p>The same channel, repeated trials at the same test 
 potential — trial-to-trial variability in latency, opening count and 
-duration. As on a real rig, one sweep is acquired every 500 ms and each 
+duration. Sweeps are acquired at 4 per second (one every 250 ms) and each 
 new sweep is drawn below the previous one.</p>
         </div>
         <div class="field" style="width:160px;">
@@ -413,24 +413,24 @@ The number of sweeps locks while a run is in progress — press <b>Reset</b> to 
         <span class="v" id="sweepsProgress" style="font-family:var(--font-mono); font-size:12.5px;">Sweep 0 / 20</span>
       </div>
       <div class="scope"><div class="chart-box chart-box-tall"><canvas id="chartSweeps"></canvas></div></div>
-      <div class="note" style="margin-top:10px;">After a run, press <b>Add mean Po to plot</b> to store the mean open probability of all sweeps recorded at this test potential. Change the test potential, run again and add another point — repeat to build the <b>Po–V curve</b> and see how channel opening depends on voltage. Error bars are ± SEM across sweeps.</div>
+      <div class="note" style="margin-top:10px;">After a run, press <b>Add point to plot</b> to store the mean open probability and the mean first latency of the sweeps recorded at this test potential. Change the test potential, run again and add another point — repeat to build the <b>Po–V</b> and <b>latency–V</b> curves (switch with the selector above the plot). Latency is averaged only over sweeps with at least one opening during the pulse (null sweeps are excluded; their number is n − n<sub>open</sub>). Error bars are ± SEM.</div>
       <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-        <button class="run-btn" id="addPoVBtn" style="max-width:220px; background:#6fb8ff; color:#0a0f08;">Add mean Po to plot</button>
-        <button class="ghost-btn" id="clearPoVBtn" style="max-width:160px;">Clear Po–V data</button>
+        <button class="run-btn" id="addPoVBtn" style="max-width:220px; background:#6fb8ff; color:#0a0f08;">Add point to plot</button>
+        <button class="ghost-btn" id="clearPoVBtn" style="max-width:160px;">Clear plot data</button>
       </div>
       <div class="two-col" style="margin-top:16px; align-items:start;">
         <div>
           <div class="table-controls" style="margin-top:0;">
-            <div class="left"><b style="font-size:12.5px;">Mean Po per test potential</b></div>
+            <div class="left"><b style="font-size:12.5px;">Mean Po and first latency per test potential</b></div>
             <div><button id="copyPoVBtn">Copy table</button></div>
           </div>
           <div class="table-wrap"><table class="data-table" id="tblPoV">
-            <thead><tr><th>#</th><th>Test V (mV)</th><th>Sweeps (n)</th><th>Mean Po</th><th>SD</th><th>SEM</th></tr></thead>
+            <thead><tr><th>#</th><th>Test V (mV)</th><th>Sweeps (n)</th><th>Mean Po</th><th>SD</th><th>SEM</th><th>n<sub>open</sub></th><th>Mean latency (ms)</th><th>SD</th><th>SEM</th></tr></thead>
             <tbody></tbody>
           </table></div>
         </div>
         <div>
-          <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;">Po–V plot</b></div><div></div></div>
+          <div class="table-controls" style="margin-top:0;"><div class="left"><b style="font-size:12.5px;" id="povPlotTitle">Po–V plot</b></div><div><select id="povPlotMode" style="font-family:var(--font-mono); font-size:12px;"><option value="po">Mean Po vs V</option><option value="lat">Mean first latency vs V</option></select></div></div>
           <div class="scope"><div class="chart-box" style="height:300px;"><canvas id="chartPoV"></canvas></div></div>
         </div>
       </div>
@@ -1084,8 +1084,9 @@ function resetCursorsToDefaults(){
 
 // Real-time acquisition state for the Multiple Sweeps and Ensemble tabs.
 // Declared before the charts because the sweeps y-axis tick callbacks read it.
-const SWEEP_INTERVAL_MS = 500; // inter-sweep interval, as on a real rig
-let sweepsRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, step:1, plannedOffsets:[], pos:[] };
+const SWEEP_INTERVAL_MS = 500; // inter-sweep interval, as on a real rig (Ensemble tab)
+const SWEEPS_TAB_INTERVAL_MS = 250; // Multiple Sweeps tab: 4 sweeps per second
+let sweepsRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, step:1, plannedOffsets:[], pos:[], lats:[] };
 let ensRun = { running:false, timer:null, index:0, n:0, p:null, rng:null, sumI:null, timeRef:null, stride:3 };
 
 const chartSweeps = new Chart(document.getElementById('chartSweeps'), {
@@ -1555,7 +1556,7 @@ document.getElementById('clearPointsTab1Btn').addEventListener('click', ()=>{
 });
 
 /* ================= TAB 2: MULTIPLE SWEEPS (real-time acquisition) ================= */
-// One sweep every SWEEP_INTERVAL_MS, each drawn below the previous one, like a
+// One sweep every SWEEPS_TAB_INTERVAL_MS (4/s), each drawn below the previous one, like a
 // chart recorder / acquisition software. Same Start/Stop/Reset model as the
 // Dwell-Time tab: side-panel parameters are snapshotted when a run starts.
 function getNSweeps(){ return Math.max(1, Math.round(+val('nSweeps')) || 20); }
@@ -1580,7 +1581,7 @@ function prepareSweepsRun(){
   sweepsRun.p = p; sweepsRun.n = n; sweepsRun.index = 0; sweepsRun.step = step;
   sweepsRun.rng = mulberry32(p.seed);
   sweepsRun.plannedOffsets = Array.from({length:n}, (_,s)=>-s*step);
-  sweepsRun.pos = [];
+  sweepsRun.pos = []; sweepsRun.lats = [];
   chartSweeps.data.datasets = [];
   // Fix the axes for the whole run so the display does not rescale as sweeps arrive.
   const xs = chartSweeps.options.scales.x, ys = chartSweeps.options.scales.y;
@@ -1608,6 +1609,8 @@ function sweepsTick(){
   // (for the Naᵥ models this includes time spent inactivated)
   const closedTime = p.tPulse - res.openTimeInPulse;
   sweepsRun.pos.push(res.po);
+  // first latency counts only if the first opening happened during the pulse (null sweeps excluded)
+  if (res.firstOpenLatency!==null && res.firstOpenLatency < p.tPulse) sweepsRun.lats.push(res.firstOpenLatency);
   const tr = document.createElement('tr');
   tr.innerHTML = `<td>${s+1}</td><td>${res.firstOpenLatency!==null?res.firstOpenLatency.toFixed(3):'—'}</td><td>${res.events.length}</td><td>${res.openTimeInPulse.toFixed(3)}</td><td>${closedTime.toFixed(3)}</td><td>${res.po.toFixed(4)}</td>`;
   document.querySelector('#tblSweeps tbody').appendChild(tr);
@@ -1622,7 +1625,7 @@ function startSweepsRun(){
   sweepsRun.running = true;
   setSweepsButtons();
   sweepsTick();                                   // first sweep immediately...
-  if (sweepsRun.running) sweepsRun.timer = setInterval(sweepsTick, SWEEP_INTERVAL_MS); // ...then one every 500 ms
+  if (sweepsRun.running) sweepsRun.timer = setInterval(sweepsTick, SWEEPS_TAB_INTERVAL_MS); // ...then 4 per second
 }
 function stopSweepsRun(){
   sweepsRun.running = false;
@@ -1631,7 +1634,7 @@ function stopSweepsRun(){
 }
 function resetSweepsRun(){
   stopSweepsRun();
-  sweepsRun.index = 0; sweepsRun.n = 0; sweepsRun.plannedOffsets = []; sweepsRun.pos = [];
+  sweepsRun.index = 0; sweepsRun.n = 0; sweepsRun.plannedOffsets = []; sweepsRun.pos = []; sweepsRun.lats = [];
   chartSweeps.data.datasets = [];
   chartSweeps.options.plugins.pulseMarkers = { start:null, end:null };
   chartSweeps.update('none');
@@ -1665,7 +1668,7 @@ const chartPoV = new Chart(document.getElementById('chartPoV'), {
   type:'scatter',
   data:{ datasets:[{ label:'Mean Po', data:[], showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:'#f4ecd8', pointBorderColor:'#f4ecd8' }] },
   options:{ animation:false, responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{display:false}, tooltip:{enabled:true, callbacks:{ label:(c)=>`V = ${c.raw.x} mV · Po = ${c.raw.y.toFixed(4)} ± ${c.raw.sem.toFixed(4)} (n = ${c.raw.n})` }} },
+    plugins:{ legend:{display:false}, tooltip:{enabled:true, callbacks:{ label:(c)=> c.raw.kind==='lat' ? `V = ${c.raw.x} mV · latency = ${c.raw.y.toFixed(3)} ± ${(c.raw.sem||0).toFixed(3)} ms (n = ${c.raw.n} sweeps with openings)` : `V = ${c.raw.x} mV · Po = ${c.raw.y.toFixed(4)} ± ${c.raw.sem.toFixed(4)} (n = ${c.raw.n})` }} },
     scales:{
       x:{ type:'linear', title:{display:true,text:'Test potential (mV)',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'} },
       y:{ title:{display:true,text:'Mean Po',color:'#b8ae95'}, ticks:{color:'#b8ae95'}, grid:{color:'#0f3a22'}, beginAtZero:true }
@@ -1679,10 +1682,21 @@ function renderPoV(){
   tbody.innerHTML = '';
   poVPoints.forEach((pt,i)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${pt.V}</td><td>${pt.n}</td><td>${pt.mean.toFixed(4)}</td><td>${pt.sd.toFixed(4)}</td><td>${pt.sem.toFixed(4)}</td>`;
+    const L = pt.lat;
+    tr.innerHTML = `<td>${i+1}</td><td>${pt.V}</td><td>${pt.n}</td><td>${pt.mean.toFixed(4)}</td><td>${pt.sd.toFixed(4)}</td><td>${pt.sem.toFixed(4)}</td>`
+      + `<td>${L.n}</td><td>${L.n?L.mean.toFixed(3):'—'}</td><td>${L.n>1?L.sd.toFixed(3):'—'}</td><td>${L.n>1?L.sem.toFixed(3):'—'}</td>`;
     tbody.appendChild(tr);
   });
-  chartPoV.data.datasets[0].data = poVPoints.map(pt=>({x:pt.V, y:pt.mean, sem:pt.sem, n:pt.n}));
+  const mode = document.getElementById('povPlotMode').value;
+  if (mode==='lat'){
+    chartPoV.data.datasets[0].data = poVPoints.filter(pt=>pt.lat.n>0).map(pt=>({x:pt.V, y:pt.lat.mean, sem:pt.lat.sem, n:pt.lat.n, kind:'lat'}));
+    chartPoV.options.scales.y.title.text = 'Mean first latency (ms)';
+    document.getElementById('povPlotTitle').textContent = 'Latency–V plot';
+  } else {
+    chartPoV.data.datasets[0].data = poVPoints.map(pt=>({x:pt.V, y:pt.mean, sem:pt.sem, n:pt.n, kind:'po'}));
+    chartPoV.options.scales.y.title.text = 'Mean Po';
+    document.getElementById('povPlotTitle').textContent = 'Po–V plot';
+  }
   chartPoV.update();
 }
 function updateAddPoVBtn(){
@@ -1693,9 +1707,13 @@ document.getElementById('addPoVBtn').addEventListener('click', ()=>{
   if (!n || sweepsRun.running) return;
   const mean = pos.reduce((a,b)=>a+b,0)/n;
   const sd = n>1 ? Math.sqrt(pos.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(n-1)) : 0;
-  poVPoints.push({ V: sweepsRun.p.testV, n, mean, sd, sem: sd/Math.sqrt(n) });
+  const lats = sweepsRun.lats, nl = lats.length;
+  const lm = nl ? lats.reduce((a,b)=>a+b,0)/nl : 0;
+  const lsd = nl>1 ? Math.sqrt(lats.reduce((a,b)=>a+(b-lm)*(b-lm),0)/(nl-1)) : 0;
+  poVPoints.push({ V: sweepsRun.p.testV, n, mean, sd, sem: sd/Math.sqrt(n), lat:{ n:nl, mean:lm, sd:lsd, sem: nl>1 ? lsd/Math.sqrt(nl) : 0 } });
   renderPoV();
 });
+document.getElementById('povPlotMode').addEventListener('change', renderPoV);
 document.getElementById('clearPoVBtn').addEventListener('click', ()=>{ poVPoints = []; renderPoV(); });
 updateAddPoVBtn();
 
