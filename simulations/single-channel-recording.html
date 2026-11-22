@@ -474,7 +474,7 @@ locks while a run is in progress — press <b>Reset</b> to change it.</div>
         <div class="chart-box" style="height:136px;"><canvas id="chartEnsemble"></canvas></div>
         <div class="chart-box" style="height:410px; margin-top:4px;"><canvas id="chartEnsembleSweeps"></canvas></div>
       </div>
-      <div class="note" style="margin:12px 0;"><b>Top:</b> running ensemble average of all sweeps acquired so far, updated after every sweep — watch the recording noise shrink (as 1/√n) and the smooth macroscopic time course emerge. <b>Bottom:</b> each sweep as it arrives (bright), earlier sweeps fading into the background. The final average is i × Po(t); multiplied by the number of channels in a cell, it is the whole-cell macroscopic current.</div>
+      <div class="note" style="margin:12px 0;"><b>Top:</b> running ensemble average of all sweeps acquired so far, updated after every sweep — watch the recording noise shrink (as 1/√n) and the smooth macroscopic time course emerge. <b>Bottom:</b> each sweep as it arrives (white), earlier sweeps fading into the background. The final average is i × Po(t); multiplied by the number of channels in a cell, it is the whole-cell macroscopic current.</div>
       <div style="margin-top:10px;"><button class="ghost-btn" id="clearPointsTab3Btn" style="max-width:160px;">Clear table</button></div>
       <div class="two-col" style="margin-top:16px; align-items:start;">
         <div>
@@ -1703,7 +1703,7 @@ updateAddPoVBtn();
 // One sweep every SWEEP_INTERVAL_MS. Bottom panel: sweeps overlaid, newest bright,
 // older ones fading. Top panel: running average of all (noisy) sweeps so far,
 // redrawn after every sweep, so the noise visibly shrinks as 1/√n.
-const ENS_FAINT = 'rgba(77,255,160,0.14)', ENS_BRIGHT = '#4dffa0';
+const ENS_FAINT = 'rgba(77,255,160,0.14)', ENS_BRIGHT = '#ffffff';
 let ensYLim = null;
 function getNEnsemble(){ return Math.max(2, Math.round(+val('nEnsemble')) || 150); }
 function ensembleFinished(){ return ensRun.index>0 && ensRun.index>=ensRun.n; }
