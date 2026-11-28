@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spontaneous Miniature EPPs — Poisson Process Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --danger: #d9694f;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1180px; }
+
+  header{ margin-bottom: 18px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.9rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p{
+    max-width: 760px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+
+  .topbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    margin: 0 0 18px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+  }
+  .topbar .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+  }
+  input[type="text"]{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--scope-bg);
+    color: var(--phosphor);
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    padding: 7px 10px;
+    width: 110px;
+  }
+  input[type="range"]{ accent-color: var(--amber); width: 160px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    text-align: right;
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; background: var(--scope-bg); }
+
+  .controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin-top: 14px;
+  }
+  button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  button:hover{ border-color: var(--amber-dim); color: var(--amber); }
+  button:focus-visible, .cond-btn:focus-visible, input:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+  button.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+  }
+  button.primary:hover{ background:#f0b455; color:#1c1408; }
+  button.primary.running{ background: var(--danger); border-color: var(--danger); color:#2a0d06; }
+  button.primary.running:hover{ background:#e57b60; }
+
+  .cond-group{ display:flex; gap:0; border:1px solid var(--panel-edge); border-radius:6px; overflow:hidden; flex-wrap: wrap; }
+  .cond-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: none;
+    border-radius: 0;
+    padding: 8px 12px;
+    cursor:pointer;
+  }
+  .cond-btn + .cond-btn{ border-left: 1px solid var(--panel-edge); }
+  .cond-btn.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  .cond-btn:hover{ color: var(--amber); }
+
+  .toggle{
+    display:flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle input{ accent-color: var(--amber); width:14px; height:14px; }
+
+  .readout{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--phosphor);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+  @media (max-width: 520px){ .stats{ grid-template-columns: 1fr; } }
+  .stats .row{
+    display:flex; justify-content:space-between; gap: 8px;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); text-align:right; }
+  .stats .row .v.amber{ color: var(--amber); }
+  .stats .section-label{
+    grid-column: 1 / -1;
+    color: var(--paper-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    border-top: 1px solid var(--panel-edge);
+    padding-top: 8px;
+  }
+  .stats .section-label:first-child{ border-top:none; margin-top:0; padding-top:0; }
+  .hidden{ display:none !important; }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p, details li{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+  }
+  details p{ margin: 10px 0 0; max-width: 820px; }
+  details ol{ margin: 10px 0 0; padding-left: 20px; max-width: 820px; }
+  details code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+body{align-items:stretch;padding-left:28px;padding-right:28px;padding-top:0}
+.wrap{max-width:none;padding-top:14px}
+.lab-nav{padding-left:0;padding-right:0}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · SYNAPTIC PHYSIOLOGY · STATISTICS</p>
+    <h1>Spontaneous Miniature End-Plate Potentials</h1>
+    <p>
+      A resting frog end-plate, recorded with no nerve stimulation, after Fatt &amp; Katz (1952). Small
+      potentials of roughly half a millivolt appear at irregular moments: single quanta released at random.
+      Are they really random? Record from four junctions and test whether the intervals between events
+      follow an exponential distribution and the number of events per time window follows a Poisson
+      distribution. One junction behaves like a Poisson process; the other mystery junctions may not.
+    </p>
+  </header>
+
+  <div class="topbar">
+    <span class="label">Recording site</span>
+    <div class="cond-group" id="sourceGroup">
+      <button class="cond-btn active" data-src="0">Explore</button>
+      <button class="cond-btn" data-src="1">Junction A</button>
+      <button class="cond-btn" data-src="2">Junction B</button>
+      <button class="cond-btn" data-src="3">Junction C</button>
+    </div>
+    <label class="toggle hidden" id="rateWrap">rate λ
+      <input type="range" id="rateSlider" min="0.2" max="10" step="0.1" value="1">
+      <span class="readout" id="rateReadout" style="margin-left:0">1.0 /s</span>
+    </label>
+    <span class="label" style="margin-left:auto">Group code</span>
+    <input type="text" id="groupCode" placeholder="e.g. 7" aria-label="Group code">
+    <button id="applyCode">Load</button>
+  </div>
+
+  <div class="grid">
+
+    <!-- SCOPE -->
+    <div class="panel">
+      <div class="panel-title">
+        <h2>OSCILLOSCOPE — RESTING END-PLATE</h2>
+        <span id="scopeInfo">last 2 s</span>
+      </div>
+      <canvas id="scopeCanvas"></canvas>
+      <div class="controls">
+        <button id="runBtn" class="primary">Start recording</button>
+        <div class="cond-group" id="speedGroup">
+          <button class="cond-btn active" data-speed="1">1×</button>
+          <button class="cond-btn" data-speed="10">10×</button>
+          <button class="cond-btn" data-speed="100">100×</button>
+        </div>
+        <button id="fastBtn">Record 500 s now</button>
+        <button id="resetBtn">Reset</button>
+        <span class="readout" id="timeReadout">t = 0.0 s</span>
+      </div>
+    </div>
+
+    <!-- INTERVALS -->
+    <div class="panel">
+      <div class="panel-title">
+        <h2>INTER-EVENT INTERVAL HISTOGRAM</h2>
+        <span id="intInfo">no intervals yet</span>
+      </div>
+      <canvas id="intCanvas"></canvas>
+      <div class="controls">
+        <span class="label toggle" style="cursor:default">bin</span>
+        <div class="cond-group" id="binGroup">
+          <button class="cond-btn" data-bin="0.02">20 ms</button>
+          <button class="cond-btn active" data-bin="0.05">50 ms</button>
+          <button class="cond-btn" data-bin="0.1">100 ms</button>
+          <button class="cond-btn" data-bin="0.2">200 ms</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="logToggle"> log y-axis</label>
+        <label class="toggle"><input type="checkbox" id="expToggle"> exponential prediction</label>
+      </div>
+      <div class="stats">
+        <div class="section-label">RECORDING</div>
+        <div class="row"><span class="k">events</span><span class="v" id="sEvents">0</span></div>
+        <div class="row"><span class="k">mean rate (events / time)</span><span class="v" id="sRate">— /s</span></div>
+        <div class="section-label">INTERVALS</div>
+        <div class="row"><span class="k">mean interval</span><span class="v" id="sMeanI">— s</span></div>
+        <div class="row"><span class="k">SD of intervals</span><span class="v" id="sSdI">— s</span></div>
+        <div class="row"><span class="k">CV = SD / mean</span><span class="v" id="sCV">—</span></div>
+        <div class="row"><span class="k">rate from 1 / mean interval</span><span class="v" id="sRateI">— /s</span></div>
+        <div class="row hidden" id="truthRow"><span class="k">true process (this junction)</span><span class="v amber" id="sTruth">hidden</span></div>
+      </div>
+    </div>
+
+    <!-- RASTER -->
+    <div class="panel">
+      <div class="panel-title">
+        <h2>EVENT RASTER — ONE ROW PER SECOND</h2>
+        <span>last 30 s, newest at bottom</span>
+      </div>
+      <canvas id="rasterCanvas"></canvas>
+      <div class="controls">
+        <label class="toggle"><input type="checkbox" id="revealToggle"> reveal true process</label>
+        <button id="csvBtn" style="margin-left:auto">Download events (CSV)</button>
+      </div>
+    </div>
+
+    <!-- COUNTS -->
+    <div class="panel">
+      <div class="panel-title">
+        <h2>EVENTS PER TIME WINDOW</h2>
+        <span id="cntInfo">record longer to fill windows</span>
+      </div>
+      <canvas id="cntCanvas"></canvas>
+      <div class="controls">
+        <span class="label toggle" style="cursor:default">window Δt</span>
+        <div class="cond-group" id="winGroup">
+          <button class="cond-btn" data-win="0.25">0.25 s</button>
+          <button class="cond-btn" data-win="0.5">0.5 s</button>
+          <button class="cond-btn active" data-win="1">1 s</button>
+          <button class="cond-btn" data-win="2">2 s</button>
+          <button class="cond-btn" data-win="5">5 s</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="poisToggle"> Poisson prediction</label>
+      </div>
+      <div class="stats">
+        <div class="section-label">COUNTS</div>
+        <div class="row"><span class="k">windows</span><span class="v" id="sWin">0</span></div>
+        <div class="row"><span class="k">mean count μ</span><span class="v" id="sMeanC">—</span></div>
+        <div class="row"><span class="k">variance of count</span><span class="v" id="sVarC">—</span></div>
+        <div class="row"><span class="k">Fano factor = var / mean</span><span class="v" id="sFano">—</span></div>
+        <div class="section-label">GOODNESS OF FIT TO POISSON(μ)</div>
+        <div class="row"><span class="k">χ²</span><span class="v" id="sChi">—</span></div>
+        <div class="row"><span class="k">degrees of freedom</span><span class="v" id="sDf">—</span></div>
+        <div class="row"><span class="k">p-value</span><span class="v" id="sP">—</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      Fatt &amp; Katz (1952) recorded from frog muscle fibres at the end-plate with no nerve stimulation and saw
+      small spontaneous potentials, now called miniature end-plate potentials (mEPPs). They showed that the
+      intervals between them were distributed exponentially, as expected if each quantum is released
+      independently of the others at a constant average rate. That is the definition of a <b>Poisson process</b>.
+    </p>
+    <p>
+      A Poisson process with rate <code>λ</code> has two equivalent signatures. The waiting time between events
+      is exponential, <code>p(t) = λ·e^(−λt)</code>, with mean <code>1/λ</code> and SD also <code>1/λ</code>, so
+      the coefficient of variation is <code>CV = 1</code>. The number of events in a window of length
+      <code>Δt</code> follows a Poisson distribution, <code>P(k) = e^(−μ)·μ^k / k!</code> with
+      <code>μ = λ·Δt</code>, whose variance equals its mean, so the Fano factor is <code>1</code>. On a
+      logarithmic y-axis the exponential interval histogram becomes a straight line with slope <code>−λ</code>.
+    </p>
+    <p>
+      In <b>Explore</b> you set <code>λ</code> yourself and the process is always Poisson. Junctions A, B and C
+      have hidden rates of about one event per second. Exactly one of them is a Poisson process. Another fires
+      too regularly: its intervals are gamma-distributed, like a noisy clock. The third releases in clusters:
+      bursts of several quanta at short intervals, separated by long silences. All three have similar mean
+      rates, so the rate alone cannot tell them apart; only the shape of the distributions can. The
+      assignment and the rates are randomized on page load. Typing the same group code always reproduces the
+      same junctions and the same data.
+    </p>
+    <p>
+      Recording noise is Gaussian (SD ≈ 0.025 mV) and mEPP amplitudes vary around a quantal size near 0.5 mV.
+      Every event is detected, so the analysis uses the true event times. The χ² test groups count classes
+      so that each has at least 5 expected windows; the degrees of freedom are the number of classes minus 2,
+      because <code>μ</code> is estimated from the same data. The CSV export contains event times and
+      amplitudes, for analysis in a spreadsheet or Python.
+    </p>
+    <p>Things to try:</p>
+    <ol>
+      <li>In Explore, record a few hundred events. Which interval is most common, the shortest or the mean? Does a random train look evenly spaced in the raster?</li>
+      <li>Turn on the log y-axis. Read the slope of the line and compare it with <code>1/mean interval</code>.</li>
+      <li>Change the bin width and the window Δt. Which conclusions change, and which do not?</li>
+      <li>Record about 1000 s from each junction. Use CV, Fano factor, the shape of both histograms and the χ² test to decide which junction is Poisson, which is regular and which is clustered. Then reveal the answer.</li>
+      <li>With only 30 s of data, can you still tell them apart? How much recording do you need?</li>
+    </ol>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  // ---------- constants ----------
+  const DS = 0.0005;           // s, sample interval of the displayed trace
+  const W_TRACE = 2.0;         // s, oscilloscope window
+  const NOISE = 0.025;         // mV, baseline noise SD
+  const TAU_R = 0.0004, TAU_D = 0.004; // s, mEPP rise/decay
+  const T_PK = (TAU_R*TAU_D/(TAU_D-TAU_R))*Math.log(TAU_D/TAU_R);
+  const PK_NORM = Math.exp(-T_PK/TAU_D) - Math.exp(-T_PK/TAU_R);
+  const REG_SHAPE = 6;         // gamma shape for the "regular" junction
+  const BURST_MEAN = 3.5;      // mean quanta per burst, "clustered" junction
+  const BURST_ISI = 0.04;      // s, mean interval inside a burst
+  const RASTER_ROWS = 30;
+  const LABELS = ['Explore','Junction A','Junction B','Junction C'];
+  const KIND_NAMES = {poisson:'Poisson (random)', regular:'regular (gamma, shape 6)', bursty:'clustered (bursts)'};
+
+  // ---------- seeded RNG ----------
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function seedFromString(s){
+    let h = 2166136261;
+    for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function expo(r, mean){ return -mean*Math.log(1 - r()); }
+  function gauss(r){
+    let u = 0; while(u === 0) u = r();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r());
+  }
+  // deterministic noise so the scrolling trace is stable from frame to frame
+  function hash32(n){
+    n = Math.imul(n ^ (n >>> 16), 0x85ebca6b);
+    n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35);
+    n ^= n >>> 16;
+    return (n >>> 0) / 4294967296;
+  }
+  function noiseAt(k, salt){
+    const u1 = Math.max(hash32((k*2 + salt) | 0), 1e-9);
+    const u2 = hash32((k*2 + 1 + salt*7919) | 0);
+    return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+  }
+
+  // ---------- special functions ----------
+  function gammaln(x){
+    const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+    let y=x, tmp=x+5.5; tmp -= (x+0.5)*Math.log(tmp);
+    let ser=1.000000000190015;
+    for(let j=0;j<6;j++) ser += c[j]/++y;
+    return -tmp + Math.log(2.5066282746310005*ser/x);
+  }
+  function gser(a,x){
+    if(x <= 0) return 0;
+    let ap=a, sum=1/a, del=sum;
+    for(let n=0;n<1000;n++){ ap++; del*=x/ap; sum+=del; if(Math.abs(del) < Math.abs(sum)*1e-13) break; }
+    return sum*Math.exp(-x + a*Math.log(x) - gammaln(a));
+  }
+  function gcf(a,x){
+    const FP=1e-300;
+    let b=x+1-a, c=1/FP, d=1/b, h=d;
+    for(let i=1;i<1000;i++){
+      const an=-i*(i-a); b+=2;
+      d=an*d+b; if(Math.abs(d)<FP) d=FP;
+      c=b+an/c; if(Math.abs(c)<FP) c=FP;
+      d=1/d; const del=d*c; h*=del;
+      if(Math.abs(del-1)<1e-13) break;
+    }
+    return Math.exp(-x + a*Math.log(x) - gammaln(a))*h;
+  }
+  function gammq(a,x){ return (x < a+1) ? 1 - gser(a,x) : gcf(a,x); } // upper regularized
+  function chi2p(chi, df){ return gammq(df/2, chi/2); }
+  function poisPMF(k, mu){
+    if(mu <= 0) return k === 0 ? 1 : 0;
+    return Math.exp(k*Math.log(mu) - mu - gammaln(k+1));
+  }
+
+  // ---------- event sources ----------
+  let sources = [], cur = 0, seedLabel = '';
+
+  function makeSource(kind, rate, q, seed, salt){
+    return { kind, rate, q, rng: mulberry32(seed), salt, events: [], amps: [], T: 0, nextT: null, burstLeft: 0 };
+  }
+  function nextInterval(s){
+    const r = s.rng;
+    if(s.kind === 'poisson') return expo(r, 1/s.rate);
+    if(s.kind === 'regular'){
+      let x = 0;
+      for(let i=0;i<REG_SHAPE;i++) x += expo(r, 1/(REG_SHAPE*s.rate));
+      return x;
+    }
+    // clustered: geometric number of quanta per burst, short intervals within bursts
+    if(s.burstLeft > 0){ s.burstLeft--; return expo(r, BURST_ISI); }
+    const p = 1/BURST_MEAN;
+    const n = 1 + Math.floor(Math.log(1 - r())/Math.log(1 - p));
+    s.burstLeft = n - 1;
+    const gap = BURST_MEAN/s.rate - (BURST_MEAN - 1)*BURST_ISI;
+    return expo(r, gap);
+  }
+  function advance(s, Tnew){
+    if(s.nextT === null) s.nextT = nextInterval(s);
+    while(s.nextT <= Tnew){
+      s.events.push(s.nextT);
+      const a = s.q*(1 + 0.3*gauss(s.rng));
+      s.amps.push(Math.max(a, 0.3*s.q));
+      s.nextT += nextInterval(s);
+    }
+    s.T = Tnew;
+  }
+
+  function buildSources(seed){
+    const r = mulberry32(seed);
+    const kinds = ['poisson','regular','bursty'];
+    for(let i=kinds.length-1;i>0;i--){ const j = Math.floor(r()*(i+1)); [kinds[i],kinds[j]] = [kinds[j],kinds[i]]; }
+    const q = 0.4 + 0.2*r();
+    const exploreRate = +document.getElementById('rateSlider').value;
+    sources = [ makeSource('poisson', exploreRate, q, (seed ^ 0xABCDEF) >>> 0, 11) ];
+    for(let i=0;i<3;i++){
+      const rate = +(0.8 + 0.7*r()).toFixed(2);
+      sources.push(makeSource(kinds[i], rate, q, (seed ^ Math.imul(i+1, 0x9E3779B1)) >>> 0, 101 + 37*i));
+    }
+  }
+  function resetSource(i){
+    const s = sources[i];
+    const seed = Math.floor(s.rng()*4294967296);
+    sources[i] = makeSource(s.kind, s.rate, s.q, seed, s.salt);
+  }
+
+  // ---------- canvas setup ----------
+  function setupCanvas(id, w, h){
+    const c = document.getElementById(id);
+    const dpr = window.devicePixelRatio || 1;
+    c.width = w*dpr; c.height = h*dpr;
+    const ctx = c.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {c, ctx, w, h};
+  }
+  const scope = setupCanvas('scopeCanvas', 640, 300);
+  const raster = setupCanvas('rasterCanvas', 640, 300);
+  const intC = setupCanvas('intCanvas', 640, 300);
+  const cntC = setupCanvas('cntCanvas', 640, 300);
+
+  const COL = {
+    grid: 'rgba(77,255,160,0.10)',
+    axis: 'rgba(184,174,149,0.55)',
+    text: '#b8ae95',
+    phos: '#4dffa0',
+    phosDim: 'rgba(77,255,160,0.28)',
+    amber: '#e8a53d'
+  };
+  const FONT = '11px "JetBrains Mono", monospace';
+
+  function clear(cv){ cv.ctx.fillStyle = '#05130a'; cv.ctx.fillRect(0,0,cv.w,cv.h); }
+  function fmtNum(x, d){ return (x === null || !isFinite(x)) ? '—' : x.toFixed(d); }
+
+  // ---------- oscilloscope ----------
+  const traceBuf = new Float32Array(Math.round(W_TRACE/DS));
+  function lowerBound(arr, x){
+    let lo=0, hi=arr.length;
+    while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<x) lo=m+1; else hi=m; }
+    return lo;
+  }
+  function drawScope(){
+    const s = sources[cur], cv = scope, ctx = cv.ctx;
+    clear(cv);
+    const P = {x:46, y:12, w:cv.w-58, h:cv.h-44};
+    const yMin = -0.3, yMax = 1.2;
+    const Y = v => P.y + P.h*(1 - (v - yMin)/(yMax - yMin));
+    const t1 = s.T, t0 = t1 - W_TRACE, N = traceBuf.length;
+    const k0 = Math.floor(t0/DS);
+
+    // grid + labels
+    ctx.font = FONT; ctx.lineWidth = 1;
+    for(let v = 0; v <= 1.0001; v += 0.5){
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(P.x, Y(v)); ctx.lineTo(P.x+P.w, Y(v)); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(v.toFixed(1), P.x-6, Y(v));
+    }
+    ctx.save(); ctx.translate(12, P.y+P.h/2); ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center'; ctx.fillText('mV', 0, 0); ctx.restore();
+    for(let i=0;i<=4;i++){
+      const x = P.x + P.w*i/4;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(x, P.y); ctx.lineTo(x, P.y+P.h); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = i === 4 ? 'right' : (i === 0 ? 'left' : 'center'); ctx.textBaseline = 'top';
+      ctx.fillText((W_TRACE*i/4).toFixed(1)+' s', x, P.y+P.h+8);
+    }
+
+    // build trace
+    for(let i=0;i<N;i++) traceBuf[i] = NOISE*noiseAt(k0+i, s.salt);
+    const ev = s.events, am = s.amps;
+    const nShape = Math.ceil(8*TAU_D/DS);
+    for(let j = lowerBound(ev, t0 - 8*TAU_D); j < ev.length && ev[j] <= t1; j++){
+      const te = ev[j], a = am[j];
+      const iStart = Math.ceil(te/DS) - k0;
+      const iEnd = Math.min(N-1, iStart + nShape);
+      for(let i = Math.max(0, iStart); i <= iEnd; i++){
+        const tt = (k0+i)*DS - te;
+        if(tt >= 0) traceBuf[i] += a*(Math.exp(-tt/TAU_D) - Math.exp(-tt/TAU_R))/PK_NORM;
+      }
+    }
+
+    // draw min/max per pixel column (keeps brief peaks visible)
+    ctx.strokeStyle = COL.phos; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    const cols = Math.floor(P.w);
+    let started = false;
+    for(let px=0; px<cols; px++){
+      const i0 = Math.floor(px*N/cols), i1 = Math.floor((px+1)*N/cols);
+      if((k0+i1)*DS < 0) continue;
+      let mn = Infinity, mx = -Infinity;
+      for(let i=i0;i<i1;i++){ const v = traceBuf[i]; if(v<mn) mn=v; if(v>mx) mx=v; }
+      const x = P.x + px + 0.5;
+      const yA = Y(Math.max(yMin, Math.min(yMax, mx))), yB = Y(Math.max(yMin, Math.min(yMax, mn)));
+      if(!started){ ctx.moveTo(x, yA); started = true; } else ctx.lineTo(x, yA);
+      ctx.lineTo(x, yB);
+    }
+    ctx.stroke();
+  }
+
+  // ---------- raster ----------
+  function drawRaster(){
+    const s = sources[cur], cv = raster, ctx = cv.ctx;
+    clear(cv);
+    const P = {x:56, y:10, w:cv.w-68, h:cv.h-38};
+    const rowH = P.h/RASTER_ROWS;
+    const lastRow = Math.floor(s.T);              // second currently being recorded
+    const firstRow = lastRow - RASTER_ROWS + 1;
+    ctx.font = FONT;
+    // time axis
+    for(let i=0;i<=4;i++){
+      const x = P.x + P.w*i/4;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(x, P.y); ctx.lineTo(x, P.y+P.h); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText((i*0.25).toFixed(2)+' s', x, P.y+P.h+8);
+    }
+    // rows
+    ctx.textAlign='right'; ctx.textBaseline='middle';
+    for(let r=0;r<RASTER_ROWS;r++){
+      const sec = firstRow + r;
+      if(sec < 0) continue;
+      const yc = P.y + rowH*(r+0.5);
+      if(sec % 5 === 0){ ctx.fillStyle = COL.text; ctx.fillText(sec+' s', P.x-8, yc); }
+    }
+    // partial-row shading for the current second
+    if(s.T > 0){
+      const frac = s.T - lastRow;
+      ctx.fillStyle = 'rgba(77,255,160,0.05)';
+      ctx.fillRect(P.x, P.y + rowH*(RASTER_ROWS-1), P.w*frac, rowH);
+    }
+    ctx.strokeStyle = COL.phos; ctx.lineWidth = 2;
+    ctx.beginPath();
+    const ev = s.events;
+    for(let j = lowerBound(ev, Math.max(0, firstRow)); j < ev.length; j++){
+      const t = ev[j], sec = Math.floor(t);
+      const r = sec - firstRow;
+      if(r < 0 || r >= RASTER_ROWS) continue;
+      const x = P.x + P.w*(t - sec);
+      const y0 = P.y + rowH*r + 1, y1 = P.y + rowH*(r+1) - 1;
+      ctx.moveTo(x, y0); ctx.lineTo(x, y1);
+    }
+    ctx.stroke();
+  }
+
+  // ---------- analysis ----------
+  let binW = 0.05, winDt = 1;
+  function intervalStats(s){
+    const ev = s.events, n = ev.length - 1;
+    if(n < 1) return null;
+    let sum = 0;
+    for(let i=1;i<ev.length;i++) sum += ev[i]-ev[i-1];
+    const mean = sum/n;
+    let ss = 0;
+    for(let i=1;i<ev.length;i++){ const d = ev[i]-ev[i-1]-mean; ss += d*d; }
+    const sd = n > 1 ? Math.sqrt(ss/(n-1)) : NaN;
+    return {n, mean, sd, cv: sd/mean};
+  }
+  function countStats(s, dt){
+    const M = Math.floor(s.T/dt + 1e-9);
+    if(M < 2) return null;
+    const c = new Uint32Array(M);
+    for(const t of s.events){ const i = Math.floor(t/dt); if(i < M) c[i]++; }
+    let sum = 0, kmax = 0;
+    for(let i=0;i<M;i++){ sum += c[i]; if(c[i] > kmax) kmax = c[i]; }
+    const mean = sum/M;
+    let ss = 0;
+    for(let i=0;i<M;i++){ const d = c[i]-mean; ss += d*d; }
+    const variance = ss/(M-1);
+    const freq = new Array(kmax+1).fill(0);
+    for(let i=0;i<M;i++) freq[c[i]]++;
+
+    // chi-square: classes 0..kmax-1, plus tail k>=kmax; merge so expected >= 5
+    let chi = null, df = null, p = null;
+    if(mean > 0){
+      const cls = [];
+      let cdf = 0;
+      for(let k=0;k<kmax;k++){ const pk = poisPMF(k, mean); cdf += pk; cls.push({o:freq[k], e:M*pk}); }
+      cls.push({o:freq[kmax], e:M*Math.max(0, 1 - cdf)});
+      const groups = []; let o = 0, e = 0;
+      for(const cl of cls){
+        o += cl.o; e += cl.e;
+        if(e >= 5){ groups.push({o, e}); o = 0; e = 0; }
+      }
+      if(e > 0 || o > 0){
+        if(groups.length){ groups[groups.length-1].o += o; groups[groups.length-1].e += e; }
+        else groups.push({o, e});
+      }
+      df = groups.length - 2;
+      if(df >= 1){
+        chi = 0;
+        for(const g of groups) chi += (g.o - g.e)*(g.o - g.e)/g.e;
+        p = chi2p(chi, df);
+      }
+    }
+    return {M, mean, variance, fano: variance/mean, freq, kmax, chi, df, p};
+  }
+
+  // ---------- interval histogram ----------
+  function niceStep(maxV){
+    const raw = maxV/4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const f = raw/mag;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10)*mag;
+  }
+  function drawIntervals(st){
+    const s = sources[cur], cv = intC, ctx = cv.ctx;
+    clear(cv);
+    const P = {x:52, y:12, w:cv.w-64, h:cv.h-46};
+    ctx.font = FONT;
+    if(!st || st.n < 2){
+      ctx.fillStyle = COL.text; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('Start recording to collect intervals', P.x+P.w/2, P.y+P.h/2);
+      document.getElementById('intInfo').textContent = 'no intervals yet';
+      return;
+    }
+    const nb = Math.max(10, Math.min(100, Math.ceil(4*st.mean/binW)));
+    const xmax = nb*binW;
+    const h = new Array(nb).fill(0);
+    let over = 0;
+    const ev = s.events;
+    for(let i=1;i<ev.length;i++){
+      const d = ev[i]-ev[i-1], b = Math.floor(d/binW);
+      if(b < nb) h[b]++; else over++;
+    }
+    const tau = st.mean;
+    const expd = h.map((_, b) => st.n*(Math.exp(-b*binW/tau) - Math.exp(-(b+1)*binW/tau)));
+    const showExp = document.getElementById('expToggle').checked;
+    const logY = document.getElementById('logToggle').checked;
+    let ymax = Math.max(...h, 1);
+    if(showExp) ymax = Math.max(ymax, ...expd);
+    let Y;
+    let yTicks = [];
+    if(logY){
+      const lmin = Math.log10(0.5), lmax = Math.log10(ymax*1.6);
+      Y = v => P.y + P.h*(1 - (Math.log10(Math.max(v, 0.5)) - lmin)/(lmax - lmin));
+      for(let e=0; Math.pow(10,e) <= ymax*1.6; e++) yTicks.push(Math.pow(10,e));
+    } else {
+      const top = ymax*1.1;
+      Y = v => P.y + P.h*(1 - v/top);
+      const stp = niceStep(top);
+      for(let v=0; v<=top; v+=stp) yTicks.push(v);
+    }
+    const X = t => P.x + P.w*t/xmax;
+
+    ctx.lineWidth = 1;
+    for(const v of yTicks){
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(P.x, Y(v)); ctx.lineTo(P.x+P.w, Y(v)); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText(v >= 1000 ? v.toExponential(0) : String(+v.toFixed(2)), P.x-6, Y(v));
+    }
+    const xs = niceStep(xmax);
+    for(let t=0; t<=xmax+1e-9; t+=xs){
+      ctx.fillStyle = COL.text; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(+t.toFixed(3)+' s', X(t), P.y+P.h+8);
+    }
+    ctx.save(); ctx.translate(12, P.y+P.h/2); ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center'; ctx.fillStyle = COL.text; ctx.fillText('intervals', 0, 0); ctx.restore();
+
+    // bars
+    ctx.fillStyle = COL.phosDim; ctx.strokeStyle = COL.phos;
+    for(let b=0;b<nb;b++){
+      if(h[b] === 0) continue;
+      const x0 = X(b*binW), x1 = X((b+1)*binW), y = Y(h[b]);
+      ctx.fillRect(x0, y, x1-x0, P.y+P.h-y);
+      ctx.beginPath(); ctx.moveTo(x0, P.y+P.h); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, P.y+P.h); ctx.stroke();
+    }
+    if(showExp){
+      ctx.strokeStyle = COL.amber; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for(let b=0;b<nb;b++){
+        const x = X((b+0.5)*binW), y = Y(expd[b]);
+        if(b === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.strokeStyle = COL.axis; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x, P.y+P.h); ctx.lineTo(P.x+P.w, P.y+P.h); ctx.stroke();
+    document.getElementById('intInfo').textContent =
+      over ? `${over} interval${over>1?'s':''} beyond ${+xmax.toFixed(2)} s` : `all intervals shown`;
+  }
+
+  // ---------- count histogram ----------
+  function drawCounts(cs){
+    const cv = cntC, ctx = cv.ctx;
+    clear(cv);
+    const P = {x:52, y:12, w:cv.w-64, h:cv.h-58};
+    ctx.font = FONT;
+    if(!cs){
+      ctx.fillStyle = COL.text; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('Record at least two windows of Δt', P.x+P.w/2, P.y+P.h/2);
+      document.getElementById('cntInfo').textContent = 'record longer to fill windows';
+      return;
+    }
+    const showP = document.getElementById('poisToggle').checked;
+    let kTop = cs.kmax;
+    if(showP){ while(cs.M*poisPMF(kTop+1, cs.mean) >= 0.5) kTop++; }
+    kTop = Math.max(kTop, 4);
+    const nk = kTop + 1;
+    const exp = [];
+    for(let k=0;k<nk;k++) exp.push(cs.M*poisPMF(k, cs.mean));
+    let ymax = Math.max(...cs.freq, 1);
+    if(showP) ymax = Math.max(ymax, ...exp);
+    const top = ymax*1.12;
+    const Y = v => P.y + P.h*(1 - v/top);
+    const bw = P.w/nk;
+    const X = k => P.x + bw*(k+0.5);
+    const stp = niceStep(top);
+    ctx.lineWidth = 1;
+    for(let v=0; v<=top; v+=stp){
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(P.x, Y(v)); ctx.lineTo(P.x+P.w, Y(v)); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText(String(+v.toFixed(1)), P.x-6, Y(v));
+    }
+    const labelEvery = Math.ceil(nk/16);
+    for(let k=0;k<nk;k+=labelEvery){
+      ctx.fillStyle = COL.text; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(String(k), X(k), P.y+P.h+8);
+    }
+    ctx.save(); ctx.translate(12, P.y+P.h/2); ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center'; ctx.fillStyle = COL.text; ctx.fillText('windows', 0, 0); ctx.restore();
+
+    ctx.fillStyle = COL.phosDim; ctx.strokeStyle = COL.phos;
+    for(let k=0;k<=cs.kmax && k<nk;k++){
+      const f = cs.freq[k]; if(!f) continue;
+      const x0 = X(k) - bw*0.38, w = bw*0.76, y = Y(f);
+      ctx.fillRect(x0, y, w, P.y+P.h-y); ctx.strokeRect(x0+0.5, y+0.5, w-1, P.y+P.h-y-0.5);
+    }
+    if(showP){
+      ctx.fillStyle = COL.amber; ctx.strokeStyle = COL.amber; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for(let k=0;k<nk;k++){ const x=X(k), y=Y(exp[k]); if(k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+      ctx.stroke();
+      for(let k=0;k<nk;k++){ ctx.beginPath(); ctx.arc(X(k), Y(exp[k]), 3.5, 0, 2*Math.PI); ctx.fill(); }
+    }
+    ctx.strokeStyle = COL.axis; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x, P.y+P.h); ctx.lineTo(P.x+P.w, P.y+P.h); ctx.stroke();
+    ctx.fillStyle = COL.text; ctx.textAlign='right'; ctx.textBaseline='top';
+    ctx.textAlign='center'; ctx.fillText('events per window (k)', P.x+P.w/2, P.y+P.h+26);
+    document.getElementById('cntInfo').textContent = `${cs.M} windows of ${winDt} s`;
+  }
+
+  // ---------- stats readouts ----------
+  function setText(id, t){ document.getElementById(id).textContent = t; }
+  function updateStats(){
+    const s = sources[cur];
+    const st = intervalStats(s), cs = countStats(s, winDt);
+    setText('sEvents', s.events.length);
+    setText('sRate', s.T > 0 ? fmtNum(s.events.length/s.T, 2)+' /s' : '— /s');
+    setText('sMeanI', st ? fmtNum(st.mean, 3)+' s' : '— s');
+    setText('sSdI', st && st.n > 1 ? fmtNum(st.sd, 3)+' s' : '— s');
+    setText('sCV', st && st.n > 1 ? fmtNum(st.cv, 2) : '—');
+    setText('sRateI', st ? fmtNum(1/st.mean, 2)+' /s' : '— /s');
+    setText('sWin', cs ? cs.M : 0);
+    setText('sMeanC', cs ? fmtNum(cs.mean, 3) : '—');
+    setText('sVarC', cs ? fmtNum(cs.variance, 3) : '—');
+    setText('sFano', cs && cs.mean > 0 ? fmtNum(cs.fano, 2) : '—');
+    setText('sChi', cs && cs.chi !== null ? fmtNum(cs.chi, 2) : '—');
+    setText('sDf', cs && cs.df !== null && cs.df >= 1 ? cs.df : '—');
+    setText('sP', cs && cs.p !== null ? (cs.p < 0.0001 ? '< 0.0001' : fmtNum(cs.p, 4)) : '—');
+
+    const reveal = document.getElementById('revealToggle').checked;
+    const truthRow = document.getElementById('truthRow');
+    if(cur === 0){
+      truthRow.classList.remove('hidden');
+      setText('sTruth', `Poisson, λ = ${s.rate.toFixed(1)} /s`);
+    } else if(reveal){
+      truthRow.classList.remove('hidden');
+      setText('sTruth', `${KIND_NAMES[s.kind]}, λ = ${s.rate.toFixed(2)} /s`);
+    } else truthRow.classList.add('hidden');
+
+    drawIntervals(st);
+    drawCounts(cs);
+  }
+
+  function updateTimeReadout(){
+    const s = sources[cur];
+    setText('timeReadout', `${LABELS[cur]}${seedLabel}  t = ${s.T.toFixed(1)} s`);
+  }
+
+  // ---------- controls ----------
+  let running = false, speed = 1, lastFrame = null, lastStats = 0;
+  const runBtn = document.getElementById('runBtn');
+
+  function setRunning(on){
+    running = on;
+    runBtn.textContent = on ? 'Pause' : 'Start recording';
+    runBtn.classList.toggle('running', on);
+    lastFrame = null;
+  }
+  runBtn.addEventListener('click', () => setRunning(!running));
+
+  function bindGroup(id, attr, fn){
+    const g = document.getElementById(id);
+    g.querySelectorAll('.cond-btn').forEach(b => b.addEventListener('click', () => {
+      g.querySelectorAll('.cond-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      fn(b.dataset[attr]);
+    }));
+  }
+  bindGroup('sourceGroup', 'src', v => {
+    cur = +v;
+    document.getElementById('rateWrap').classList.toggle('hidden', cur !== 0);
+    refreshAll();
+  });
+  bindGroup('speedGroup', 'speed', v => { speed = +v; });
+  bindGroup('binGroup', 'bin', v => { binW = +v; updateStats(); });
+  bindGroup('winGroup', 'win', v => { winDt = +v; updateStats(); });
+
+  ['logToggle','expToggle','poisToggle','revealToggle'].forEach(id =>
+    document.getElementById(id).addEventListener('change', updateStats));
+
+  const rateSlider = document.getElementById('rateSlider');
+  rateSlider.addEventListener('input', () => {
+    const r = +rateSlider.value;
+    setText('rateReadout', r.toFixed(1)+' /s');
+    const s = sources[0];
+    sources[0] = makeSource('poisson', r, s.q, Math.floor(s.rng()*4294967296), s.salt);
+    refreshAll();
+  });
+
+  document.getElementById('fastBtn').addEventListener('click', () => {
+    const s = sources[cur];
+    advance(s, s.T + 500);
+    refreshAll();
+  });
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    resetSource(cur);
+    refreshAll();
+  });
+
+  function applySeed(){
+    const code = document.getElementById('groupCode').value.trim();
+    let seed;
+    if(code){ seed = seedFromString('mepp-' + code); seedLabel = ` (group ${code})`; }
+    else { seed = (Math.random()*4294967296) >>> 0; seedLabel = ''; }
+    buildSources(seed);
+    setRunning(false);
+    refreshAll();
+  }
+  document.getElementById('applyCode').addEventListener('click', applySeed);
+  document.getElementById('groupCode').addEventListener('keydown', e => { if(e.key === 'Enter') applySeed(); });
+
+  document.getElementById('csvBtn').addEventListener('click', () => {
+    const s = sources[cur];
+    const lines = [
+      `# Spontaneous mEPP simulator - ${LABELS[cur]}${seedLabel}`,
+      `# recording duration (s): ${s.T.toFixed(3)}`,
+      'event,time_s,interval_s,amplitude_mV'
+    ];
+    for(let i=0;i<s.events.length;i++){
+      const iv = i > 0 ? (s.events[i]-s.events[i-1]).toFixed(5) : '';
+      lines.push(`${i+1},${s.events[i].toFixed(5)},${iv},${s.amps[i].toFixed(4)}`);
+    }
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `mepp_${LABELS[cur].replace(' ','_').toLowerCase()}${seedLabel ? '_group' + document.getElementById('groupCode').value.trim() : ''}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  function refreshAll(){
+    drawScope(); drawRaster(); updateStats(); updateTimeReadout();
+  }
+
+  // ---------- animation loop ----------
+  function frame(ts){
+    if(running){
+      if(lastFrame !== null){
+        const dt = Math.min(0.1, (ts - lastFrame)/1000);
+        const s = sources[cur];
+        advance(s, s.T + dt*speed);
+      }
+      lastFrame = ts;
+      drawScope(); drawRaster(); updateTimeReadout();
+      if(ts - lastStats > 250){ updateStats(); lastStats = ts; }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  applySeed();
+  requestAnimationFrame(frame);
+})();
+</script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
+</body>
+</html>

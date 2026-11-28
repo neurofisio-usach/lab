@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histograms and Noise — Seeing Current Levels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --danger: #d9694f;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1180px; }
+
+  header{ margin-bottom: 18px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.9rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p, .tab-intro{
+    max-width: 780px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+  .tab-intro{ margin: 0 0 16px; }
+  .tab-intro b{ color: var(--paper); font-weight: 600; }
+
+  .topbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    margin: 0 0 18px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+  }
+  .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+  }
+  input[type="text"]{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--scope-bg);
+    color: var(--phosphor);
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    padding: 7px 10px;
+    width: 100px;
+  }
+  input[type="range"]{ accent-color: var(--amber); width: 150px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .wide{ grid-column: 1 / -1; }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    text-align: right;
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; background: var(--scope-bg); }
+
+  .controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin-top: 14px;
+  }
+  button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  button:hover{ border-color: var(--amber-dim); color: var(--amber); }
+  button:focus-visible, input:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+  button.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+  }
+  button.primary:hover{ background:#f0b455; color:#1c1408; }
+
+  .cond-group{ display:flex; gap:0; border:1px solid var(--panel-edge); border-radius:6px; overflow:hidden; flex-wrap: wrap; }
+  .cond-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: none;
+    border-radius: 0;
+    padding: 8px 11px;
+    cursor:pointer;
+  }
+  .cond-btn + .cond-btn{ border-left: 1px solid var(--panel-edge); }
+  .cond-btn.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  .cond-btn:hover{ color: var(--amber); }
+
+  .tabbar{ margin: 0 0 16px; }
+  .tabbar .cond-btn{ font-size: 0.78rem; padding: 10px 14px; }
+
+  .toggle{
+    display:flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle input{ accent-color: var(--amber); width:14px; height:14px; }
+  .toggle input[type="range"]{ width:150px; height:auto; }
+
+  .readout{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--phosphor);
+    white-space: nowrap;
+  }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+  @media (max-width: 520px){ .stats{ grid-template-columns: 1fr; } }
+  .stats .row{
+    display:flex; justify-content:space-between; gap: 8px;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); text-align:right; }
+  .stats .row .v.amber{ color: var(--amber); }
+  .stats .section-label{
+    grid-column: 1 / -1;
+    color: var(--paper-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    border-top: 1px solid var(--panel-edge);
+    padding-top: 8px;
+  }
+  .stats .section-label:first-child{ border-top:none; margin-top:0; padding-top:0; }
+  .hidden{ display:none !important; }
+  .tab{ display:none; }
+  .tab.active{ display:block; }
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap: 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    margin-top: 10px;
+  }
+  .legend i{ display:inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+
+  table.gtable{
+    width:100%; border-collapse: collapse; margin-top: 14px;
+    font-family:'JetBrains Mono', monospace; font-size: 0.78rem;
+  }
+  table.gtable th{ color: var(--paper-dim); font-weight: 400; text-align:right; padding: 4px 8px; border-bottom: 1px solid var(--panel-edge); }
+  table.gtable th:first-child, table.gtable td:first-child{ text-align:left; }
+  table.gtable td{ color: var(--phosphor); text-align:right; padding: 4px 8px; border-bottom: 1px dotted var(--panel-edge); }
+  table.gtable td:first-child{ color: var(--paper); }
+  .table-scroll{ overflow-x:auto; }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+    margin: 10px 0 0;
+    max-width: 840px;
+  }
+  details code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+body{align-items:stretch;padding-left:28px;padding-right:28px;padding-top:0}
+.wrap{max-width:none;padding-top:14px}
+.lab-nav{padding-left:0;padding-right:0}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · SINGLE-CHANNEL RECORDING · STATISTICS</p>
+    <h1>Histograms and Noise: Seeing Current Levels</h1>
+    <p>
+      An amplitude histogram is our estimate of a probability distribution, and how we build it changes what we
+      see. The first exercise is about the histogram itself: bin width, bin position and normalization. The second
+      generates a patch with one or more channels in Gaussian noise and asks how well the current levels can be
+      resolved, how to measure the unitary current and the open probability by fitting Gaussians, and whether
+      the channels open independently of each other.
+    </p>
+  </header>
+
+  <div class="topbar">
+    <label class="toggle"><input type="checkbox" id="revealToggle"> reveal true values</label>
+    <button id="csvBtn">Download data (CSV)</button>
+    <span class="label" style="margin-left:auto">Group code</span>
+    <input type="text" id="groupCode" placeholder="e.g. 7" aria-label="Group code">
+    <button id="applyCode">Load</button>
+  </div>
+
+  <div class="cond-group tabbar" id="tabGroup" role="tablist">
+    <button class="cond-btn active" data-tab="0">1 · How wide should the bins be?</button>
+    <button class="cond-btn" data-tab="1">2 · Resolving current levels</button>
+  </div>
+
+  <!-- ===================== TAB 1 ===================== -->
+  <section class="tab active" id="tab0">
+    <p class="tab-intro">
+      Patches A, B and C contain current amplitudes with <b>one, two or three</b> levels, in an order you don't know.
+      For each patch, decide how many levels there are. Change the bin width and the bin position and watch the
+      shape change. Which conclusions survive every reasonable binning?
+    </p>
+    <div class="grid">
+      <div class="panel wide">
+        <div class="panel-title"><h2>AMPLITUDE HISTOGRAM</h2><span id="h1Info"></span></div>
+        <canvas id="h1Canvas"></canvas>
+        <div class="controls">
+          <div class="cond-group" id="h1Data">
+            <button class="cond-btn active" data-d="0">Patch A</button>
+            <button class="cond-btn" data-d="1">Patch B</button>
+            <button class="cond-btn" data-d="2">Patch C</button>
+            <button class="cond-btn" data-d="3">Open times</button>
+          </div>
+          <span class="label">n</span>
+          <div class="cond-group" id="h1N">
+            <button class="cond-btn" data-n="50">50</button>
+            <button class="cond-btn active" data-n="300">300</button>
+            <button class="cond-btn" data-n="2000">2000</button>
+            <button class="cond-btn" data-n="20000">20 000</button>
+          </div>
+          <button class="primary" id="h1New">New sample</button>
+        </div>
+        <div class="controls">
+          <label class="toggle">bin width <input type="range" id="h1W" min="0" max="100" value="50"><span class="readout" id="h1WR"></span></label>
+          <label class="toggle">bin position <input type="range" id="h1Off" min="0" max="99" value="0"><span class="readout" id="h1OffR"></span></label>
+          <span class="label">rule</span>
+          <div class="cond-group" id="h1Rule">
+            <button class="cond-btn" data-r="sturges">Sturges</button>
+            <button class="cond-btn" data-r="scott">Scott</button>
+            <button class="cond-btn" data-r="fd">Freedman–Diaconis</button>
+          </div>
+        </div>
+        <div class="controls">
+          <span class="label">y-axis</span>
+          <div class="cond-group" id="h1Norm">
+            <button class="cond-btn active" data-y="count">counts</button>
+            <button class="cond-btn" data-y="frac">fraction per bin</button>
+            <button class="cond-btn" data-y="dens">probability density</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="h1Err"> ±√count error bars</label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>SAME DATA, BINS SHIFTED</h2><span>offset 0, ¼, ½ and ¾ of a bin</span></div>
+        <canvas id="h2Canvas"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>THIS HISTOGRAM</h2><span></span></div>
+        <div class="stats" style="margin-top:0">
+          <div class="section-label">BINNING</div>
+          <div class="row"><span class="k">measurements n</span><span class="v" id="h1Sn">—</span></div>
+          <div class="row"><span class="k">bin width</span><span class="v" id="h1Sw">—</span></div>
+          <div class="row"><span class="k">number of bins</span><span class="v" id="h1Sb">—</span></div>
+          <div class="row"><span class="k">empty bins</span><span class="v" id="h1Se">—</span></div>
+          <div class="row"><span class="k">mean count per occupied bin</span><span class="v" id="h1Sm">—</span></div>
+          <div class="row"><span class="k">apparent peaks</span><span class="v amber" id="h1Sp">—</span></div>
+          <div class="row"><span class="k">area under histogram</span><span class="v" id="h1Sa">—</span></div>
+          <div class="row truth hidden"><span class="k">true distribution</span><span class="v amber" id="h1Truth">—</span></div>
+          <div class="section-label">BIN WIDTH SUGGESTED BY EACH RULE</div>
+          <div class="row"><span class="k">Sturges: range / (log₂n + 1)</span><span class="v" id="h1RS">—</span></div>
+          <div class="row"><span class="k">Scott: 3.49·SD·n^(−1/3)</span><span class="v" id="h1RSc">—</span></div>
+          <div class="row"><span class="k">Freedman–Diaconis: 2·IQR·n^(−1/3)</span><span class="v" id="h1RF">—</span></div>
+        </div>
+        <p class="tab-intro" style="margin-top:14px;font-size:0.86rem">
+          A peak counts as "apparent" if it holds at least 10% of the tallest bin and rises above the dip
+          separating it from any taller peak by more than √count. The count in each bin is itself a random number with SD ≈ √count, so narrow bins with few
+          events produce peaks that are only noise.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 2 ===================== -->
+  <section class="tab" id="tab1">
+    <p class="tab-intro">
+      A patch with <b>N</b> identical channels, each opening with probability <b>Po</b> and passing a unitary current
+      <b>i</b>, recorded with Gaussian noise and a low-pass filter. Fit the all-points histogram with Gaussians:
+      their spacing is <b>i</b>, their areas are the fractions of time with 0, 1, 2… channels open. If the channels
+      are independent, those fractions follow the <b>binomial</b> distribution.
+    </p>
+    <div class="grid">
+      <div class="panel wide">
+        <div class="panel-title"><h2>RECORDING</h2><span id="r1Info"></span></div>
+        <canvas id="r1Canvas"></canvas>
+        <div class="controls">
+          <div class="cond-group" id="r1Mode">
+            <button class="cond-btn active" data-m="own">Your patch</button>
+            <button class="cond-btn" data-m="mystery">Mystery patch</button>
+          </div>
+          <span class="label own-only">channels N</span>
+          <div class="cond-group own-only" id="r1N">
+            <button class="cond-btn active" data-n="1">1</button>
+            <button class="cond-btn" data-n="2">2</button>
+            <button class="cond-btn" data-n="3">3</button>
+          </div>
+          <label class="toggle own-only"><input type="checkbox" id="r1Indep" checked> channels gate independently</label>
+          <button class="primary" id="r1New">Record again</button>
+          <button id="r1Next">Next 200 ms</button>
+        </div>
+        <div class="controls own-only">
+          <label class="toggle">Po <input type="range" id="r1Po" min="0.05" max="0.95" step="0.01" value="0.3"><span class="readout" id="r1PoR"></span></label>
+          <label class="toggle">i <input type="range" id="r1I" min="0.3" max="3" step="0.05" value="1.5"><span class="readout" id="r1IR"></span></label>
+          <label class="toggle">noise <input type="range" id="r1Sig" min="0.05" max="1.5" step="0.05" value="0.4"><span class="readout" id="r1SigR"></span></label>
+          <span class="label">mean open time</span>
+          <div class="cond-group" id="r1Tau">
+            <button class="cond-btn" data-t="0.3">0.3 ms</button>
+            <button class="cond-btn active" data-t="2">2 ms</button>
+            <button class="cond-btn" data-t="10">10 ms</button>
+          </div>
+        </div>
+        <div class="controls">
+          <span class="label">low-pass filter</span>
+          <div class="cond-group" id="r1Fc">
+            <button class="cond-btn" data-f="10">10 kHz</button>
+            <button class="cond-btn" data-f="5">5 kHz</button>
+            <button class="cond-btn active" data-f="2">2 kHz</button>
+            <button class="cond-btn" data-f="1">1 kHz</button>
+            <button class="cond-btn" data-f="0.5">0.5 kHz</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>ALL-POINTS AMPLITUDE HISTOGRAM</h2><span id="r2Info">2 s of recording</span></div>
+        <canvas id="r2Canvas"></canvas>
+        <div class="controls">
+          <span class="label">Gaussians</span>
+          <div class="cond-group" id="r2K">
+            <button class="cond-btn" data-k="1">1</button>
+            <button class="cond-btn active" data-k="2">2</button>
+            <button class="cond-btn" data-k="3">3</button>
+            <button class="cond-btn" data-k="4">4</button>
+            <button class="cond-btn" data-k="5">5</button>
+          </div>
+          <button class="primary" id="r2Fit">Fit</button>
+          <label class="toggle"><input type="checkbox" id="r2Log"> log y-axis</label>
+        </div>
+        <div class="table-scroll"><table class="gtable" id="r2Table"></table></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>TIME WITH k CHANNELS OPEN</h2><span>fitted areas vs binomial</span></div>
+        <canvas id="r3Canvas"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--phosphor)"></i>Gaussian areas from the fit</span>
+          <span><i style="background:var(--amber)"></i>binomial(N, Po) with N = Gaussians − 1</span>
+          <span class="truth-or-own"><i style="background:var(--paper-dim)"></i>true occupancy</span>
+        </div>
+        <div class="stats">
+          <div class="section-label">FROM THE FIT</div>
+          <div class="row"><span class="k">unitary current i (spacing)</span><span class="v amber" id="r3I">—</span></div>
+          <div class="row"><span class="k">Po = mean current / (N·i)</span><span class="v amber" id="r3Po">—</span></div>
+          <div class="row"><span class="k">largest |area − binomial|</span><span class="v" id="r3Chi">—</span></div>
+          <div class="section-label">NOISE AND RESOLUTION</div>
+          <div class="row"><span class="k">baseline noise SD after filter</span><span class="v" id="r3Sig">—</span></div>
+          <div class="row"><span class="k">i / noise SD</span><span class="v" id="r3SNR">—</span></div>
+          <div class="row"><span class="k">samples misclassified (half-amplitude threshold)</span><span class="v" id="r3Mis">—</span></div>
+          <div class="row"><span class="k">mean current</span><span class="v" id="r3Mean">—</span></div>
+          <div class="row truth-or-own"><span class="k">true N, i, Po</span><span class="v amber" id="r3Truth">—</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      <b>Bin width.</b> Patches A, B and C are drawn from a single Gaussian, from two Gaussians whose means are
+      about 2.5 SD apart, and from three levels of unequal weight; the assignment changes with the group code.
+      "Open times" are exponential. The rules of thumb balance two errors: wide bins blur real structure, narrow
+      bins are dominated by counting noise. Sturges' rule assumes Gaussian data and gives too few bins for large
+      n; Scott's rule uses the SD; Freedman–Diaconis uses the interquartile range and is more robust to tails
+      and multiple peaks. With <i>counts</i> the height depends on n and on bin width; with <i>probability
+      density</i> (count / (n · bin width)) the area is 1 and histograms with different n or bins can be compared.
+    </p>
+    <p>
+      <b>Resolving levels.</b> Each channel switches between closed and open with rates chosen so that its open
+      probability is Po and its mean open time is the selected value, simulated every 0.05 ms (20 kHz) for 2 s.
+      White Gaussian noise of the chosen SD is added and the record is filtered with a Gaussian digital filter
+      (σ of the impulse response = 0.1325 / f<sub>c</sub>). Filtering reduces the noise but also rounds the
+      transitions and shrinks openings shorter than about 1/(2f<sub>c</sub>), which then fill the space between
+      the peaks. With "gate independently" off, a channel opens four times faster for each other channel
+      already open (positive cooperativity), and the level occupancies no longer follow the binomial.
+    </p>
+    <p>
+      <b>Fitting.</b> The fit is a mixture of Gaussians estimated by maximum likelihood (expectation–maximization)
+      on all 40 000 samples. The unitary current is the slope of a straight line through the fitted means
+      against level number; Po is the mean current divided by N·i, where N is the number of Gaussians minus one.
+      The misclassification rate counts samples assigned to the wrong number of open channels when thresholds
+      are placed halfway between levels, using the true i for your patch and the fitted i for the mystery patch.
+      Mystery patches have 1–3 channels with i between 1.2 and 2.5 pA, set by the group code.
+    </p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  // ================= random numbers =================
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function seedFromString(s){
+    let h = 2166136261;
+    for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function gauss(r){ let u = 0; while(u === 0) u = r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r()); }
+  function expo(r, mean){ return -mean*Math.log(1 - r()); }
+  function poissonK(r, mu){ const L = Math.exp(-mu); let k = 0, p = 1; do { k++; p *= r(); } while(p > L); return k - 1; }
+  function hash01(n){
+    n = Math.imul(n ^ (n >>> 16), 0x85ebca6b);
+    n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35);
+    n ^= n >>> 16;
+    return (n >>> 0) / 4294967296;
+  }
+
+  // ================= descriptive statistics =================
+  function mean(a){ let s = 0; for(const v of a) s += v; return s/a.length; }
+  function sumSq(a, m){ let s = 0; for(const v of a){ const d = v - m; s += d*d; } return s; }
+  function sdev(a){ return Math.sqrt(sumSq(a, mean(a))/(a.length - 1)); }
+  function skewness(a){
+    const m = mean(a); let m2 = 0, m3 = 0;
+    for(const v of a){ const d = v - m; m2 += d*d; m3 += d*d*d; }
+    m2 /= a.length; m3 /= a.length;
+    return m3/Math.pow(m2, 1.5);
+  }
+  function quantileSorted(s, p){
+    const h = (s.length - 1)*p, lo = Math.floor(h), hi = Math.ceil(h);
+    return s[lo] + (s[hi] - s[lo])*(h - lo);
+  }
+  function sorted(a){ return Float64Array.from(a).sort(); }
+
+  // ================= special functions =================
+  function gammaln(x){
+    const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+    let y=x, tmp=x+5.5; tmp -= (x+0.5)*Math.log(tmp);
+    let ser=1.000000000190015;
+    for(let j=0;j<6;j++) ser += c[j]/++y;
+    return -tmp + Math.log(2.5066282746310005*ser/x);
+  }
+  function betacf(a,b,x){
+    const FP=1e-300; const qab=a+b, qap=a+1, qam=a-1;
+    let c=1, d=1-qab*x/qap; if(Math.abs(d)<FP) d=FP; d=1/d; let h=d;
+    for(let m=1;m<=300;m++){
+      const m2=2*m;
+      let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+      d=1+aa*d; if(Math.abs(d)<FP) d=FP; c=1+aa/c; if(Math.abs(c)<FP) c=FP; d=1/d; h*=d*c;
+      aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d=1+aa*d; if(Math.abs(d)<FP) d=FP; c=1+aa/c; if(Math.abs(c)<FP) c=FP; d=1/d;
+      const del=d*c; h*=del; if(Math.abs(del-1)<3e-14) break;
+    }
+    return h;
+  }
+  function betai(a,b,x){
+    if(x<=0) return 0; if(x>=1) return 1;
+    const bt=Math.exp(gammaln(a+b)-gammaln(a)-gammaln(b)+a*Math.log(x)+b*Math.log(1-x));
+    return (x<(a+1)/(a+b+2)) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b;
+  }
+  function tTwoSidedP(t, df){ return betai(df/2, 0.5, df/(df + t*t)); }
+  const tcache = {};
+  function tCrit(df){ // two-sided 95%
+    if(tcache[df]) return tcache[df];
+    let lo = 0, hi = 200;
+    for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(tTwoSidedP(m, df) > 0.05) lo = m; else hi = m; }
+    return (tcache[df] = (lo+hi)/2);
+  }
+  function normInv(p){
+    const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+    const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+    const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+    const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+    const pl=0.02425; let q, r;
+    if(p<pl){ q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    if(p>1-pl){ q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    q=p-0.5; r=q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  }
+  function welch(x, y){
+    const n1=x.length, n2=y.length, m1=mean(x), m2=mean(y);
+    const v1=sumSq(x,m1)/(n1-1), v2=sumSq(y,m2)/(n2-1);
+    const a=v1/n1, b=v2/n2, se=Math.sqrt(a+b);
+    const t=(m2-m1)/se;
+    const df=(a+b)*(a+b)/(a*a/(n1-1) + b*b/(n2-1));
+    return {m1, m2, t, df, p: tTwoSidedP(t, df)};
+  }
+
+  // ================= drawing helpers =================
+  const COL = {
+    grid: 'rgba(77,255,160,0.10)', axis: 'rgba(184,174,149,0.55)', text: '#b8ae95',
+    phos: '#4dffa0', phosDim: 'rgba(77,255,160,0.28)', amber: '#e8a53d', amberDim: 'rgba(232,165,61,0.30)',
+    paper: '#f4ecd8', danger: '#d9694f'
+  };
+  const FONT = '11px "JetBrains Mono", monospace';
+
+  function setupCanvas(id, w, h){
+    const c = $(id), dpr = window.devicePixelRatio || 1;
+    c.width = w*dpr; c.height = h*dpr;
+    const ctx = c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {c, ctx, w, h};
+  }
+  function clear(cv){ cv.ctx.fillStyle = '#05130a'; cv.ctx.fillRect(0,0,cv.w,cv.h); }
+  function niceStep(range, target){
+    const raw = range/target, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/mag;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10)*mag;
+  }
+  function linTicks(min, max, target){
+    const s = niceStep(max - min, target || 5), out = [];
+    for(let v = Math.ceil(min/s - 1e-9)*s; v <= max + 1e-9*Math.abs(s); v += s) out.push(+v.toPrecision(12));
+    return out;
+  }
+  function logTicks(min, max){
+    const out = [];
+    for(let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++)
+      for(const m of [1,2,5]){ const v = m*Math.pow(10,e); if(v >= min*0.999 && v <= max*1.001) out.push(v); }
+    return out;
+  }
+  function fmtTick(v){
+    if(v === 0) return '0';
+    const a = Math.abs(v);
+    if(a >= 10000 || a < 0.001) return v.toExponential(0);
+    return String(+v.toPrecision(3));
+  }
+  function emptyMsg(cv, msg){
+    clear(cv);
+    const ctx = cv.ctx; ctx.font = FONT; ctx.fillStyle = COL.text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(msg, cv.w/2, cv.h/2);
+  }
+  // Draw axes and grid; returns mapping functions.
+  function frame(cv, o){
+    clear(cv);
+    const ctx = cv.ctx;
+    const padL = o.padL || 56, padB = o.padB || 44;
+    const P = {x: padL, y: 14, w: cv.w - padL - 16, h: cv.h - 14 - padB};
+    const fx = v => o.logx ? Math.log10(v) : v, fy = v => o.logy ? Math.log10(v) : v;
+    const X = v => P.x + P.w*(fx(v) - fx(o.xmin))/(fx(o.xmax) - fx(o.xmin));
+    const Y = v => P.y + P.h*(1 - (fy(v) - fy(o.ymin))/(fy(o.ymax) - fy(o.ymin)));
+    ctx.font = FONT; ctx.lineWidth = 1;
+    const xt = o.xticks || (o.logx ? logTicks(o.xmin, o.xmax) : linTicks(o.xmin, o.xmax, o.xn || 6));
+    const yt = o.yticks || (o.logy ? logTicks(o.ymin, o.ymax) : linTicks(o.ymin, o.ymax, o.yn || 4));
+    const xf = o.xfmt || fmtTick, yf = o.yfmt || fmtTick;
+    for(const v of yt){
+      const y = Y(v); if(y < P.y - 0.5 || y > P.y + P.h + 0.5) continue;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(P.x, y); ctx.lineTo(P.x + P.w, y); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(yf(v), P.x - 6, y);
+    }
+    for(const v of xt){
+      const x = X(v); if(x < P.x - 0.5 || x > P.x + P.w + 0.5) continue;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(x, P.y); ctx.lineTo(x, P.y + P.h); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(xf(v), x, P.y + P.h + 6);
+    }
+    ctx.strokeStyle = COL.axis;
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x, P.y + P.h); ctx.lineTo(P.x + P.w, P.y + P.h); ctx.stroke();
+    ctx.fillStyle = COL.text;
+    if(o.xlabel){ ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(o.xlabel, P.x + P.w/2, P.y + P.h + 24); }
+    if(o.ylabel){ ctx.save(); ctx.translate(12, P.y + P.h/2); ctx.rotate(-Math.PI/2); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.ylabel, 0, 0); ctx.restore(); }
+    return {ctx, P, X, Y};
+  }
+  function clipped(f, draw){
+    const {ctx, P} = f; ctx.save(); ctx.beginPath(); ctx.rect(P.x, P.y, P.w, P.h); ctx.clip(); draw(); ctx.restore();
+  }
+  function histogram(data, edges){
+    const nb = edges.length - 1, lo = edges[0], w = edges[1] - edges[0], c = new Array(nb).fill(0);
+    for(const v of data){ const b = Math.floor((v - lo)/w); if(b >= 0 && b < nb) c[b]++; }
+    return c;
+  }
+  function makeEdges(lo, hi, nb){ const e = []; for(let i=0;i<=nb;i++) e.push(lo + (hi - lo)*i/nb); return e; }
+  function drawBars(f, edges, counts, fill, stroke){
+    const {ctx, X, Y, P} = f;
+    clipped(f, () => {
+      ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 1;
+      for(let b=0;b<counts.length;b++){
+        if(!counts[b]) continue;
+        const x0 = X(edges[b]), x1 = X(edges[b+1]), y = Y(counts[b]);
+        ctx.fillRect(x0, y, x1 - x0, P.y + P.h - y);
+        ctx.beginPath(); ctx.moveTo(x0, P.y + P.h); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, P.y + P.h); ctx.stroke();
+      }
+    });
+  }
+  function drawStep(f, edges, counts, color, width, dash){
+    const {ctx, X, Y} = f;
+    clipped(f, () => {
+      ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+      ctx.beginPath(); ctx.moveTo(X(edges[0]), Y(0));
+      for(let b=0;b<counts.length;b++){ ctx.lineTo(X(edges[b]), Y(counts[b])); ctx.lineTo(X(edges[b+1]), Y(counts[b])); }
+      ctx.lineTo(X(edges[edges.length-1]), Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  function drawCurve(f, xs, ys, color, width, dash){
+    const {ctx, X, Y} = f;
+    clipped(f, () => {
+      ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+      ctx.beginPath(); xs.forEach((x, i) => { if(i === 0) ctx.moveTo(X(x), Y(ys[i])); else ctx.lineTo(X(x), Y(ys[i])); });
+      ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  function vLine(f, x, color, width, dash){
+    const {ctx, X, P} = f; const px = X(x);
+    if(px < P.x || px > P.x + P.w) return;
+    ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(px, P.y); ctx.lineTo(px, P.y + P.h); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function hLine(f, y, color, width, dash){
+    const {ctx, Y, P} = f; const py = Y(y);
+    ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(P.x, py); ctx.lineTo(P.x + P.w, py); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function dot(ctx, x, y, r, color, fill){
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 2*Math.PI);
+    if(fill){ ctx.fillStyle = color; ctx.fill(); } else { ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke(); }
+  }
+  // dot strip with deterministic vertical jitter around the middle of the plot
+  function strip(f, xs, salt, color){
+    const {ctx, X, P} = f, yc = P.y + P.h*0.5, half = P.h*0.32;
+    const r = xs.length > 200 ? 2 : (xs.length > 30 ? 3.2 : 4.5);
+    clipped(f, () => {
+      xs.forEach((v, i) => dot(ctx, X(v), yc + (hash01(i*31 + salt) - 0.5)*2*half, r, color, xs.length > 200));
+    });
+  }
+  const fmt = (x, d) => (x === null || x === undefined || !isFinite(x)) ? '—' : x.toFixed(d);
+  const pct = x => isFinite(x) ? (100*x).toFixed(1) + ' %' : '—';
+  function setText(id, t){ $(id).textContent = t; }
+  function bindGroup(id, attr, fn){
+    const g = $(id);
+    g.querySelectorAll('.cond-btn').forEach(b => b.addEventListener('click', () => {
+      g.querySelectorAll('.cond-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      fn(b.dataset[attr]);
+    }));
+  }
+  const revealed = () => $('revealToggle').checked;
+
+  // ================= state =================
+  let SEED = 0, seedLabel = '', R = [], truth = {};
+  function tabRng(k){ return mulberry32((SEED ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0); }
+  const cv = {
+    h1: setupCanvas('h1Canvas', 1100, 320), h2: setupCanvas('h2Canvas', 640, 340),
+    r1: setupCanvas('r1Canvas', 1100, 230), r2: setupCanvas('r2Canvas', 640, 300), r3: setupCanvas('r3Canvas', 640, 260)
+  };
+  const normPdf = (x, m, s) => Math.exp(-0.5*((x - m)/s)*((x - m)/s))/(s*Math.sqrt(2*Math.PI));
+
+  // ======================================================
+  // TAB 1: bin width
+  // ======================================================
+  const SHAPES = {
+    one:   { label: 'one level (single Gaussian)', comps: [[1, 1.8, 0.35]] },
+    two:   { label: 'two levels, 2.5 SD apart', comps: [[0.5, 1.45, 0.28], [0.5, 2.15, 0.28]] },
+    three: { label: 'three levels of unequal weight', comps: [[0.5, 0, 0.25], [0.15, 1.0, 0.25], [0.35, 2.0, 0.25]] },
+    expo:  { label: 'exponential, τ = 2 ms', expo: 2 }
+  };
+  const T1 = { d: 0, n: 300, data: [], norm: 'count', rule: null };
+  function t1Shape(){ return SHAPES[T1.d === 3 ? 'expo' : truth.order[T1.d]]; }
+  function t1Range(){ return T1.d === 3 ? [0, 14] : [-1, 3.2]; }
+  function t1Gen(){
+    const r = R[0], S = t1Shape();
+    T1.data = Array.from({length: T1.n}, () => {
+      if(S.expo) return expo(r, S.expo);
+      let u = r(), j = 0;
+      while(j < S.comps.length - 1 && u > S.comps[j][0]){ u -= S.comps[j][0]; j++; }
+      return S.comps[j][1] + S.comps[j][2]*gauss(r);
+    });
+    if(T1.rule) applyRule(T1.rule); else t1Render();
+  }
+  function widthFromSlider(){ const [a, b] = t1Range(), span = b - a; return span/800*Math.pow(800/3, (+$('h1W').value)/100); }
+  function sliderFromWidth(w){ const [a, b] = t1Range(), span = b - a; return Math.max(0, Math.min(100, Math.round(100*Math.log(w*800/span)/Math.log(800/3)))); }
+  function rules(){
+    const x = T1.data, n = x.length, s = sorted(x), range = s[n-1] - s[0];
+    const iqr = quantileSorted(s, 0.75) - quantileSorted(s, 0.25);
+    return { sturges: range/(Math.log2(n) + 1), scott: 3.49*sdev(x)*Math.pow(n, -1/3), fd: 2*iqr*Math.pow(n, -1/3) };
+  }
+  function applyRule(rname){ T1.rule = rname; $('h1W').value = sliderFromWidth(rules()[rname]); t1Render(); }
+  function binsFor(w, offFrac){
+    const [a, b] = t1Range(), start = a - w + offFrac*w, edges = [];
+    for(let e = start; e < b + w; e += w) edges.push(e);
+    return edges;
+  }
+  function trueCurve(S, xs){
+    return xs.map(x => S.expo ? (x < 0 ? 0 : Math.exp(-x/S.expo)/S.expo) : S.comps.reduce((acc, c) => acc + c[0]*normPdf(x, c[1], c[2]), 0));
+  }
+  function scaleFor(norm, n, w){ return norm === 'count' ? 1 : norm === 'frac' ? 1/n : 1/(n*w); }
+  // A peak counts if its bin is a local maximum holding at least 10% of the tallest bin, and it rises above
+  // the lowest point separating it from any taller peak by more than one counting-noise SD (√count).
+  function countPeaks(h){
+    const mx = Math.max(...h), n = h.length; let p = 0;
+    for(let b=0;b<n;b++){
+      const v = h[b];
+      if(v < 0.1*mx || v < 2) continue;
+      if(b > 0 && h[b-1] >= v) continue;
+      let k = b; while(k + 1 < n && h[k+1] === v) k++;
+      if(k + 1 < n && h[k+1] > v){ b = k; continue; }
+      let minL = v, j = b - 1; while(j >= 0 && h[j] <= v){ minL = Math.min(minL, h[j]); j--; } if(j < 0) minL = 0;
+      let minR = v; j = k + 1; while(j < n && h[j] <= v){ minR = Math.min(minR, h[j]); j++; } if(j >= n) minR = 0;
+      if(v - Math.max(minL, minR) > Math.sqrt(v)) p++;
+      b = k;
+    }
+    return p;
+  }
+  function t1Render(){
+    const x = T1.data, n = x.length, w = widthFromSlider(), off = (+$('h1Off').value)/100, S = t1Shape();
+    const [xa, xb] = t1Range();
+    const edges = binsFor(w, off), h = histogram(x, edges);
+    const sc = scaleFor(T1.norm, n, w), hv = h.map(c => c*sc);
+    const xs = []; for(let i=0;i<=400;i++) xs.push(xa + (xb - xa)*i/400);
+    const showTrue = revealed();
+    const tc = trueCurve(S, xs).map(v => v*n*w*sc);
+    let ymax = Math.max(...hv, showTrue ? Math.max(...tc) : 0);
+    if($('h1Err').checked) ymax = Math.max(...h.map((c, b) => (c + Math.sqrt(c))*sc), ymax);
+    const unit = T1.d === 3 ? 'ms' : 'pA';
+    const ylab = {count: 'measurements per bin', frac: 'fraction per bin', dens: 'probability density (1/' + unit + ')'}[T1.norm];
+    const f = frame(cv.h1, {xmin: xa, xmax: xb, ymin: 0, ymax: ymax*1.1, xlabel: T1.d === 3 ? 'open time (ms)' : 'amplitude (pA)', ylabel: ylab, xn: 10});
+    drawBars(f, edges, hv, COL.phosDim, COL.phos);
+    if($('h1Err').checked) clipped(f, () => {
+      f.ctx.strokeStyle = COL.paper; f.ctx.lineWidth = 1;
+      h.forEach((c, b) => { if(!c) return; const xm = f.X((edges[b] + edges[b+1])/2);
+        f.ctx.beginPath(); f.ctx.moveTo(xm, f.Y((c - Math.sqrt(c))*sc)); f.ctx.lineTo(xm, f.Y((c + Math.sqrt(c))*sc)); f.ctx.stroke(); });
+    });
+    if(showTrue) drawCurve(f, xs, tc, COL.amber, 2);
+
+    // shifted copies
+    const g = cv.h2, ctx = g.ctx; clear(g);
+    const rowsH = (g.h - 34)/4, P = {x: 14, w: g.w - 28};
+    const all = [0, 0.25, 0.5, 0.75].map(o => { const e = binsFor(w, (off + o) % 1); return {e, h: histogram(x, e)}; });
+    const gmax = Math.max(...all.flatMap(a => a.h));
+    all.forEach((a, k) => {
+      const y0 = 8 + rowsH*k, hh = rowsH - 8;
+      const X = v => P.x + P.w*(v - xa)/(xb - xa), Y = v => y0 + hh*(1 - v/gmax);
+      ctx.save(); ctx.beginPath(); ctx.rect(P.x, y0, P.w, hh); ctx.clip();
+      ctx.fillStyle = COL.phosDim; ctx.strokeStyle = COL.phos; ctx.lineWidth = 1;
+      a.h.forEach((c, b) => { if(!c) return; const x0 = X(a.e[b]), x1 = X(a.e[b+1]); ctx.fillRect(x0, Y(c), x1 - x0, y0 + hh - Y(c)); ctx.strokeRect(x0 + 0.5, Y(c) + 0.5, x1 - x0 - 1, y0 + hh - Y(c) - 0.5); });
+      ctx.restore();
+      ctx.strokeStyle = COL.axis; ctx.beginPath(); ctx.moveTo(P.x, y0 + hh); ctx.lineTo(P.x + P.w, y0 + hh); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.font = FONT; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.fillText(`peaks: ${countPeaks(a.h)}`, P.x + P.w - 4, y0 + 2);
+    });
+    ctx.fillStyle = COL.text; ctx.font = FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for(const v of linTicks(xa, xb, 6)){ const px = P.x + P.w*(v - xa)/(xb - xa); ctx.fillText(fmtTick(v), px, g.h - 22); }
+
+    // stats
+    const occ = h.filter(c => c > 0).length;
+    const inRange = edges.length - 1;
+    setText('h1Info', `${n} measurements, ${inRange} bins`);
+    setText('h1WR', fmt(w, w < 0.1 ? 3 : 2) + ' ' + unit);
+    setText('h1OffR', (100*off).toFixed(0) + ' % of a bin');
+    setText('h1Sn', n); setText('h1Sw', fmt(w, 4) + ' ' + unit); setText('h1Sb', inRange);
+    setText('h1Se', `${inRange - occ}`); setText('h1Sm', fmt(n/Math.max(occ, 1), 1));
+    setText('h1Sp', countPeaks(h));
+    setText('h1Sa', fmt(hv.reduce((a, v) => a + v*w, 0), 3) + (T1.norm === 'dens' ? '' : T1.norm === 'count' ? ` (= n × bin width)` : ' (= bin width)'));
+    setText('h1Truth', S.label);
+    const rl = rules();
+    setText('h1RS', fmt(rl.sturges, 3) + ' ' + unit); setText('h1RSc', fmt(rl.scott, 3) + ' ' + unit); setText('h1RF', fmt(rl.fd, 3) + ' ' + unit);
+  }
+  bindGroup('h1Data', 'd', v => { T1.d = +v; t1Gen(); });
+  bindGroup('h1N', 'n', v => { T1.n = +v; t1Gen(); });
+  bindGroup('h1Norm', 'y', v => { T1.norm = v; t1Render(); });
+  bindGroup('h1Rule', 'r', v => applyRule(v));
+  $('h1W').addEventListener('input', () => { T1.rule = null; $('h1Rule').querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active')); t1Render(); });
+  $('h1Off').addEventListener('input', t1Render);
+  $('h1Err').addEventListener('change', t1Render);
+  $('h1New').addEventListener('click', t1Gen);
+
+  // ======================================================
+  // TAB 2: resolving current levels
+  // ======================================================
+  const DT = 0.05, NS = 40000, WIN = 4000;     // ms per sample; 2 s; 200 ms window
+  const T2 = { mode: 'own', N: 1, tauO: 2, fc: 2, k: 2, win: 0, nOpen: null, raw: null, y: null, fit: null, baseSD: null };
+  function t2Params(){
+    if(T2.mode === 'mystery') return { N: truth.mN, Po: truth.mPo, i: truth.mI, sig: 0.35, tauO: 2, indep: true };
+    return { N: T2.N, Po: +$('r1Po').value, i: +$('r1I').value, sig: +$('r1Sig').value, tauO: T2.tauO, indep: $('r1Indep').checked };
+  }
+  function t2Gen(){
+    const r = R[1], p = t2Params();
+    const beta = 1/p.tauO, alpha = beta*p.Po/(1 - p.Po);
+    const pc = 1 - Math.exp(-beta*DT);
+    const st = new Uint8Array(p.N);
+    for(let c=0;c<p.N;c++) st[c] = r() < p.Po ? 1 : 0;
+    const nOpen = new Uint8Array(NS), noise = new Float32Array(NS);
+    for(let t=0;t<NS;t++){
+      let tot = 0; for(let c=0;c<p.N;c++) tot += st[c];
+      for(let c=0;c<p.N;c++){
+        if(st[c]){ if(r() < pc) st[c] = 0; }
+        else {
+          const a = p.indep ? alpha : alpha*Math.pow(4, tot);
+          if(r() < 1 - Math.exp(-a*DT)) st[c] = 1;
+        }
+      }
+      tot = 0; for(let c=0;c<p.N;c++) tot += st[c];
+      nOpen[t] = tot;
+      noise[t] = p.sig*gauss(r);
+    }
+    T2.nOpen = nOpen; T2.noise = noise; T2.p = p;
+    t2Filter();
+  }
+  function gaussFilter(x, fc){
+    const sig = 0.1325/(fc*DT);                   // in samples
+    if(sig < 0.3) return Float32Array.from(x);
+    const half = Math.ceil(4*sig), ker = [];
+    let s = 0; for(let k=-half;k<=half;k++){ const v = Math.exp(-0.5*k*k/(sig*sig)); ker.push(v); s += v; }
+    for(let k=0;k<ker.length;k++) ker[k] /= s;
+    const n = x.length, y = new Float32Array(n);
+    for(let i=0;i<n;i++){
+      let acc = 0;
+      for(let k=-half;k<=half;k++){ let j = i + k; if(j < 0) j = 0; else if(j >= n) j = n - 1; acc += ker[k + half]*x[j]; }
+      y[i] = acc;
+    }
+    return y;
+  }
+  function t2Filter(){
+    const p = T2.p, sig = Float32Array.from(T2.nOpen, (k, t) => k*p.i + T2.noise[t]);
+    T2.y = gaussFilter(sig, T2.fc);
+    const nz = gaussFilter(T2.noise, T2.fc);
+    T2.baseSD = sdev(nz);
+    T2.fit = null;
+    t2Fit();
+  }
+  // Gaussian mixture by EM
+  function gmmFit(x, K){
+    const s = sorted(x), n = x.length;
+    const lo = quantileSorted(s, 0.005), hi = quantileSorted(s, 0.995);
+    let mu = [], sd = [], w = [];
+    for(let j=0;j<K;j++){ mu.push(K === 1 ? mean(x) : lo + (hi - lo)*j/(K - 1)); sd.push(K === 1 ? sdev(x) : (hi - lo)/(2*K)); w.push(1/K); }
+    const r = new Float64Array(n*K);
+    let ll = -Infinity;
+    for(let it=0; it<400; it++){
+      let L = 0;
+      for(let i=0;i<n;i++){
+        let tot = 0;
+        for(let j=0;j<K;j++){ const v = w[j]*normPdf(x[i], mu[j], sd[j]); r[i*K + j] = v; tot += v; }
+        tot = Math.max(tot, 1e-300); L += Math.log(tot);
+        for(let j=0;j<K;j++) r[i*K + j] /= tot;
+      }
+      for(let j=0;j<K;j++){
+        let sr = 0, sx = 0;
+        for(let i=0;i<n;i++){ sr += r[i*K + j]; sx += r[i*K + j]*x[i]; }
+        const m = sx/Math.max(sr, 1e-12);
+        let sv = 0; for(let i=0;i<n;i++){ const d = x[i] - m; sv += r[i*K + j]*d*d; }
+        w[j] = sr/n; mu[j] = m; sd[j] = Math.max(Math.sqrt(sv/Math.max(sr, 1e-12)), 0.01);
+      }
+      if(Math.abs(L - ll) < 1e-9*Math.abs(L)){ ll = L; break; }
+      ll = L;
+    }
+    const o = mu.map((m, j) => j).sort((a, b) => mu[a] - mu[b]);
+    return { mu: o.map(j => mu[j]), sd: o.map(j => sd[j]), w: o.map(j => w[j]), ll, K };
+  }
+  function t2Fit(){
+    const y = T2.y, step = 2, sub = new Float64Array(Math.floor(y.length/step));
+    for(let i=0;i<sub.length;i++) sub[i] = y[i*step];
+    T2.fit = gmmFit(sub, T2.k);
+    t2Render();
+  }
+  function binom(N, k, p){ let c = 1; for(let j=1;j<=k;j++) c = c*(N - k + j)/j; return c*Math.pow(p, k)*Math.pow(1 - p, N - k); }
+  function t2Render(){
+    const p = T2.p, own = T2.mode === 'own', showTrue = own || revealed();
+    document.querySelectorAll('#tab1 .own-only').forEach(el => el.classList.toggle('hidden', !own));
+    document.querySelectorAll('.truth-or-own').forEach(el => el.classList.toggle('hidden', !showTrue));
+    setText('r1PoR', (+$('r1Po').value).toFixed(2)); setText('r1IR', (+$('r1I').value).toFixed(2) + ' pA'); setText('r1SigR', (+$('r1Sig').value).toFixed(2) + ' pA');
+    const y = T2.y, fit = T2.fit;
+    const ymaxLevel = (own ? p.N*p.i : Math.max(...fit.mu) ) ;
+    const yLo = -4*T2.baseSD - 0.3, yHi = Math.max(ymaxLevel, quantileSorted(sorted(y.slice(0, 20000)), 0.999)) + 4*T2.baseSD + 0.3;
+
+    // trace
+    const w0 = T2.win*WIN;
+    const f = frame(cv.r1, {xmin: w0*DT, xmax: (w0 + WIN)*DT, ymin: yLo, ymax: yHi, xlabel: 'time (ms)', ylabel: 'pA', xn: 10});
+    if(showTrue) for(let k=0;k<=p.N;k++) hLine(f, k*p.i, 'rgba(232,165,61,0.35)', 1, [4,4]);
+    clipped(f, () => {
+      const ctx = f.ctx, cols = Math.floor(f.P.w);
+      ctx.strokeStyle = COL.phos; ctx.lineWidth = 1; ctx.beginPath();
+      for(let px=0; px<cols; px++){
+        const i0 = w0 + Math.floor(px*WIN/cols), i1 = w0 + Math.floor((px + 1)*WIN/cols);
+        let mn = Infinity, mx = -Infinity;
+        for(let i=i0;i<Math.max(i1, i0 + 1);i++){ const v = y[i]; if(v < mn) mn = v; if(v > mx) mx = v; }
+        const xx = f.P.x + px + 0.5;
+        if(px === 0) ctx.moveTo(xx, f.Y(mx)); else ctx.lineTo(xx, f.Y(mx));
+        ctx.lineTo(xx, f.Y(mn));
+      }
+      ctx.stroke();
+    });
+    setText('r1Info', `${own ? '' : 'mystery patch, '}filter ${T2.fc} kHz, window ${(w0*DT).toFixed(0)}–${((w0 + WIN)*DT).toFixed(0)} ms of 2000 ms`);
+
+    // histogram
+    const edges = makeEdges(yLo, yHi, 120), h = histogram(y, edges), bw = edges[1] - edges[0];
+    const logY = $('r2Log').checked;
+    const xs = []; for(let i=0;i<=400;i++) xs.push(yLo + (yHi - yLo)*i/400);
+    const tot = xs.map(xv => fit.mu.reduce((a, m, j) => a + fit.w[j]*normPdf(xv, m, fit.sd[j]), 0)*y.length*bw);
+    const ymax = Math.max(...h, ...tot)*1.15;
+    const g = frame(cv.r2, {xmin: yLo, xmax: yHi, ymin: logY ? 1 : 0, ymax: logY ? ymax*2 : ymax, logy: logY, xlabel: 'current (pA)', ylabel: 'samples per bin',
+      yticks: logY ? logTicks(1, ymax*2).filter(v => Math.log10(v) % 1 === 0) : null});
+    drawBars(g, edges, logY ? h.map(v => Math.max(v, 1e-9)) : h, COL.phosDim, COL.phos);
+    fit.mu.forEach((m, j) => drawCurve(g, xs, xs.map(xv => Math.max(fit.w[j]*normPdf(xv, m, fit.sd[j])*y.length*bw, logY ? 1e-3 : 0)), 'rgba(232,165,61,0.6)', 1.2, [3,3]));
+    drawCurve(g, xs, tot.map(v => logY ? Math.max(v, 1e-3) : v), COL.amber, 2);
+    let html = '<tr><th>level</th><th>mean (pA)</th><th>SD (pA)</th><th>area</th></tr>';
+    fit.mu.forEach((m, j) => html += `<tr><td>${j}</td><td>${fmt(m, 3)}</td><td>${fmt(fit.sd[j], 3)}</td><td>${fmt(fit.w[j], 3)}</td></tr>`);
+    $('r2Table').innerHTML = html;
+
+    // estimates
+    const K = fit.K, Nfit = K - 1, ymean = mean(y);
+    let iEst = null, PoEst = null;
+    if(K > 1){
+      const idx = fit.mu.map((_, j) => j), mi = mean(idx), mm = mean(fit.mu);
+      let sxy = 0, sxx = 0; idx.forEach((v, j) => { sxy += (v - mi)*(fit.mu[j] - mm); sxx += (v - mi)*(v - mi); });
+      iEst = sxy/sxx;
+      PoEst = (ymean - fit.mu[0])/(Nfit*iEst);
+    }
+    setText('r3I', iEst === null ? '— (fit ≥ 2 Gaussians)' : fmt(iEst, 3) + ' pA');
+    setText('r3Po', PoEst === null ? '—' : fmt(PoEst, 3));
+    setText('r3Sig', fmt(T2.baseSD, 3) + ' pA');
+    const iRef = own ? p.i : iEst;
+    setText('r3SNR', iRef ? fmt(iRef/T2.baseSD, 2) : '—');
+    if(iRef){
+      let wrong = 0;
+      for(let t=0;t<NS;t++){ const k = Math.max(0, Math.min(p.N + 3, Math.round(y[t]/iRef))); if(k !== T2.nOpen[t]) wrong++; }
+      setText('r3Mis', pct(wrong/NS));
+    } else setText('r3Mis', '—');
+    setText('r3Mean', fmt(ymean, 3) + ' pA');
+    setText('r3Truth', `N = ${p.N}, i = ${p.i.toFixed(2)} pA, Po = ${p.Po.toFixed(2)}`);
+
+    // occupancy
+    const kmax = Math.max(Nfit, showTrue ? p.N : 0);
+    const occTrue = new Array(p.N + 1).fill(0); for(let t=0;t<NS;t++) occTrue[T2.nOpen[t]]++;
+    const bin = PoEst === null ? null : fit.w.map((_, k) => binom(Nfit, k, Math.max(0, Math.min(1, PoEst))));
+    const o = frame(cv.r3, {xmin: -0.5, xmax: kmax + 0.5, ymin: 0, ymax: 1.05, xticks: Array.from({length: kmax + 1}, (_, k) => k), xfmt: v => String(v), xlabel: 'channels open (k)', ylabel: 'fraction of time'});
+    const bwid = (o.X(1) - o.X(0))*0.28;
+    clipped(o, () => {
+      const ctx = o.ctx;
+      fit.w.forEach((wk, k) => { ctx.fillStyle = COL.phosDim; ctx.strokeStyle = COL.phos; ctx.fillRect(o.X(k) - bwid - 2, o.Y(wk), bwid, o.Y(0) - o.Y(wk)); ctx.strokeRect(o.X(k) - bwid - 2, o.Y(wk), bwid, o.Y(0) - o.Y(wk)); });
+      if(showTrue) occTrue.forEach((c, k) => { const v = c/NS; ctx.fillStyle = 'rgba(184,174,149,0.25)'; ctx.strokeStyle = COL.text; ctx.fillRect(o.X(k) + 2, o.Y(v), bwid, o.Y(0) - o.Y(v)); ctx.strokeRect(o.X(k) + 2, o.Y(v), bwid, o.Y(0) - o.Y(v)); });
+      if(bin) bin.forEach((v, k) => dot(ctx, o.X(k), o.Y(v), 5, COL.amber, true));
+    });
+    if(bin && Nfit > 1){
+      const dev = Math.max(...fit.w.map((wk, k) => Math.abs(wk - bin[k])));
+      setText('r3Chi', fmt(dev, 3));
+    } else setText('r3Chi', Nfit === 1 ? '— (one channel: always binomial)' : '—');
+  }
+  bindGroup('r1Mode', 'm', v => { T2.mode = v; if(v === 'mystery'){ T2.k = 2; setActiveK(); } else { T2.k = T2.N + 1; setActiveK(); } T2.win = 0; t2Gen(); });
+  bindGroup('r1N', 'n', v => { T2.N = +v; T2.k = T2.N + 1; setActiveK(); t2Gen(); });
+  bindGroup('r1Tau', 't', v => { T2.tauO = +v; t2Gen(); });
+  bindGroup('r1Fc', 'f', v => { T2.fc = +v; t2Filter(); });
+  bindGroup('r2K', 'k', v => { T2.k = +v; });
+  function setActiveK(){ $('r2K').querySelectorAll('.cond-btn').forEach(b => b.classList.toggle('active', +b.dataset.k === T2.k)); }
+  ['r1Po','r1I','r1Sig'].forEach(id => $(id).addEventListener('change', t2Gen));
+  ['r1Po','r1I','r1Sig'].forEach(id => $(id).addEventListener('input', () => { setText('r1PoR', (+$('r1Po').value).toFixed(2)); setText('r1IR', (+$('r1I').value).toFixed(2) + ' pA'); setText('r1SigR', (+$('r1Sig').value).toFixed(2) + ' pA'); }));
+  $('r1Indep').addEventListener('change', t2Gen);
+  $('r1New').addEventListener('click', t2Gen);
+  $('r1Next').addEventListener('click', () => { T2.win = (T2.win + 1) % (NS/WIN); t2Render(); });
+  $('r2Fit').addEventListener('click', () => { $('r2Fit').textContent = 'Fitting…'; setTimeout(() => { t2Fit(); $('r2Fit').textContent = 'Fit'; }, 20); });
+  $('r2Log').addEventListener('change', t2Render);
+
+  // ======================================================
+  // tabs, seed, reveal, CSV
+  // ======================================================
+  let curTab = 0;
+  const renderers = [t1Render, t2Render];
+  bindGroup('tabGroup', 'tab', v => {
+    curTab = +v;
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === curTab));
+    renderers[curTab]();
+  });
+  $('revealToggle').addEventListener('change', () => {
+    document.querySelectorAll('.truth').forEach(el => el.classList.toggle('hidden', !revealed()));
+    renderers[curTab]();
+  });
+  $('csvBtn').addEventListener('click', () => {
+    const lines = [`# Histograms and noise simulator${seedLabel}`];
+    let name;
+    if(curTab === 0){
+      name = ['patch_A','patch_B','patch_C','open_times'][T1.d];
+      lines.push(`# ${name}`, T1.d === 3 ? 'measurement,open_time_ms' : 'measurement,amplitude_pA');
+      T1.data.forEach((v, i) => lines.push(`${i+1},${v.toFixed(5)}`));
+    } else {
+      name = 'patch_recording';
+      lines.push(`# sampling interval ${DT} ms, filter ${T2.fc} kHz`, 'time_ms,current_pA');
+      T2.y.forEach((v, i) => lines.push(`${(i*DT).toFixed(2)},${v.toFixed(4)}`));
+    }
+    const blob = new Blob([lines.join('\n')], {type: 'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name + (seedLabel ? '_group' + $('groupCode').value.trim() : '') + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  function applySeed(){
+    const code = $('groupCode').value.trim();
+    if(code){ SEED = seedFromString('hist-' + code); seedLabel = ` (group ${code})`; }
+    else { SEED = (Math.random()*4294967296) >>> 0; seedLabel = ''; }
+    R = [0, 1].map(tabRng);
+    const r = mulberry32(SEED);
+    const order = ['one','two','three'];
+    for(let i=2;i>0;i--){ const j = Math.floor(r()*(i+1)); [order[i],order[j]] = [order[j],order[i]]; }
+    truth = { order, mN: 1 + Math.floor(3*r()), mI: 1.2 + 1.3*r(), mPo: 0.15 + 0.45*r() };
+    T1.rule = null; $('h1Rule').querySelectorAll('.cond-btn').forEach(b => b.classList.remove('active'));
+    t1Gen(); t2Gen();
+    renderers[curTab]();
+  }
+  $('applyCode').addEventListener('click', applySeed);
+  $('groupCode').addEventListener('keydown', e => { if(e.key === 'Enter') applySeed(); });
+
+  applySeed();
+})();
+</script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
+</body>
+</html>

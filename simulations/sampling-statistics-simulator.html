@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sampling Statistics — From One Recording to Many</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --danger: #d9694f;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1180px; }
+
+  header{ margin-bottom: 18px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.9rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p, .tab-intro{
+    max-width: 780px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+  .tab-intro{ margin: 0 0 16px; }
+  .tab-intro b{ color: var(--paper); font-weight: 600; }
+
+  .topbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    margin: 0 0 18px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+  }
+  .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+  }
+  input[type="text"]{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--scope-bg);
+    color: var(--phosphor);
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    padding: 7px 10px;
+    width: 100px;
+  }
+  input[type="range"]{ accent-color: var(--amber); width: 150px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .wide{ grid-column: 1 / -1; }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    text-align: right;
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; background: var(--scope-bg); }
+
+  .controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin-top: 14px;
+  }
+  button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  button:hover{ border-color: var(--amber-dim); color: var(--amber); }
+  button:focus-visible, input:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+  button.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+  }
+  button.primary:hover{ background:#f0b455; color:#1c1408; }
+
+  .cond-group{ display:flex; gap:0; border:1px solid var(--panel-edge); border-radius:6px; overflow:hidden; flex-wrap: wrap; }
+  .cond-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: none;
+    border-radius: 0;
+    padding: 8px 11px;
+    cursor:pointer;
+  }
+  .cond-btn + .cond-btn{ border-left: 1px solid var(--panel-edge); }
+  .cond-btn.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  .cond-btn:hover{ color: var(--amber); }
+
+  .tabbar{ margin: 0 0 16px; }
+  .tabbar .cond-btn{ font-size: 0.78rem; padding: 10px 14px; }
+
+  .toggle{
+    display:flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle input{ accent-color: var(--amber); width:14px; height:14px; }
+  .toggle input[type="range"]{ width:150px; height:auto; }
+
+  .readout{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--phosphor);
+    white-space: nowrap;
+  }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+  @media (max-width: 520px){ .stats{ grid-template-columns: 1fr; } }
+  .stats .row{
+    display:flex; justify-content:space-between; gap: 8px;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); text-align:right; }
+  .stats .row .v.amber{ color: var(--amber); }
+  .stats .section-label{
+    grid-column: 1 / -1;
+    color: var(--paper-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    border-top: 1px solid var(--panel-edge);
+    padding-top: 8px;
+  }
+  .stats .section-label:first-child{ border-top:none; margin-top:0; padding-top:0; }
+  .hidden{ display:none !important; }
+  .tab{ display:none; }
+  .tab.active{ display:block; }
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap: 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    margin-top: 10px;
+  }
+  .legend i{ display:inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+
+  table.gtable{
+    width:100%; border-collapse: collapse; margin-top: 14px;
+    font-family:'JetBrains Mono', monospace; font-size: 0.78rem;
+  }
+  table.gtable th{ color: var(--paper-dim); font-weight: 400; text-align:right; padding: 4px 8px; border-bottom: 1px solid var(--panel-edge); }
+  table.gtable th:first-child, table.gtable td:first-child{ text-align:left; }
+  table.gtable td{ color: var(--phosphor); text-align:right; padding: 4px 8px; border-bottom: 1px dotted var(--panel-edge); }
+  table.gtable td:first-child{ color: var(--paper); }
+  .table-scroll{ overflow-x:auto; }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+    margin: 10px 0 0;
+    max-width: 840px;
+  }
+  details code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+body{align-items:stretch;padding-left:28px;padding-right:28px;padding-top:0}
+.wrap{max-width:none;padding-top:14px}
+.lab-nav{padding-left:0;padding-right:0}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · STATISTICS FOR ELECTROPHYSIOLOGY</p>
+    <h1>From One Recording to Many: Sampling Statistics</h1>
+    <p>
+      Every number we measure in the lab, a unitary current, an open time, an EPSC amplitude, is one draw
+      from a population we never see in full. These six exercises show what a sample can and cannot tell you
+      about that population: how means and variances are estimated, what an error bar means, why averages
+      become Gaussian, why a bar graph can hide the data, and how many measurements an experiment needs.
+    </p>
+  </header>
+
+  <div class="topbar">
+    <label class="toggle"><input type="checkbox" id="revealToggle"> reveal true values</label>
+    <button id="csvBtn">Download data (CSV)</button>
+    <span class="label" style="margin-left:auto">Group code</span>
+    <input type="text" id="groupCode" placeholder="e.g. 7" aria-label="Group code">
+    <button id="applyCode">Load</button>
+  </div>
+
+  <div class="cond-group tabbar" id="tabGroup" role="tablist">
+    <button class="cond-btn active" data-tab="0">1 · Estimate μ and σ²</button>
+    <button class="cond-btn" data-tab="1">2 · SD vs SEM</button>
+    <button class="cond-btn" data-tab="2">3 · Central limit theorem</button>
+    <button class="cond-btn" data-tab="3">4 · Show the data</button>
+    <button class="cond-btn" data-tab="4">5 · Bootstrap</button>
+    <button class="cond-btn" data-tab="5">6 · How many cells?</button>
+  </div>
+
+  <!-- ===================== TAB 1 ===================== -->
+  <section class="tab active" id="tab0">
+    <p class="tab-intro">
+      You measure the amplitude of single-channel openings in one patch. The true mean <b>μ</b> and variance
+      <b>σ²</b> of the population are hidden. Estimate them from a sample, then repeat the experiment 2000 times
+      to see whether dividing by <b>n</b> or by <b>n − 1</b> gives the right variance on average.
+    </p>
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-title"><h2>YOUR SAMPLE — UNITARY CURRENT AMPLITUDES</h2><span id="e1Info"></span></div>
+        <canvas id="e1Canvas"></canvas>
+        <div class="controls">
+          <span class="label">n</span>
+          <div class="cond-group" id="e1N">
+            <button class="cond-btn" data-n="3">3</button>
+            <button class="cond-btn active" data-n="5">5</button>
+            <button class="cond-btn" data-n="10">10</button>
+            <button class="cond-btn" data-n="30">30</button>
+            <button class="cond-btn" data-n="100">100</button>
+            <button class="cond-btn" data-n="500">500</button>
+          </div>
+          <button class="primary" id="e1Draw">Draw a new sample</button>
+        </div>
+        <div class="stats">
+          <div class="section-label">THIS SAMPLE</div>
+          <div class="row"><span class="k">mean x̄</span><span class="v" id="e1Mean">—</span></div>
+          <div class="row"><span class="k">Σ(x − x̄)²</span><span class="v" id="e1SS">—</span></div>
+          <div class="row"><span class="k">variance, ÷ n</span><span class="v" id="e1VarN">—</span></div>
+          <div class="row"><span class="k">variance, ÷ (n − 1)</span><span class="v" id="e1VarN1">—</span></div>
+          <div class="row"><span class="k">SD = √variance (÷ n − 1)</span><span class="v" id="e1SD">—</span></div>
+          <div class="row truth hidden"><span class="k">true μ, σ, σ²</span><span class="v amber" id="e1Truth">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>2000 REPEATED SAMPLES — VARIANCE ESTIMATES</h2><span id="e2Info">same n</span></div>
+        <canvas id="e2Canvas"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--phosphor)"></i>÷ (n − 1)</span>
+          <span><i style="background:var(--amber)"></i>÷ n</span>
+          <span class="truth hidden"><i style="background:var(--paper)"></i>true σ²</span>
+        </div>
+        <div class="controls">
+          <button class="primary" id="e2Run">Repeat 2000 samples</button>
+        </div>
+        <div class="stats">
+          <div class="section-label">AVERAGE OVER 2000 SAMPLES</div>
+          <div class="row"><span class="k">average variance ÷ n</span><span class="v" id="e2AvgN">—</span></div>
+          <div class="row"><span class="k">average variance ÷ (n − 1)</span><span class="v" id="e2AvgN1">—</span></div>
+          <div class="row"><span class="k">ratio of the two averages</span><span class="v" id="e2Ratio">—</span></div>
+          <div class="row"><span class="k">(n − 1) / n</span><span class="v" id="e2Pred">—</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 2 ===================== -->
+  <section class="tab" id="tab1">
+    <p class="tab-intro">
+      Here the population is known: unitary current <b>μ = 2.0 pA</b>, <b>σ = 0.3 pA</b>. Each experiment measures
+      <b>n</b> openings and reports the mean with an error bar. Which kind of bar contains the true mean, and how
+      often? How does each kind of spread change as <b>n</b> grows?
+    </p>
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-title"><h2>EXPERIMENTS — MEAN WITH ERROR BAR</h2><span>last 40, newest at bottom</span></div>
+        <canvas id="s1Canvas"></canvas>
+        <div class="controls">
+          <span class="label">n</span>
+          <div class="cond-group" id="s1N">
+            <button class="cond-btn" data-n="3">3</button>
+            <button class="cond-btn" data-n="5">5</button>
+            <button class="cond-btn active" data-n="10">10</button>
+            <button class="cond-btn" data-n="30">30</button>
+            <button class="cond-btn" data-n="100">100</button>
+          </div>
+          <span class="label">bar</span>
+          <div class="cond-group" id="s1Bar">
+            <button class="cond-btn active" data-bar="sd">± SD</button>
+            <button class="cond-btn" data-bar="sem">± SEM</button>
+            <button class="cond-btn" data-bar="ci">95% CI</button>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="primary" id="s1One">Run 1 experiment</button>
+          <button id="s1Many">Run 50</button>
+          <button id="s1Clear">Clear</button>
+        </div>
+        <div class="stats">
+          <div class="section-label">ALL EXPERIMENTS AT THIS n</div>
+          <div class="row"><span class="k">experiments</span><span class="v" id="s1Count">0</span></div>
+          <div class="row"><span class="k">bars that contain μ</span><span class="v amber" id="s1Cover">—</span></div>
+          <div class="row"><span class="k">average sample SD</span><span class="v" id="s1AvgSD">—</span></div>
+          <div class="row"><span class="k">SD of the means</span><span class="v" id="s1SDm">—</span></div>
+          <div class="row"><span class="k">σ / √n</span><span class="v" id="s1Pred">—</span></div>
+          <div class="row"><span class="k">t(0.975, n − 1)</span><span class="v" id="s1T">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>SPREAD VS SAMPLE SIZE</h2><span>log–log, 400 experiments per n</span></div>
+        <canvas id="s2Canvas"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--phosphor)"></i>average sample SD</span>
+          <span><i style="background:var(--amber)"></i>SD of the means (= SEM)</span>
+          <span><i style="background:var(--paper-dim)"></i>σ and σ/√n</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 3 ===================== -->
+  <section class="tab" id="tab2">
+    <p class="tab-intro">
+      Most single measurements are <b>not</b> Gaussian: open times are exponential, event counts are Poisson,
+      current amplitudes in a patch are bimodal. Average <b>n</b> of them, repeat 5000 times, and look at the
+      distribution of the averages.
+    </p>
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-title"><h2>SINGLE MEASUREMENTS (POPULATION)</h2><span id="c1Info"></span></div>
+        <canvas id="c1Canvas"></canvas>
+        <div class="controls">
+          <div class="cond-group" id="c1Parent">
+            <button class="cond-btn active" data-p="exp">Open times</button>
+            <button class="cond-btn" data-p="pois">Event counts</button>
+            <button class="cond-btn" data-p="bimod">Two current levels</button>
+            <button class="cond-btn" data-p="unif">Uniform</button>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="section-label">POPULATION</div>
+          <div class="row"><span class="k">mean</span><span class="v" id="c1Mean">—</span></div>
+          <div class="row"><span class="k">SD</span><span class="v" id="c1SD">—</span></div>
+          <div class="row"><span class="k">skewness</span><span class="v" id="c1Skew">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>5000 MEANS OF n MEASUREMENTS</h2><span id="c2Info"></span></div>
+        <canvas id="c2Canvas"></canvas>
+        <div class="controls">
+          <span class="label">n</span>
+          <div class="cond-group" id="c2N">
+            <button class="cond-btn active" data-n="1">1</button>
+            <button class="cond-btn" data-n="2">2</button>
+            <button class="cond-btn" data-n="5">5</button>
+            <button class="cond-btn" data-n="10">10</button>
+            <button class="cond-btn" data-n="30">30</button>
+            <button class="cond-btn" data-n="100">100</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="c2Gauss" checked> Gaussian with SD = σ/√n</label>
+        </div>
+        <div class="stats">
+          <div class="section-label">MEANS</div>
+          <div class="row"><span class="k">mean of means</span><span class="v" id="c2Mean">—</span></div>
+          <div class="row"><span class="k">SD of means</span><span class="v" id="c2SD">—</span></div>
+          <div class="row"><span class="k">σ / √n</span><span class="v" id="c2Pred">—</span></div>
+          <div class="row"><span class="k">skewness of means</span><span class="v" id="c2Skew">—</span></div>
+          <div class="row"><span class="k">population skewness / √n</span><span class="v" id="c2SkewPred">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>NORMAL QUANTILE (Q–Q) PLOT OF THE MEANS</h2><span>Gaussian = straight line</span></div>
+        <canvas id="c3Canvas"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 4 ===================== -->
+  <section class="tab" id="tab3">
+    <p class="tab-intro">
+      Four groups of evoked EPSC amplitudes. The four groups have <b>exactly</b> the same mean and the same SD.
+      Look at them as a bar graph first. Then switch to the dot plot and the box plot: are these the same data?
+    </p>
+    <div class="grid">
+      <div class="panel wide">
+        <div class="panel-title"><h2>EPSC AMPLITUDE, FOUR GROUPS</h2><span id="g1Info"></span></div>
+        <canvas id="g1Canvas"></canvas>
+        <div class="controls">
+          <span class="label">display</span>
+          <div class="cond-group" id="g1Mode">
+            <button class="cond-btn active" data-m="bar">Bar ± SEM</button>
+            <button class="cond-btn" data-m="dots">Dots</button>
+            <button class="cond-btn" data-m="box">Box plot</button>
+            <button class="cond-btn" data-m="both">Dots + box</button>
+          </div>
+          <span class="label">n per group</span>
+          <div class="cond-group" id="g1N">
+            <button class="cond-btn" data-n="8">8</button>
+            <button class="cond-btn active" data-n="20">20</button>
+            <button class="cond-btn" data-n="50">50</button>
+          </div>
+          <button class="primary" id="g1New">New data</button>
+        </div>
+        <div class="table-scroll">
+          <table class="gtable" id="g1Table"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 5 ===================== -->
+  <section class="tab" id="tab4">
+    <p class="tab-intro">
+      You record <b>n</b> open times from one channel and estimate the time constant as <b>τ<sub>est</sub> = mean open time</b>.
+      How uncertain is τ<sub>est</sub>? You can't repeat the experiment 2000 times, but you can <b>resample your own data</b>
+      with replacement (the bootstrap) and see how much τ<sub>est</sub> changes.
+    </p>
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-title"><h2>YOUR SAMPLE — OPEN TIMES</h2><span id="b1Info"></span></div>
+        <canvas id="b1Canvas"></canvas>
+        <div class="controls">
+          <span class="label">n</span>
+          <div class="cond-group" id="b1N">
+            <button class="cond-btn" data-n="10">10</button>
+            <button class="cond-btn active" data-n="30">30</button>
+            <button class="cond-btn" data-n="100">100</button>
+          </div>
+          <button class="primary" id="b1Draw">Record a new sample</button>
+        </div>
+        <div class="stats">
+          <div class="section-label">CLASSICAL ESTIMATE</div>
+          <div class="row"><span class="k">τ<sub>est</sub> = mean</span><span class="v" id="b1Tau">—</span></div>
+          <div class="row"><span class="k">SEM = SD / √n</span><span class="v" id="b1SEM">—</span></div>
+          <div class="row"><span class="k">95% CI, τ<sub>est</sub> ± t·SEM</span><span class="v" id="b1CI">—</span></div>
+          <div class="row truth hidden"><span class="k">true τ, true SE = τ/√n</span><span class="v amber" id="b1Truth">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>BOOTSTRAP DISTRIBUTION OF τ<sub>est</sub></h2><span>2000 resamples</span></div>
+        <canvas id="b2Canvas"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--phosphor)"></i>bootstrap τ<sub>est</sub></span>
+          <span><i style="background:var(--amber)"></i>percentile 95% CI</span>
+          <span><i style="background:var(--paper-dim)"></i>t-based 95% CI</span>
+          <span class="truth hidden"><i style="background:var(--danger)"></i>true sampling distribution</span>
+        </div>
+        <div class="controls">
+          <button class="primary" id="b2Run">Bootstrap 2000×</button>
+          <button id="b2Cover">Check 200 experiments</button>
+        </div>
+        <div class="stats">
+          <div class="section-label">BOOTSTRAP</div>
+          <div class="row"><span class="k">bootstrap SE</span><span class="v" id="b2SE">—</span></div>
+          <div class="row"><span class="k">percentile 95% CI</span><span class="v" id="b2CI">—</span></div>
+          <div class="section-label">COVERAGE OVER 200 NEW EXPERIMENTS</div>
+          <div class="row"><span class="k">t-based CI contains τ</span><span class="v amber" id="b2CovT">—</span></div>
+          <div class="row"><span class="k">percentile CI contains τ</span><span class="v amber" id="b2CovB">—</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 6 ===================== -->
+  <section class="tab" id="tab5">
+    <p class="tab-intro">
+      A drug changes mEPSC amplitude by <b>Δ</b> pA. You record <b>n</b> cells per group and compare them with
+      a t-test. Set Δ, the cell-to-cell SD and n, and run many experiments: what fraction finds p &lt; 0.05?
+      That fraction is the <b>statistical power</b>. With Δ = 0 it is the false-positive rate.
+    </p>
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-title"><h2>ONE EXPERIMENT</h2><span id="p1Info"></span></div>
+        <canvas id="p1Canvas"></canvas>
+        <div class="controls">
+          <label class="toggle">Δ <input type="range" id="pDelta" min="0" max="10" step="0.5" value="3"><span class="readout" id="pDeltaR">3.0 pA</span></label>
+          <label class="toggle">SD <input type="range" id="pSD" min="2" max="15" step="0.5" value="6"><span class="readout" id="pSDR">6.0 pA</span></label>
+          <label class="toggle">n <input type="range" id="pN" min="3" max="60" step="1" value="8"><span class="readout" id="pNR">8 cells</span></label>
+        </div>
+        <div class="controls">
+          <button class="primary" id="p1One">Run 1 experiment</button>
+          <button id="p1Many">Run 1000</button>
+        </div>
+        <div class="stats">
+          <div class="section-label">THIS EXPERIMENT</div>
+          <div class="row"><span class="k">control mean</span><span class="v" id="p1M1">—</span></div>
+          <div class="row"><span class="k">drug mean</span><span class="v" id="p1M2">—</span></div>
+          <div class="row"><span class="k">t (Welch)</span><span class="v" id="p1T">—</span></div>
+          <div class="row"><span class="k">p</span><span class="v amber" id="p1P">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>p-VALUES OF ALL EXPERIMENTS</h2><span id="p2Info">0 experiments</span></div>
+        <canvas id="p2Canvas"></canvas>
+        <div class="stats">
+          <div class="section-label">SUMMARY</div>
+          <div class="row"><span class="k">effect size d = Δ / SD</span><span class="v" id="p2D">—</span></div>
+          <div class="row"><span class="k">experiments</span><span class="v" id="p2Count">0</span></div>
+          <div class="row"><span class="k" id="p2PowLabel">fraction p &lt; 0.05 (power)</span><span class="v amber" id="p2Pow">—</span></div>
+          <div class="row"><span class="k">median p</span><span class="v" id="p2Med">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>POWER VS CELLS PER GROUP</h2><span>400 experiments per point</span></div>
+        <canvas id="p3Canvas"></canvas>
+        <div class="controls">
+          <button class="primary" id="p3Run">Compute power curve</button>
+          <span class="readout" id="p3Info"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      <b>1 · Estimate μ and σ².</b> Amplitudes are drawn from a Gaussian with a hidden mean (1.8–2.4 pA) and SD
+      (0.25–0.40 pA), randomized per group code. The sum of squared deviations from the <i>sample</i> mean is
+      always a little smaller than from the true mean, so dividing it by <code>n</code> underestimates
+      <code>σ²</code> by the factor <code>(n − 1)/n</code>. Dividing by <code>n − 1</code> removes that bias. The
+      difference matters for n = 3 and is negligible for n = 500.
+    </p>
+    <p>
+      <b>2 · SD vs SEM.</b> The SD describes how much single measurements vary and does not shrink with more data.
+      The SEM, <code>SD/√n</code>, estimates how much the <i>mean</i> would vary between repeated experiments.
+      About 68% of ±SEM bars and 95% of 95% confidence intervals contain μ. The CI uses the t distribution
+      with <code>n − 1</code> degrees of freedom, which matters for small n. On the log–log plot the SEM line
+      has slope −½.
+    </p>
+    <p>
+      <b>3 · Central limit theorem.</b> Open times are exponential (τ = 2 ms), counts are Poisson (μ = 1.5),
+      two current levels are a mixture of closed (60%, 0 pA) and open (40%, 2 pA) with Gaussian noise.
+      Whatever the population, the mean of n measurements has SD <code>σ/√n</code>, and its distribution
+      approaches a Gaussian as n grows; its skewness falls as <code>1/√n</code>. This is why tests on means
+      work even when single measurements are far from Gaussian.
+    </p>
+    <p>
+      <b>4 · Show the data.</b> The four groups are generated from a Gaussian, a skewed (log-normal), a bimodal
+      (two subpopulations of cells) and a Gaussian-plus-outlier distribution, then rescaled so that every group has
+      mean 40 pA and SD 18 pA exactly. The bar graph is therefore identical for all four. Medians, ranges and
+      the plots themselves are not.
+    </p>
+    <p>
+      <b>5 · Bootstrap.</b> Open times are exponential with a hidden τ (1.5–3 ms). Each bootstrap resample draws
+      n values from your own sample with replacement and recomputes the mean. The spread of those 2000 means
+      estimates the standard error, and their 2.5th and 97.5th percentiles give a confidence interval that
+      follows the skewed shape of the true sampling distribution. "Check 200 experiments" measures how often each
+      kind of interval actually contains the true τ.
+    </p>
+    <p>
+      <b>6 · How many cells?</b> Control cells have mean 20 pA; drug cells have mean 20 + Δ pA; both have the
+      chosen SD. Each experiment is analysed with Welch's two-sample t-test. Power depends only on the effect
+      size <code>d = Δ/SD</code> and on n. With Δ = 0 every "significant" result is a false positive, and
+      p-values are uniformly distributed, so about 5% fall below 0.05.
+    </p>
+    <p>
+      The group code makes every random draw reproducible: the same code and the same sequence of buttons
+      gives the same data. "Download data (CSV)" exports what the current tab is showing.
+    </p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+
+  // ================= random numbers =================
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function seedFromString(s){
+    let h = 2166136261;
+    for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function gauss(r){ let u = 0; while(u === 0) u = r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r()); }
+  function expo(r, mean){ return -mean*Math.log(1 - r()); }
+  function poissonK(r, mu){ const L = Math.exp(-mu); let k = 0, p = 1; do { k++; p *= r(); } while(p > L); return k - 1; }
+  function hash01(n){
+    n = Math.imul(n ^ (n >>> 16), 0x85ebca6b);
+    n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35);
+    n ^= n >>> 16;
+    return (n >>> 0) / 4294967296;
+  }
+
+  // ================= descriptive statistics =================
+  function mean(a){ let s = 0; for(const v of a) s += v; return s/a.length; }
+  function sumSq(a, m){ let s = 0; for(const v of a){ const d = v - m; s += d*d; } return s; }
+  function sdev(a){ return Math.sqrt(sumSq(a, mean(a))/(a.length - 1)); }
+  function skewness(a){
+    const m = mean(a); let m2 = 0, m3 = 0;
+    for(const v of a){ const d = v - m; m2 += d*d; m3 += d*d*d; }
+    m2 /= a.length; m3 /= a.length;
+    return m3/Math.pow(m2, 1.5);
+  }
+  function quantileSorted(s, p){
+    const h = (s.length - 1)*p, lo = Math.floor(h), hi = Math.ceil(h);
+    return s[lo] + (s[hi] - s[lo])*(h - lo);
+  }
+  function sorted(a){ return Float64Array.from(a).sort(); }
+
+  // ================= special functions =================
+  function gammaln(x){
+    const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+    let y=x, tmp=x+5.5; tmp -= (x+0.5)*Math.log(tmp);
+    let ser=1.000000000190015;
+    for(let j=0;j<6;j++) ser += c[j]/++y;
+    return -tmp + Math.log(2.5066282746310005*ser/x);
+  }
+  function betacf(a,b,x){
+    const FP=1e-300; const qab=a+b, qap=a+1, qam=a-1;
+    let c=1, d=1-qab*x/qap; if(Math.abs(d)<FP) d=FP; d=1/d; let h=d;
+    for(let m=1;m<=300;m++){
+      const m2=2*m;
+      let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+      d=1+aa*d; if(Math.abs(d)<FP) d=FP; c=1+aa/c; if(Math.abs(c)<FP) c=FP; d=1/d; h*=d*c;
+      aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d=1+aa*d; if(Math.abs(d)<FP) d=FP; c=1+aa/c; if(Math.abs(c)<FP) c=FP; d=1/d;
+      const del=d*c; h*=del; if(Math.abs(del-1)<3e-14) break;
+    }
+    return h;
+  }
+  function betai(a,b,x){
+    if(x<=0) return 0; if(x>=1) return 1;
+    const bt=Math.exp(gammaln(a+b)-gammaln(a)-gammaln(b)+a*Math.log(x)+b*Math.log(1-x));
+    return (x<(a+1)/(a+b+2)) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b;
+  }
+  function tTwoSidedP(t, df){ return betai(df/2, 0.5, df/(df + t*t)); }
+  const tcache = {};
+  function tCrit(df){ // two-sided 95%
+    if(tcache[df]) return tcache[df];
+    let lo = 0, hi = 200;
+    for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(tTwoSidedP(m, df) > 0.05) lo = m; else hi = m; }
+    return (tcache[df] = (lo+hi)/2);
+  }
+  function normInv(p){
+    const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+    const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+    const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+    const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+    const pl=0.02425; let q, r;
+    if(p<pl){ q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    if(p>1-pl){ q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    q=p-0.5; r=q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  }
+  function welch(x, y){
+    const n1=x.length, n2=y.length, m1=mean(x), m2=mean(y);
+    const v1=sumSq(x,m1)/(n1-1), v2=sumSq(y,m2)/(n2-1);
+    const a=v1/n1, b=v2/n2, se=Math.sqrt(a+b);
+    const t=(m2-m1)/se;
+    const df=(a+b)*(a+b)/(a*a/(n1-1) + b*b/(n2-1));
+    return {m1, m2, t, df, p: tTwoSidedP(t, df)};
+  }
+
+  // ================= drawing helpers =================
+  const COL = {
+    grid: 'rgba(77,255,160,0.10)', axis: 'rgba(184,174,149,0.55)', text: '#b8ae95',
+    phos: '#4dffa0', phosDim: 'rgba(77,255,160,0.28)', amber: '#e8a53d', amberDim: 'rgba(232,165,61,0.30)',
+    paper: '#f4ecd8', danger: '#d9694f'
+  };
+  const FONT = '11px "JetBrains Mono", monospace';
+
+  function setupCanvas(id, w, h){
+    const c = $(id), dpr = window.devicePixelRatio || 1;
+    c.width = w*dpr; c.height = h*dpr;
+    const ctx = c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {c, ctx, w, h};
+  }
+  function clear(cv){ cv.ctx.fillStyle = '#05130a'; cv.ctx.fillRect(0,0,cv.w,cv.h); }
+  function niceStep(range, target){
+    const raw = range/target, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/mag;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10)*mag;
+  }
+  function linTicks(min, max, target){
+    const s = niceStep(max - min, target || 5), out = [];
+    for(let v = Math.ceil(min/s - 1e-9)*s; v <= max + 1e-9*Math.abs(s); v += s) out.push(+v.toPrecision(12));
+    return out;
+  }
+  function logTicks(min, max){
+    const out = [];
+    for(let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++)
+      for(const m of [1,2,5]){ const v = m*Math.pow(10,e); if(v >= min*0.999 && v <= max*1.001) out.push(v); }
+    return out;
+  }
+  function fmtTick(v){
+    if(v === 0) return '0';
+    const a = Math.abs(v);
+    if(a >= 10000 || a < 0.001) return v.toExponential(0);
+    return String(+v.toPrecision(3));
+  }
+  function emptyMsg(cv, msg){
+    clear(cv);
+    const ctx = cv.ctx; ctx.font = FONT; ctx.fillStyle = COL.text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(msg, cv.w/2, cv.h/2);
+  }
+  // Draw axes and grid; returns mapping functions.
+  function frame(cv, o){
+    clear(cv);
+    const ctx = cv.ctx;
+    const padL = o.padL || 56, padB = o.padB || 44;
+    const P = {x: padL, y: 14, w: cv.w - padL - 16, h: cv.h - 14 - padB};
+    const fx = v => o.logx ? Math.log10(v) : v, fy = v => o.logy ? Math.log10(v) : v;
+    const X = v => P.x + P.w*(fx(v) - fx(o.xmin))/(fx(o.xmax) - fx(o.xmin));
+    const Y = v => P.y + P.h*(1 - (fy(v) - fy(o.ymin))/(fy(o.ymax) - fy(o.ymin)));
+    ctx.font = FONT; ctx.lineWidth = 1;
+    const xt = o.xticks || (o.logx ? logTicks(o.xmin, o.xmax) : linTicks(o.xmin, o.xmax, o.xn || 6));
+    const yt = o.yticks || (o.logy ? logTicks(o.ymin, o.ymax) : linTicks(o.ymin, o.ymax, o.yn || 4));
+    const xf = o.xfmt || fmtTick, yf = o.yfmt || fmtTick;
+    for(const v of yt){
+      const y = Y(v); if(y < P.y - 0.5 || y > P.y + P.h + 0.5) continue;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(P.x, y); ctx.lineTo(P.x + P.w, y); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(yf(v), P.x - 6, y);
+    }
+    for(const v of xt){
+      const x = X(v); if(x < P.x - 0.5 || x > P.x + P.w + 0.5) continue;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(x, P.y); ctx.lineTo(x, P.y + P.h); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(xf(v), x, P.y + P.h + 6);
+    }
+    ctx.strokeStyle = COL.axis;
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x, P.y + P.h); ctx.lineTo(P.x + P.w, P.y + P.h); ctx.stroke();
+    ctx.fillStyle = COL.text;
+    if(o.xlabel){ ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(o.xlabel, P.x + P.w/2, P.y + P.h + 24); }
+    if(o.ylabel){ ctx.save(); ctx.translate(12, P.y + P.h/2); ctx.rotate(-Math.PI/2); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.ylabel, 0, 0); ctx.restore(); }
+    return {ctx, P, X, Y};
+  }
+  function clipped(f, draw){
+    const {ctx, P} = f; ctx.save(); ctx.beginPath(); ctx.rect(P.x, P.y, P.w, P.h); ctx.clip(); draw(); ctx.restore();
+  }
+  function histogram(data, edges){
+    const nb = edges.length - 1, lo = edges[0], w = edges[1] - edges[0], c = new Array(nb).fill(0);
+    for(const v of data){ const b = Math.floor((v - lo)/w); if(b >= 0 && b < nb) c[b]++; }
+    return c;
+  }
+  function makeEdges(lo, hi, nb){ const e = []; for(let i=0;i<=nb;i++) e.push(lo + (hi - lo)*i/nb); return e; }
+  function drawBars(f, edges, counts, fill, stroke){
+    const {ctx, X, Y, P} = f;
+    clipped(f, () => {
+      ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 1;
+      for(let b=0;b<counts.length;b++){
+        if(!counts[b]) continue;
+        const x0 = X(edges[b]), x1 = X(edges[b+1]), y = Y(counts[b]);
+        ctx.fillRect(x0, y, x1 - x0, P.y + P.h - y);
+        ctx.beginPath(); ctx.moveTo(x0, P.y + P.h); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, P.y + P.h); ctx.stroke();
+      }
+    });
+  }
+  function drawStep(f, edges, counts, color, width, dash){
+    const {ctx, X, Y} = f;
+    clipped(f, () => {
+      ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+      ctx.beginPath(); ctx.moveTo(X(edges[0]), Y(0));
+      for(let b=0;b<counts.length;b++){ ctx.lineTo(X(edges[b]), Y(counts[b])); ctx.lineTo(X(edges[b+1]), Y(counts[b])); }
+      ctx.lineTo(X(edges[edges.length-1]), Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  function drawCurve(f, xs, ys, color, width, dash){
+    const {ctx, X, Y} = f;
+    clipped(f, () => {
+      ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+      ctx.beginPath(); xs.forEach((x, i) => { if(i === 0) ctx.moveTo(X(x), Y(ys[i])); else ctx.lineTo(X(x), Y(ys[i])); });
+      ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  function vLine(f, x, color, width, dash){
+    const {ctx, X, P} = f; const px = X(x);
+    if(px < P.x || px > P.x + P.w) return;
+    ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(px, P.y); ctx.lineTo(px, P.y + P.h); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function hLine(f, y, color, width, dash){
+    const {ctx, Y, P} = f; const py = Y(y);
+    ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(P.x, py); ctx.lineTo(P.x + P.w, py); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function dot(ctx, x, y, r, color, fill){
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 2*Math.PI);
+    if(fill){ ctx.fillStyle = color; ctx.fill(); } else { ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke(); }
+  }
+  // dot strip with deterministic vertical jitter around the middle of the plot
+  function strip(f, xs, salt, color){
+    const {ctx, X, P} = f, yc = P.y + P.h*0.5, half = P.h*0.32;
+    const r = xs.length > 200 ? 2 : (xs.length > 30 ? 3.2 : 4.5);
+    clipped(f, () => {
+      xs.forEach((v, i) => dot(ctx, X(v), yc + (hash01(i*31 + salt) - 0.5)*2*half, r, color, xs.length > 200));
+    });
+  }
+  const fmt = (x, d) => (x === null || x === undefined || !isFinite(x)) ? '—' : x.toFixed(d);
+  const pct = x => isFinite(x) ? (100*x).toFixed(1) + ' %' : '—';
+  function setText(id, t){ $(id).textContent = t; }
+  function bindGroup(id, attr, fn){
+    const g = $(id);
+    g.querySelectorAll('.cond-btn').forEach(b => b.addEventListener('click', () => {
+      g.querySelectorAll('.cond-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      fn(b.dataset[attr]);
+    }));
+  }
+  const revealed = () => $('revealToggle').checked;
+
+  // ================= seeds and per-tab state =================
+  let SEED = 0, seedLabel = '';
+  let R = [];                // one RNG per tab
+  let truth = {};
+  function tabRng(k){ return mulberry32((SEED ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0); }
+
+  const cv = {
+    e1: setupCanvas('e1Canvas', 640, 220), e2: setupCanvas('e2Canvas', 640, 260),
+    s1: setupCanvas('s1Canvas', 640, 340), s2: setupCanvas('s2Canvas', 640, 340),
+    c1: setupCanvas('c1Canvas', 640, 250), c2: setupCanvas('c2Canvas', 640, 250), c3: setupCanvas('c3Canvas', 640, 280),
+    g1: setupCanvas('g1Canvas', 1100, 380),
+    b1: setupCanvas('b1Canvas', 640, 220), b2: setupCanvas('b2Canvas', 640, 260),
+    p1: setupCanvas('p1Canvas', 640, 260), p2: setupCanvas('p2Canvas', 640, 240), p3: setupCanvas('p3Canvas', 640, 240)
+  };
+
+  // ======================================================
+  // TAB 1: estimate mean and variance
+  // ======================================================
+  const T1 = { n: 5, sample: null, reps: null };
+  function t1Draw(){
+    const r = R[0];
+    T1.sample = Array.from({length: T1.n}, () => truth.mu1 + truth.sd1*gauss(r));
+    t1Render();
+  }
+  function t1Repeat(){
+    const r = R[0], n = T1.n, vN = new Float64Array(2000), vN1 = new Float64Array(2000);
+    for(let k=0;k<2000;k++){
+      let s = 0; const x = new Float64Array(n);
+      for(let i=0;i<n;i++){ x[i] = truth.mu1 + truth.sd1*gauss(r); s += x[i]; }
+      const m = s/n; let ss = 0; for(let i=0;i<n;i++){ const d = x[i] - m; ss += d*d; }
+      vN[k] = ss/n; vN1[k] = ss/(n - 1);
+    }
+    T1.reps = {vN, vN1};
+    t1Render();
+  }
+  function t1Render(){
+    const s = T1.sample, n = T1.n;
+    // sample strip
+    const f = frame(cv.e1, {xmin: 0.5, xmax: 3.5, ymin: 0, ymax: 1, yticks: [], xlabel: 'amplitude (pA)', padL: 20});
+    const m = mean(s), ss = sumSq(s, m), sd = Math.sqrt(ss/(n - 1));
+    clipped(f, () => {
+      f.ctx.fillStyle = 'rgba(232,165,61,0.10)';
+      f.ctx.fillRect(f.X(m - sd), f.P.y, f.X(m + sd) - f.X(m - sd), f.P.h);
+    });
+    if(revealed()){
+      const xs = [], ys = [];
+      for(let i=0;i<=200;i++){ const x = 0.5 + 3*i/200; xs.push(x); ys.push(0.08 + 0.84*Math.exp(-0.5*Math.pow((x - truth.mu1)/truth.sd1, 2))); }
+      drawCurve(f, xs, ys, 'rgba(244,236,216,0.45)', 1.2);
+      vLine(f, truth.mu1, COL.paper, 1.2, [5,4]);
+    }
+    strip(f, s, 17, COL.phos);
+    vLine(f, m, COL.amber, 2);
+    f.ctx.fillStyle = COL.amber; f.ctx.font = FONT; f.ctx.textAlign = 'left'; f.ctx.textBaseline = 'top';
+    f.ctx.fillText('x̄ ± SD', Math.min(f.X(m) + 6, f.P.x + f.P.w - 60), f.P.y + 4);
+    setText('e1Info', `n = ${n}`);
+    setText('e1Mean', fmt(m, 3) + ' pA');
+    setText('e1SS', fmt(ss, 4) + ' pA²');
+    setText('e1VarN', fmt(ss/n, 4) + ' pA²');
+    setText('e1VarN1', fmt(ss/(n - 1), 4) + ' pA²');
+    setText('e1SD', fmt(sd, 3) + ' pA');
+    setText('e1Truth', `${truth.mu1.toFixed(3)} pA, ${truth.sd1.toFixed(3)} pA, ${(truth.sd1*truth.sd1).toFixed(4)} pA²`);
+
+    // repeated variance estimates
+    if(!T1.reps){
+      emptyMsg(cv.e2, 'Press "Repeat 2000 samples"');
+      ['e2AvgN','e2AvgN1','e2Ratio'].forEach(id => setText(id, '—'));
+      setText('e2Pred', fmt((n - 1)/n, 3));
+      return;
+    }
+    const {vN, vN1} = T1.reps;
+    const hi = quantileSorted(sorted(vN1), 0.995)*1.05;
+    const edges = makeEdges(0, hi, 50);
+    const hN1 = histogram(vN1, edges), hN = histogram(vN, edges);
+    const ymax = Math.max(...hN1, ...hN)*1.12;
+    const g = frame(cv.e2, {xmin: 0, xmax: hi, ymin: 0, ymax, xlabel: 'variance estimate (pA²)', ylabel: 'samples'});
+    drawBars(g, edges, hN1, COL.phosDim, COL.phos);
+    drawStep(g, edges, hN, COL.amber, 1.5);
+    const aN = mean(vN), aN1 = mean(vN1);
+    vLine(g, aN1, COL.phos, 2);
+    vLine(g, aN, COL.amber, 2);
+    if(revealed()) vLine(g, truth.sd1*truth.sd1, COL.paper, 1.5, [5,4]);
+    setText('e2AvgN', fmt(aN, 4) + ' pA²');
+    setText('e2AvgN1', fmt(aN1, 4) + ' pA²');
+    setText('e2Ratio', fmt(aN/aN1, 3));
+    setText('e2Pred', fmt((n - 1)/n, 3));
+  }
+  bindGroup('e1N', 'n', v => { T1.n = +v; T1.reps = null; t1Draw(); });
+  $('e1Draw').addEventListener('click', t1Draw);
+  $('e2Run').addEventListener('click', t1Repeat);
+
+  // ======================================================
+  // TAB 2: SD vs SEM
+  // ======================================================
+  const MU2 = 2.0, SD2 = 0.3;
+  const T2 = { n: 10, bar: 'sd', exps: [], scaling: null };
+  function t2Run(k){
+    const r = R[1];
+    for(let j=0;j<k;j++){
+      const x = Array.from({length: T2.n}, () => MU2 + SD2*gauss(r));
+      T2.exps.push({m: mean(x), s: sdev(x), x});
+    }
+    if(T2.exps.length > 2000) T2.exps.splice(0, T2.exps.length - 2000);
+    t2Render();
+  }
+  function halfWidth(e){
+    if(T2.bar === 'sd') return e.s;
+    if(T2.bar === 'sem') return e.s/Math.sqrt(T2.n);
+    return tCrit(T2.n - 1)*e.s/Math.sqrt(T2.n);
+  }
+  function t2Scaling(){
+    const r = mulberry32((SEED ^ 0x51ED270B) >>> 0);
+    const ns = [2,3,5,10,20,50,100,200,500], out = [];
+    for(const n of ns){
+      const ms = new Float64Array(400); let sdSum = 0;
+      for(let k=0;k<400;k++){
+        const x = new Float64Array(n);
+        for(let i=0;i<n;i++) x[i] = MU2 + SD2*gauss(r);
+        ms[k] = mean(x); sdSum += sdev(x);
+      }
+      out.push({n, avgSD: sdSum/400, sdMeans: sdev(ms)});
+    }
+    T2.scaling = out;
+  }
+  function t2Render(){
+    const ex = T2.exps, show = ex.slice(-40), rows = 40;
+    const f = frame(cv.s1, {xmin: 0.6, xmax: 3.4, ymin: 0, ymax: rows, yticks: [], xlabel: 'unitary current (pA)', padL: 20});
+    vLine(f, MU2, COL.amber, 1.5, [5,4]);
+    clipped(f, () => {
+      const ctx = f.ctx, rowH = f.P.h/rows;
+      show.forEach((e, i) => {
+        const y = f.P.y + rowH*(rows - show.length + i + 0.5);
+        const hw = halfWidth(e), hit = (e.m - hw <= MU2 && MU2 <= e.m + hw);
+        const col = hit ? COL.phos : COL.danger;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(f.X(e.m - hw), y); ctx.lineTo(f.X(e.m + hw), y); ctx.stroke();
+        dot(ctx, f.X(e.m), y, 2.8, col, true);
+      });
+    });
+    if(!ex.length){
+      f.ctx.fillStyle = COL.text; f.ctx.font = FONT; f.ctx.textAlign = 'center'; f.ctx.textBaseline = 'middle';
+      f.ctx.fillText('Press "Run 1 experiment"', f.P.x + f.P.w/2, f.P.y + f.P.h/2);
+    }
+    f.ctx.fillStyle = COL.amber; f.ctx.font = FONT; f.ctx.textAlign = 'left'; f.ctx.textBaseline = 'top';
+    f.ctx.fillText('μ', f.X(MU2) + 5, f.P.y + 2);
+
+    const n = T2.n;
+    setText('s1Count', ex.length);
+    if(ex.length){
+      const cover = ex.filter(e => { const hw = halfWidth(e); return e.m - hw <= MU2 && MU2 <= e.m + hw; }).length/ex.length;
+      setText('s1Cover', pct(cover));
+      setText('s1AvgSD', fmt(mean(ex.map(e => e.s)), 3) + ' pA');
+      setText('s1SDm', ex.length > 1 ? fmt(sdev(ex.map(e => e.m)), 3) + ' pA' : '—');
+    } else ['s1Cover','s1AvgSD','s1SDm'].forEach(id => setText(id, '—'));
+    setText('s1Pred', fmt(SD2/Math.sqrt(n), 3) + ' pA');
+    setText('s1T', fmt(tCrit(n - 1), 3));
+
+    // scaling plot
+    const g = frame(cv.s2, {xmin: 1.5, xmax: 700, ymin: 0.008, ymax: 0.6, logx: true, logy: true,
+      xticks: [2,5,10,20,50,100,200,500], xlabel: 'n (measurements per experiment)', ylabel: 'pA'});
+    drawCurve(g, [1.5, 700], [SD2, SD2], COL.text, 1, [5,4]);
+    drawCurve(g, [1.5, 700], [SD2/Math.sqrt(1.5), SD2/Math.sqrt(700)], COL.text, 1, [5,4]);
+    const sc = T2.scaling;
+    drawCurve(g, sc.map(p => p.n), sc.map(p => p.avgSD), COL.phos, 1.5);
+    drawCurve(g, sc.map(p => p.n), sc.map(p => p.sdMeans), COL.amber, 1.5);
+    sc.forEach(p => { dot(g.ctx, g.X(p.n), g.Y(p.avgSD), 3.5, COL.phos, true); dot(g.ctx, g.X(p.n), g.Y(p.sdMeans), 3.5, COL.amber, true); });
+    vLine(g, n, 'rgba(244,236,216,0.35)', 1, [2,3]);
+  }
+  bindGroup('s1N', 'n', v => { T2.n = +v; T2.exps = []; t2Render(); });
+  bindGroup('s1Bar', 'bar', v => { T2.bar = v; t2Render(); });
+  $('s1One').addEventListener('click', () => t2Run(1));
+  $('s1Many').addEventListener('click', () => t2Run(50));
+  $('s1Clear').addEventListener('click', () => { T2.exps = []; t2Render(); });
+
+  // ======================================================
+  // TAB 3: central limit theorem
+  // ======================================================
+  const PARENTS = {
+    exp:   { label: 'open time (ms)', lo: 0, hi: 12, discrete: false, gen: r => expo(r, 2) },
+    pois:  { label: 'events per window', lo: -0.5, hi: 7.5, discrete: true, gen: r => poissonK(r, 1.5) },
+    bimod: { label: 'current (pA)', lo: -1.2, hi: 3.2, discrete: false, gen: r => (r() < 0.6 ? 0 : 2) + 0.3*gauss(r) },
+    unif:  { label: 'value', lo: 0, hi: 1, discrete: false, gen: r => r() }
+  };
+  const T3 = { parent: 'exp', n: 1, pop: null, means: null };
+  function t3Compute(){
+    const r = tabRng(2 + 100*Object.keys(PARENTS).indexOf(T3.parent)), P = PARENTS[T3.parent];
+    if(!T3.pop || T3.pop.key !== T3.parent){
+      const v = new Float64Array(20000);
+      for(let i=0;i<v.length;i++) v[i] = P.gen(r);
+      T3.pop = {key: T3.parent, v, m: mean(v), sd: sdev(v), sk: skewness(v)};
+    }
+    const rm = tabRng(7 + 13*T3.n + 100*Object.keys(PARENTS).indexOf(T3.parent));
+    const means = new Float64Array(5000);
+    for(let k=0;k<5000;k++){ let s = 0; for(let i=0;i<T3.n;i++) s += P.gen(rm); means[k] = s/T3.n; }
+    T3.means = means;
+    t3Render();
+  }
+  function t3Render(){
+    const P = PARENTS[T3.parent], pop = T3.pop, n = T3.n;
+    // parent
+    let edges;
+    if(P.discrete){ edges = []; for(let k=P.lo;k<=P.hi+1e-9;k++) edges.push(k); }
+    else edges = makeEdges(P.lo, P.hi, 60);
+    let h = histogram(pop.v, edges);
+    let f = frame(cv.c1, {xmin: P.lo, xmax: P.hi, ymin: 0, ymax: Math.max(...h)*1.12, xlabel: P.label, ylabel: 'measurements'});
+    drawBars(f, edges, h, COL.phosDim, COL.phos);
+    vLine(f, pop.m, COL.amber, 2);
+    setText('c1Info', '20 000 single measurements');
+    setText('c1Mean', fmt(pop.m, 3)); setText('c1SD', fmt(pop.sd, 3)); setText('c1Skew', fmt(pop.sk, 2));
+
+    // means
+    const se = pop.sd/Math.sqrt(n);
+    const lo = Math.max(P.lo, pop.m - 4.5*se), hi = Math.min(P.hi, pop.m + 4.5*se);
+    if(P.discrete && n <= 10){
+      const k0 = Math.floor(lo*n), k1 = Math.ceil(hi*n);
+      edges = []; for(let k=k0;k<=k1+1;k++) edges.push((k - 0.5)/n);
+    } else edges = makeEdges(lo, hi, 50);
+    h = histogram(T3.means, edges);
+    const bw = edges[1] - edges[0];
+    const xs = [], ys = [];
+    for(let i=0;i<=200;i++){ const x = edges[0] + (edges[edges.length-1] - edges[0])*i/200; xs.push(x); ys.push(5000*bw*Math.exp(-0.5*Math.pow((x - pop.m)/se, 2))/(se*Math.sqrt(2*Math.PI))); }
+    const showG = $('c2Gauss').checked;
+    const ymax = Math.max(...h, showG ? Math.max(...ys) : 0)*1.12;
+    f = frame(cv.c2, {xmin: edges[0], xmax: edges[edges.length-1], ymin: 0, ymax, xlabel: 'mean of ' + n + ' × ' + P.label, ylabel: 'means'});
+    drawBars(f, edges, h, COL.phosDim, COL.phos);
+    if(showG) drawCurve(f, xs, ys, COL.amber, 2);
+    const mm = mean(T3.means), sm = sdev(T3.means), skm = skewness(T3.means);
+    setText('c2Info', `n = ${n}`);
+    setText('c2Mean', fmt(mm, 3)); setText('c2SD', fmt(sm, 3)); setText('c2Pred', fmt(se, 3));
+    setText('c2Skew', fmt(skm, 2)); setText('c2SkewPred', fmt(pop.sk/Math.sqrt(n), 2));
+
+    // Q-Q
+    const s = sorted(T3.means), qx = [], qy = [];
+    for(let i=0;i<200;i++){ const p = (i + 0.5)/200; qx.push(normInv(p)); qy.push((quantileSorted(s, p) - mm)/sm); }
+    f = frame(cv.c3, {xmin: -3.2, xmax: 3.2, ymin: -3.2, ymax: 5.5, xlabel: 'Gaussian quantile (SD units)', ylabel: 'observed quantile (SD units)', yticks: [-3,-2,-1,0,1,2,3,4,5]});
+    drawCurve(f, [-3.2, 3.2], [-3.2, 3.2], COL.amber, 1.5, [5,4]);
+    clipped(f, () => qx.forEach((x, i) => dot(f.ctx, f.X(x), f.Y(qy[i]), 2.4, COL.phos, true)));
+  }
+  bindGroup('c1Parent', 'p', v => { T3.parent = v; t3Compute(); });
+  bindGroup('c2N', 'n', v => { T3.n = +v; t3Compute(); });
+  $('c2Gauss').addEventListener('change', t3Render);
+
+  // ======================================================
+  // TAB 4: show the data
+  // ======================================================
+  const T4 = { n: 20, mode: 'bar', groups: null };
+  const SHAPES = {
+    gauss: r => gauss(r),
+    skew: r => Math.exp(0.9*gauss(r)),
+    bimod: r => (r() < 0.4 ? 0 : 1) + 0.12*gauss(r),
+    outlier: null
+  };
+  function t4New(){
+    const r = R[3], n = T4.n;
+    const keys = ['gauss','skew','bimod','outlier'];
+    for(let i=keys.length-1;i>0;i--){ const j = Math.floor(r()*(i+1)); [keys[i],keys[j]] = [keys[j],keys[i]]; }
+    T4.groups = keys.map(k => {
+      let x;
+      if(k === 'outlier'){ x = Array.from({length: n - 1}, () => gauss(r)); x.push(Math.max(...x) + 3.5 + 1.5*r()); }
+      else x = Array.from({length: n}, () => SHAPES[k](r));
+      const m = mean(x), s = sdev(x);
+      return {kind: k, x: x.map(v => 40 + 18*(v - m)/s)};
+    });
+    t4Render();
+  }
+  function boxStats(x){
+    const s = sorted(x), q1 = quantileSorted(s, 0.25), med = quantileSorted(s, 0.5), q3 = quantileSorted(s, 0.75), iqr = q3 - q1;
+    let wlo = s[0], whi = s[s.length-1];
+    for(const v of s){ if(v >= q1 - 1.5*iqr){ wlo = v; break; } }
+    for(let i=s.length-1;i>=0;i--){ if(s[i] <= q3 + 1.5*iqr){ whi = s[i]; break; } }
+    return {q1, med, q3, wlo, whi, min: s[0], max: s[s.length-1], out: Array.from(s).filter(v => v < wlo || v > whi)};
+  }
+  function t4Render(){
+    const G = T4.groups, mode = T4.mode;
+    let lo = 0, hi = 0;
+    G.forEach(g => { lo = Math.min(lo, ...g.x); hi = Math.max(hi, ...g.x); });
+    if(mode === 'bar'){ lo = 0; hi = 60; } else { lo = Math.min(0, Math.floor(lo/10)*10); hi = Math.ceil(hi/10)*10 + 5; }
+    const f = frame(cv.g1, {xmin: 0, xmax: 4, ymin: lo, ymax: hi, xticks: [], ylabel: 'EPSC amplitude (pA)', padB: 34});
+    const ctx = f.ctx, slot = f.P.w/4;
+    G.forEach((g, i) => {
+      const xc = f.P.x + slot*(i + 0.5), m = mean(g.x), sem = sdev(g.x)/Math.sqrt(g.x.length);
+      ctx.fillStyle = COL.text; ctx.font = FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('Group ' + (i + 1), xc, f.P.y + f.P.h + 8);
+      clipped(f, () => {
+        if(mode === 'bar'){
+          const w = slot*0.45;
+          ctx.fillStyle = COL.phosDim; ctx.fillRect(xc - w/2, f.Y(m), w, f.Y(0) - f.Y(m));
+          ctx.strokeStyle = COL.phos; ctx.lineWidth = 1.2; ctx.strokeRect(xc - w/2, f.Y(m), w, f.Y(0) - f.Y(m));
+          ctx.strokeStyle = COL.paper; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(xc, f.Y(m - sem)); ctx.lineTo(xc, f.Y(m + sem));
+          ctx.moveTo(xc - 8, f.Y(m + sem)); ctx.lineTo(xc + 8, f.Y(m + sem));
+          ctx.moveTo(xc - 8, f.Y(m - sem)); ctx.lineTo(xc + 8, f.Y(m - sem)); ctx.stroke();
+          return;
+        }
+        if(mode === 'box' || mode === 'both'){
+          const b = boxStats(g.x), w = slot*0.34;
+          ctx.strokeStyle = COL.amber; ctx.lineWidth = 1.5;
+          ctx.strokeRect(xc - w/2, f.Y(b.q3), w, f.Y(b.q1) - f.Y(b.q3));
+          ctx.beginPath();
+          ctx.moveTo(xc - w/2, f.Y(b.med)); ctx.lineTo(xc + w/2, f.Y(b.med));
+          ctx.moveTo(xc, f.Y(b.q3)); ctx.lineTo(xc, f.Y(b.whi)); ctx.moveTo(xc - w/4, f.Y(b.whi)); ctx.lineTo(xc + w/4, f.Y(b.whi));
+          ctx.moveTo(xc, f.Y(b.q1)); ctx.lineTo(xc, f.Y(b.wlo)); ctx.moveTo(xc - w/4, f.Y(b.wlo)); ctx.lineTo(xc + w/4, f.Y(b.wlo));
+          ctx.stroke();
+          if(mode === 'box') b.out.forEach(v => dot(ctx, xc, f.Y(v), 3.5, COL.amber, false));
+        }
+        if(mode === 'dots' || mode === 'both'){
+          const spread = slot*0.28;
+          g.x.forEach((v, j) => dot(ctx, xc + (hash01(j*13 + i*101 + 5) - 0.5)*2*spread, f.Y(v), 3.2, COL.phos, mode === 'dots'));
+          if(mode === 'dots'){ ctx.strokeStyle = COL.paper; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(xc - spread*1.2, f.Y(m)); ctx.lineTo(xc + spread*1.2, f.Y(m)); ctx.stroke(); }
+        }
+      });
+    });
+    const label = {bar: 'mean ± SEM', dots: 'each dot is one cell; line = mean', box: 'median, quartiles, 1.5·IQR whiskers', both: 'dots over box plot'}[mode];
+    setText('g1Info', label);
+    let html = '<tr><th>group</th><th>n</th><th>mean</th><th>SD</th><th>SEM</th><th>median</th><th>min</th><th>max</th>' + (revealed() ? '<th>shape</th>' : '') + '</tr>';
+    const names = {gauss: 'Gaussian', skew: 'skewed (log-normal)', bimod: 'bimodal (two subpopulations of cells)', outlier: 'Gaussian + one outlier'};
+    G.forEach((g, i) => {
+      const s = sorted(g.x);
+      html += `<tr><td>Group ${i+1}</td><td>${g.x.length}</td><td>${fmt(mean(g.x),1)}</td><td>${fmt(sdev(g.x),1)}</td><td>${fmt(sdev(g.x)/Math.sqrt(g.x.length),1)}</td>` +
+              `<td>${fmt(quantileSorted(s,0.5),1)}</td><td>${fmt(s[0],1)}</td><td>${fmt(s[s.length-1],1)}</td>` +
+              (revealed() ? `<td style="color:var(--amber)">${names[g.kind]}</td>` : '') + '</tr>';
+    });
+    $('g1Table').innerHTML = html;
+  }
+  bindGroup('g1Mode', 'm', v => { T4.mode = v; t4Render(); });
+  bindGroup('g1N', 'n', v => { T4.n = +v; t4New(); });
+  $('g1New').addEventListener('click', t4New);
+
+  // ======================================================
+  // TAB 5: bootstrap
+  // ======================================================
+  const T5 = { n: 30, sample: null, boot: null, trueDist: null, cover: null };
+  function t5Draw(){
+    const r = R[4];
+    T5.sample = Array.from({length: T5.n}, () => expo(r, truth.tau5));
+    T5.boot = null; T5.trueDist = null;
+    t5Bootstrap();
+  }
+  function bootMeans(x, B, r){
+    const n = x.length, out = new Float64Array(B);
+    for(let b=0;b<B;b++){ let s = 0; for(let i=0;i<n;i++) s += x[Math.floor(r()*n)]; out[b] = s/n; }
+    return out;
+  }
+  function t5Bootstrap(){
+    const r = R[4];
+    T5.boot = bootMeans(T5.sample, 2000, r);
+    const rt = tabRng(55 + T5.n), td = new Float64Array(2000);
+    for(let k=0;k<2000;k++){ let s = 0; for(let i=0;i<T5.n;i++) s += expo(rt, truth.tau5); td[k] = s/T5.n; }
+    T5.trueDist = td;
+    t5Render();
+  }
+  function t5Coverage(){
+    const r = R[4], n = T5.n, tau = truth.tau5, tc = tCrit(n - 1);
+    let hitT = 0, hitB = 0;
+    for(let e=0;e<200;e++){
+      const x = Array.from({length: n}, () => expo(r, tau));
+      const m = mean(x), sem = sdev(x)/Math.sqrt(n);
+      if(m - tc*sem <= tau && tau <= m + tc*sem) hitT++;
+      const bs = sorted(bootMeans(x, 500, r));
+      if(quantileSorted(bs, 0.025) <= tau && tau <= quantileSorted(bs, 0.975)) hitB++;
+    }
+    T5.cover = {t: hitT/200, b: hitB/200, n};
+    t5Render();
+  }
+  function t5Render(){
+    const x = T5.sample, n = x.length;
+    const xmax = Math.max(8, Math.ceil(Math.max(...x)) + 1);
+    let f = frame(cv.b1, {xmin: 0, xmax, ymin: 0, ymax: 1, yticks: [], xlabel: 'open time (ms)', padL: 20});
+    const m = mean(x), sem = sdev(x)/Math.sqrt(n), tc = tCrit(n - 1);
+    strip(f, x, 71, COL.phos);
+    vLine(f, m, COL.amber, 2);
+    if(revealed()) vLine(f, truth.tau5, COL.danger, 1.5, [5,4]);
+    setText('b1Info', `n = ${n}`);
+    setText('b1Tau', fmt(m, 3) + ' ms');
+    setText('b1SEM', fmt(sem, 3) + ' ms');
+    setText('b1CI', `${fmt(m - tc*sem, 2)} – ${fmt(m + tc*sem, 2)} ms`);
+    setText('b1Truth', `${truth.tau5.toFixed(3)} ms, ${(truth.tau5/Math.sqrt(n)).toFixed(3)} ms`);
+
+    const bs = sorted(T5.boot), ts = sorted(T5.trueDist);
+    const lo = Math.min(bs[0], revealed() ? ts[0] : Infinity), hi = Math.max(bs[bs.length-1], revealed() ? ts[ts.length-1] : -Infinity);
+    const edges = makeEdges(Math.max(0, lo), hi, 50);
+    const hb = histogram(T5.boot, edges), ht = histogram(T5.trueDist, edges);
+    f = frame(cv.b2, {xmin: edges[0], xmax: edges[edges.length-1], ymin: 0, ymax: Math.max(...hb, revealed() ? Math.max(...ht) : 0)*1.12, xlabel: 'estimated τ (ms)', ylabel: 'resamples'});
+    drawBars(f, edges, hb, COL.phosDim, COL.phos);
+    if(revealed()){ drawStep(f, edges, ht, COL.danger, 1.5); vLine(f, truth.tau5, COL.danger, 1.5, [5,4]); }
+    const b025 = quantileSorted(bs, 0.025), b975 = quantileSorted(bs, 0.975);
+    vLine(f, b025, COL.amber, 2); vLine(f, b975, COL.amber, 2);
+    vLine(f, m - tc*sem, COL.text, 1.5, [4,4]); vLine(f, m + tc*sem, COL.text, 1.5, [4,4]);
+    setText('b2SE', fmt(sdev(T5.boot), 3) + ' ms');
+    setText('b2CI', `${fmt(b025, 2)} – ${fmt(b975, 2)} ms`);
+    if(T5.cover && T5.cover.n === n){ setText('b2CovT', pct(T5.cover.t)); setText('b2CovB', pct(T5.cover.b)); }
+    else { setText('b2CovT', '—'); setText('b2CovB', '—'); }
+  }
+  bindGroup('b1N', 'n', v => { T5.n = +v; T5.cover = null; t5Draw(); });
+  $('b1Draw').addEventListener('click', t5Draw);
+  $('b2Run').addEventListener('click', t5Bootstrap);
+  $('b2Cover').addEventListener('click', t5Coverage);
+
+  // ======================================================
+  // TAB 6: power
+  // ======================================================
+  const T6 = { last: null, ps: [], curve: null };
+  const pPar = () => ({d: +$('pDelta').value, sd: +$('pSD').value, n: +$('pN').value});
+  function oneExp(r, par){
+    const x = Array.from({length: par.n}, () => 20 + par.sd*gauss(r));
+    const y = Array.from({length: par.n}, () => 20 + par.d + par.sd*gauss(r));
+    return {x, y, res: welch(x, y)};
+  }
+  function t6Run(k){
+    const r = R[5], par = pPar();
+    for(let i=0;i<k;i++){ const e = oneExp(r, par); T6.ps.push(e.res.p); T6.last = e; }
+    t6Render();
+  }
+  function t6Curve(){
+    const r = tabRng(66), par = pPar(), ns = [3,4,5,6,8,10,12,15,20,25,30,40,50,60];
+    T6.curve = {par: {d: par.d, sd: par.sd}, pts: ns.map(n => {
+      let hit = 0; for(let k=0;k<400;k++) if(oneExp(r, {d: par.d, sd: par.sd, n}).res.p < 0.05) hit++;
+      return {n, pow: hit/400};
+    })};
+    t6Render();
+  }
+  function t6Render(){
+    const par = pPar();
+    setText('pDeltaR', par.d.toFixed(1) + ' pA'); setText('pSDR', par.sd.toFixed(1) + ' pA'); setText('pNR', par.n + ' cells');
+    // one experiment
+    const e = T6.last;
+    if(!e){ emptyMsg(cv.p1, 'Press "Run 1 experiment"'); }
+    else {
+      const all = e.x.concat(e.y);
+      const lo = Math.floor(Math.min(...all)/5)*5 - 5, hi = Math.ceil(Math.max(...all)/5)*5 + 5;
+      const f = frame(cv.p1, {xmin: 0, xmax: 2, ymin: lo, ymax: hi, xticks: [], ylabel: 'mEPSC amplitude (pA)', padB: 30});
+      const ctx = f.ctx;
+      [e.x, e.y].forEach((g, i) => {
+        const xc = f.P.x + f.P.w*(i*0.5 + 0.25), m = mean(g), sem = sdev(g)/Math.sqrt(g.length), spread = f.P.w*0.1;
+        ctx.fillStyle = COL.text; ctx.font = FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(i ? 'drug' : 'control', xc, f.P.y + f.P.h + 8);
+        clipped(f, () => {
+          g.forEach((v, j) => dot(ctx, xc + (hash01(j*7 + i*991) - 0.5)*2*spread, f.Y(v), 3.2, i ? COL.amber : COL.phos, true));
+          ctx.strokeStyle = COL.paper; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(xc - spread*1.3, f.Y(m)); ctx.lineTo(xc + spread*1.3, f.Y(m)); ctx.stroke();
+          ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(xc + spread*1.5, f.Y(m - sem)); ctx.lineTo(xc + spread*1.5, f.Y(m + sem)); ctx.stroke();
+        });
+      });
+      setText('p1Info', `n = ${e.x.length} per group`);
+      setText('p1M1', fmt(e.res.m1, 2) + ' pA'); setText('p1M2', fmt(e.res.m2, 2) + ' pA');
+      setText('p1T', fmt(e.res.t, 2) + ' (df ' + fmt(e.res.df, 1) + ')');
+      setText('p1P', e.res.p < 0.0001 ? '< 0.0001' : fmt(e.res.p, 4));
+    }
+    // p-value histogram
+    const ps = T6.ps;
+    setText('p2Count', ps.length); setText('p2D', fmt(par.d/par.sd, 2));
+    setText('p2PowLabel', par.d === 0 ? 'fraction p < 0.05 (false positives)' : 'fraction p < 0.05 (power)');
+    setText('p2Info', ps.length + ' experiments');
+    if(!ps.length){ emptyMsg(cv.p2, 'Run experiments to collect p-values'); setText('p2Pow', '—'); setText('p2Med', '—'); }
+    else {
+      const edges = makeEdges(0, 1, 20), h = histogram(ps.map(p => Math.min(p, 0.999999)), edges);
+      const f = frame(cv.p2, {xmin: 0, xmax: 1, ymin: 0, ymax: Math.max(...h)*1.12, xlabel: 'p-value', ylabel: 'experiments'});
+      const sig = edges.slice(0, 2), hs = [h[0]];
+      drawBars(f, edges, h, COL.phosDim, COL.phos);
+      drawBars(f, sig, hs, COL.amberDim, COL.amber);
+      vLine(f, 0.05, COL.amber, 1.5, [5,4]);
+      setText('p2Pow', pct(ps.filter(p => p < 0.05).length/ps.length));
+      setText('p2Med', fmt(quantileSorted(sorted(ps), 0.5), 3));
+    }
+    // power curve
+    const c = T6.curve;
+    const f = frame(cv.p3, {xmin: 0, xmax: 62, ymin: 0, ymax: 1, yticks: [0,0.2,0.4,0.6,0.8,1], xlabel: 'cells per group (n)', ylabel: 'power'});
+    hLine(f, 0.8, COL.text, 1, [5,4]); hLine(f, 0.05, COL.text, 1, [2,3]);
+    vLine(f, par.n, 'rgba(244,236,216,0.45)', 1, [2,3]);
+    if(c){
+      drawCurve(f, c.pts.map(p => p.n), c.pts.map(p => p.pow), COL.amber, 2);
+      c.pts.forEach(p => dot(f.ctx, f.X(p.n), f.Y(p.pow), 3.5, COL.amber, true));
+      const stale = c.par.d !== par.d || c.par.sd !== par.sd;
+      const first = c.pts.find(p => p.pow >= 0.8);
+      setText('p3Info', stale ? 'Δ or SD changed: recompute' :
+        `Δ = ${c.par.d} pA, SD = ${c.par.sd} pA: ` + (first ? `≥ 80% power from n ≈ ${first.n}` : 'below 80% up to n = 60'));
+    } else setText('p3Info', '');
+  }
+  ['pDelta','pSD','pN'].forEach(id => $(id).addEventListener('input', () => { T6.ps = []; T6.last = null; t6Render(); }));
+  $('p1One').addEventListener('click', () => t6Run(1));
+  $('p1Many').addEventListener('click', () => t6Run(1000));
+  $('p3Run').addEventListener('click', t6Curve);
+
+  // ======================================================
+  // tabs, seed, reveal, CSV
+  // ======================================================
+  let curTab = 0;
+  const renderers = [t1Render, t2Render, t3Render, t4Render, t5Render, t6Render];
+  bindGroup('tabGroup', 'tab', v => {
+    curTab = +v;
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === curTab));
+    renderers[curTab]();
+  });
+  $('revealToggle').addEventListener('change', () => {
+    document.querySelectorAll('.truth').forEach(el => el.classList.toggle('hidden', !revealed()));
+    renderers[curTab]();
+  });
+
+  function csvDownload(name, lines){
+    const blob = new Blob([lines.join('\n')], {type: 'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name + (seedLabel ? '_group' + $('groupCode').value.trim() : '') + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  $('csvBtn').addEventListener('click', () => {
+    const head = `# Sampling statistics simulator${seedLabel}`;
+    if(curTab === 0) csvDownload('sample_amplitudes', [head, 'measurement,amplitude_pA', ...T1.sample.map((v, i) => `${i+1},${v.toFixed(5)}`)]);
+    if(curTab === 1) csvDownload('experiments_sd_sem', [head, `# n = ${T2.n} per experiment; population mu = ${MU2} pA, sigma = ${SD2} pA`, 'experiment,mean_pA,sd_pA',
+      ...T2.exps.map((e, i) => `${i+1},${e.m.toFixed(5)},${e.s.toFixed(5)}`)]);
+    if(curTab === 2) csvDownload('clt_means', [head, `# population: ${T3.parent}; n = ${T3.n}`, 'replicate,mean', ...Array.from(T3.means, (v, i) => `${i+1},${v.toFixed(5)}`)]);
+    if(curTab === 3){
+      const lines = [head, 'group,cell,amplitude_pA'];
+      T4.groups.forEach((g, i) => g.x.forEach((v, j) => lines.push(`${i+1},${j+1},${v.toFixed(3)}`)));
+      csvDownload('four_groups', lines);
+    }
+    if(curTab === 4) csvDownload('open_times', [head, 'opening,open_time_ms', ...T5.sample.map((v, i) => `${i+1},${v.toFixed(5)}`)]);
+    if(curTab === 5){
+      const lines = [head];
+      if(T6.last){ lines.push('# last experiment', 'group,cell,amplitude_pA');
+        T6.last.x.forEach((v, j) => lines.push(`control,${j+1},${v.toFixed(3)}`));
+        T6.last.y.forEach((v, j) => lines.push(`drug,${j+1},${v.toFixed(3)}`)); }
+      lines.push('# p-values of all experiments', 'experiment,p'); T6.ps.forEach((p, i) => lines.push(`${i+1},${p.toExponential(5)}`));
+      csvDownload('power_experiments', lines);
+    }
+  });
+
+  function applySeed(){
+    const code = $('groupCode').value.trim();
+    if(code){ SEED = seedFromString('sampling-' + code); seedLabel = ` (group ${code})`; }
+    else { SEED = (Math.random()*4294967296) >>> 0; seedLabel = ''; }
+    R = [0,1,2,3,4,5].map(tabRng);
+    const r = mulberry32(SEED);
+    truth = { mu1: 1.8 + 0.6*r(), sd1: 0.25 + 0.15*r(), tau5: 1.5 + 1.5*r() };
+    T1.reps = null; T2.exps = []; T3.pop = null; T5.cover = null; T6.ps = []; T6.last = null; T6.curve = null;
+    t2Scaling();
+    t1Draw(); t3Compute(); t4New(); t5Draw(); t6Run(1);
+    renderers.forEach(fn => fn());
+  }
+  $('applyCode').addEventListener('click', applySeed);
+  $('groupCode').addEventListener('keydown', e => { if(e.key === 'Enter') applySeed(); });
+
+  applySeed();
+})();
+</script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
+</body>
+</html>

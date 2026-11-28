@@ -50,9 +50,9 @@
 <section>
   <div class="wrap">
     <div class="section-head">
-      <p class="eyebrow">Doce simuladores, un mismo hilo conductor</p>
+      <p class="eyebrow">Dieciséis simuladores, un mismo hilo conductor</p>
       <h2>De la membrana excitable a la plasticidad sináptica</h2>
-      <p>Las simulaciones siguen el recorrido clásico de un curso de electrofisiología: primero la generación y propagación del potencial de acción, luego el canal iónico individual que lo hace posible, y finalmente la transmisión sináptica — cuántica, central y plástica, tanto de corto como de largo plazo. Cada simulador corre directamente en el navegador.</p>
+      <p>Las simulaciones siguen el recorrido clásico de un curso de electrofisiología: primero la generación y propagación del potencial de acción, luego el canal iónico individual que lo hace posible y las herramientas estadísticas para analizar sus registros, y finalmente la transmisión sináptica — cuántica, central y plástica, tanto de corto como de largo plazo. Cada simulador corre directamente en el navegador.</p>
     </div>
 
     <div class="grid-3 sim-list">
@@ -92,8 +92,28 @@
       </article>
 
       <article class="card">
+        <h3><a href="simulations/histograms-noise-simulator.html">Histogramas y ruido: resolver niveles de corriente</a></h3>
+        <p>Cómo el ancho y la posición de los bins cambian lo que vemos en un histograma (reglas de Sturges, Scott y Freedman–Diaconis, normalización). Parche con 1–3 canales en ruido gaussiano y filtro pasa-bajos: ajuste de gaussianas al histograma de todos los puntos para obtener i y P<sub>o</sub>, y comparación con la distribución binomial.</p>
+      </article>
+
+      <article class="card">
+        <h3><a href="simulations/dwell-time-statistics-simulator.html">Tiempos de permanencia: distribución exponencial e histogramas logarítmicos</a></h3>
+        <p>Tiempos de apertura de un canal: histograma lineal, gráfico de supervivencia, propiedad sin memoria y sesgo por eventos breves no detectados (tiempo muerto). Canales con varios componentes cinéticos: histograma con bins logarítmicos y ordenada √ (Sigworth &amp; Sine), y ajuste por máxima verosimilitud con 1, 2 o 3 exponenciales.</p>
+      </article>
+
+      <article class="card">
+        <h3><a href="simulations/sampling-statistics-simulator.html">Estadística de muestreo: de un registro a muchos</a></h3>
+        <p>Seis ejercicios interactivos: estimación de media y varianza (n vs n − 1), DE vs EEM e intervalos de confianza, teorema del límite central con tiempos de apertura y conteos, por qué un gráfico de barras puede ocultar los datos, bootstrap y potencia estadística (¿cuántas células necesito?).</p>
+      </article>
+
+      <article class="card">
         <h3><a href="simulations/quantal-transmission-simulator.html">Transmisión cuántica en la unión neuromuscular</a></h3>
         <p>Réplica de los experimentos de Katz & Miledi / del Castillo & Katz: potenciales de placa terminal evocados, histograma de amplitudes cuánticas y condición de calcio cero para observar fallos y unidades cuánticas.</p>
+      </article>
+
+      <article class="card">
+        <h3><a href="simulations/spontaneous-mepp-poisson-simulator.html">mEPPs espontáneos y el proceso de Poisson</a></h3>
+        <p>Réplica del experimento de Fatt &amp; Katz (1952): potenciales miniatura espontáneos en una placa terminal en reposo. Histograma de intervalos (exponencial), conteos por ventana (Poisson), CV, factor de Fano y prueba χ². Tres uniones «misteriosas» para decidir cuál libera de forma aleatoria, cuál regular y cuál en ráfagas.</p>
       </article>
 
       <article class="card">

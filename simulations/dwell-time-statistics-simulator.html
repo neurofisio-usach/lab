@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dwell Times — Exponential Waiting and Log-Binned Histograms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12100c;
+    --panel: #1c1914;
+    --panel-edge: #2c2820;
+    --scope-bg: #05130a;
+    --phosphor: #4dffa0;
+    --phosphor-dim: rgba(77,255,160,0.28);
+    --amber: #e8a53d;
+    --amber-dim: #a97a2c;
+    --paper: #f4ecd8;
+    --paper-dim: #b8ae95;
+    --danger: #d9694f;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+    padding: 28px 18px 60px;
+  }
+  .wrap{ width:100%; max-width: 1180px; }
+
+  header{ margin-bottom: 18px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--amber);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family:'Source Serif 4', Georgia, serif;
+    font-weight:600;
+    font-size: 1.9rem;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+  header p, .tab-intro{
+    max-width: 780px;
+    font-size: 0.95rem;
+    line-height:1.55;
+    color: var(--paper-dim);
+    margin: 0;
+  }
+  .tab-intro{ margin: 0 0 16px; }
+  .tab-intro b{ color: var(--paper); font-weight: 600; }
+
+  .topbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    margin: 0 0 18px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+  }
+  .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+  }
+  input[type="text"]{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--scope-bg);
+    color: var(--phosphor);
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    padding: 7px 10px;
+    width: 100px;
+  }
+  input[type="range"]{ accent-color: var(--amber); width: 150px; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .wide{ grid-column: 1 / -1; }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .panel-title{
+    display:flex; align-items:baseline; justify-content:space-between; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .panel-title h2{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    color: var(--paper);
+    margin:0;
+  }
+  .panel-title span{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    text-align: right;
+  }
+
+  canvas{ display:block; width:100%; height:auto; border-radius: 4px; background: var(--scope-bg); }
+
+  .controls{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    margin-top: 14px;
+  }
+  button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--panel-edge);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  button:hover{ border-color: var(--amber-dim); color: var(--amber); }
+  button:focus-visible, input:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+  button.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1c1408;
+    font-weight: 500;
+  }
+  button.primary:hover{ background:#f0b455; color:#1c1408; }
+
+  .cond-group{ display:flex; gap:0; border:1px solid var(--panel-edge); border-radius:6px; overflow:hidden; flex-wrap: wrap; }
+  .cond-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    background: transparent;
+    color: var(--paper-dim);
+    border: none;
+    border-radius: 0;
+    padding: 8px 11px;
+    cursor:pointer;
+  }
+  .cond-btn + .cond-btn{ border-left: 1px solid var(--panel-edge); }
+  .cond-btn.active{ background: rgba(232,165,61,0.16); color: var(--amber); }
+  .cond-btn:hover{ color: var(--amber); }
+
+  .tabbar{ margin: 0 0 16px; }
+  .tabbar .cond-btn{ font-size: 0.78rem; padding: 10px 14px; }
+
+  .toggle{
+    display:flex; align-items:center; gap:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--paper-dim);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle input{ accent-color: var(--amber); width:14px; height:14px; }
+  .toggle input[type="range"]{ width:150px; height:auto; }
+
+  .readout{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--phosphor);
+    white-space: nowrap;
+  }
+
+  .stats{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 18px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+  @media (max-width: 520px){ .stats{ grid-template-columns: 1fr; } }
+  .stats .row{
+    display:flex; justify-content:space-between; gap: 8px;
+    border-bottom: 1px dotted var(--panel-edge);
+    padding: 3px 0;
+  }
+  .stats .row .k{ color: var(--paper-dim); }
+  .stats .row .v{ color: var(--phosphor); text-align:right; }
+  .stats .row .v.amber{ color: var(--amber); }
+  .stats .section-label{
+    grid-column: 1 / -1;
+    color: var(--paper-dim);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    margin-top: 6px;
+    border-top: 1px solid var(--panel-edge);
+    padding-top: 8px;
+  }
+  .stats .section-label:first-child{ border-top:none; margin-top:0; padding-top:0; }
+  .hidden{ display:none !important; }
+  .tab{ display:none; }
+  .tab.active{ display:block; }
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap: 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    margin-top: 10px;
+  }
+  .legend i{ display:inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+
+  table.gtable{
+    width:100%; border-collapse: collapse; margin-top: 14px;
+    font-family:'JetBrains Mono', monospace; font-size: 0.78rem;
+  }
+  table.gtable th{ color: var(--paper-dim); font-weight: 400; text-align:right; padding: 4px 8px; border-bottom: 1px solid var(--panel-edge); }
+  table.gtable th:first-child, table.gtable td:first-child{ text-align:left; }
+  table.gtable td{ color: var(--phosphor); text-align:right; padding: 4px 8px; border-bottom: 1px dotted var(--panel-edge); }
+  table.gtable td:first-child{ color: var(--paper); }
+  .table-scroll{ overflow-x:auto; }
+
+  details{
+    margin-top: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    cursor: pointer;
+  }
+  details p{
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--paper-dim);
+    margin: 10px 0 0;
+    max-width: 840px;
+  }
+  details code{
+    font-family:'JetBrains Mono', monospace;
+    background: rgba(77,255,160,0.08);
+    color: var(--phosphor);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<!-- lab-nav:start -->
+<style>
+.lab-nav{font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:8px 28px;opacity:.75}
+.lab-nav a{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+.lab-nav a:hover,.lab-nav a:focus-visible{opacity:1;border-bottom-style:solid}
+.lab-nav--foot{text-align:left;padding:18px 28px 24px}
+body{align-items:stretch;padding-left:28px;padding-right:28px;padding-top:0}
+.wrap{max-width:none;padding-top:14px}
+.lab-nav{padding-left:0;padding-right:0}
+</style>
+<div class="lab-nav lab-nav--top"><a href="../simulaciones.html">← Back to Simulations</a></div>
+<!-- lab-nav:end -->
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">TEACHING SIMULATOR · SINGLE-CHANNEL KINETICS · STATISTICS</p>
+    <h1>Dwell Times: Exponential Waiting and Log-Binned Histograms</h1>
+    <p>
+      How long a channel stays open is a random waiting time. If leaving the open state has a constant
+      probability per unit time, open times follow an exponential distribution with time constant τ. These two
+      exercises show how to read such distributions: the linear histogram, the survivor plot, the
+      memoryless property, the bias from brief events the recording misses, and the log-binned histogram
+      of Sigworth &amp; Sine (1987) that separates kinetic components differing by orders of magnitude.
+    </p>
+  </header>
+
+  <div class="topbar">
+    <label class="toggle"><input type="checkbox" id="revealToggle"> reveal true values</label>
+    <button id="csvBtn">Download dwell times (CSV)</button>
+    <span class="label" style="margin-left:auto">Group code</span>
+    <input type="text" id="groupCode" placeholder="e.g. 7" aria-label="Group code">
+    <button id="applyCode">Load</button>
+  </div>
+
+  <div class="cond-group tabbar" id="tabGroup" role="tablist">
+    <button class="cond-btn active" data-tab="0">1 · Exponential waiting times</button>
+    <button class="cond-btn" data-tab="1">2 · Several components: log-binning</button>
+  </div>
+
+  <!-- ===================== TAB 1 ===================== -->
+  <section class="tab active" id="tab0">
+    <p class="tab-intro">
+      A channel with one open state. Choose τ yourself or record from the <b>mystery channel</b>, whose τ is
+      hidden. Openings shorter than the <b>dead time</b> are not detected, as happens after filtering a real
+      recording. Estimate τ in several ways and see which ones the missed events bias.
+    </p>
+    <div class="grid">
+      <div class="panel wide">
+        <div class="panel-title"><h2>IDEALIZED SINGLE-CHANNEL RECORD</h2><span id="t1TraceInfo">openings in red are shorter than the dead time and go undetected</span></div>
+        <canvas id="t1Trace"></canvas>
+        <div class="controls">
+          <div class="cond-group" id="t1Mode">
+            <button class="cond-btn active" data-m="own">Your channel</button>
+            <button class="cond-btn" data-m="mystery">Mystery channel</button>
+          </div>
+          <label class="toggle" id="t1TauWrap">τ <input type="range" id="t1Tau" min="0" max="100" step="1" value="50"><span class="readout" id="t1TauR"></span></label>
+          <label class="toggle">dead time <input type="range" id="t1Td" min="0" max="2" step="0.05" value="0"><span class="readout" id="t1TdR"></span></label>
+          <span class="label">openings</span>
+          <div class="cond-group" id="t1N">
+            <button class="cond-btn" data-n="50">50</button>
+            <button class="cond-btn active" data-n="300">300</button>
+            <button class="cond-btn" data-n="2000">2000</button>
+            <button class="cond-btn" data-n="10000">10 000</button>
+          </div>
+          <button class="primary" id="t1New">Record again</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>OPEN-TIME HISTOGRAM (LINEAR)</h2><span id="t1HistInfo"></span></div>
+        <canvas id="t1Hist"></canvas>
+        <div class="controls">
+          <span class="label">bins</span>
+          <div class="cond-group" id="t1Bins">
+            <button class="cond-btn" data-b="15">15</button>
+            <button class="cond-btn active" data-b="40">40</button>
+            <button class="cond-btn" data-b="100">100</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="t1Pred" checked> exponential with τ<sub>est</sub></label>
+        </div>
+        <div class="stats">
+          <div class="section-label">EVENTS</div>
+          <div class="row"><span class="k">openings generated</span><span class="v" id="t1Gen">—</span></div>
+          <div class="row"><span class="k">detected</span><span class="v" id="t1Det">—</span></div>
+          <div class="row"><span class="k">missed (&lt; dead time)</span><span class="v" id="t1Miss">—</span></div>
+          <div class="row"><span class="k">most frequent duration (bin)</span><span class="v" id="t1Mode2">—</span></div>
+          <div class="section-label">ESTIMATES OF τ FROM DETECTED OPENINGS</div>
+          <div class="row"><span class="k">mean duration</span><span class="v" id="t1EMean">—</span></div>
+          <div class="row"><span class="k">mean − dead time (max. likelihood)</span><span class="v amber" id="t1EML">—</span></div>
+          <div class="row"><span class="k">SD of durations</span><span class="v" id="t1ESD">—</span></div>
+          <div class="row"><span class="k">CV = SD / mean</span><span class="v" id="t1ECV">—</span></div>
+          <div class="row"><span class="k">slope of survivor plot</span><span class="v" id="t1ESurv">—</span></div>
+          <div class="row"><span class="k">(median − dead time) / ln 2</span><span class="v" id="t1EMed">—</span></div>
+          <div class="row truth hidden"><span class="k">true τ</span><span class="v amber" id="t1Truth">—</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>SURVIVOR PLOT — FRACTION STILL OPEN AFTER t</h2><span>log y-axis</span></div>
+        <canvas id="t1Surv"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--phosphor)"></i>detected openings longer than t</span>
+          <span><i style="background:var(--amber)"></i>e^(−(t − dead time)/τ<sub>est</sub>)</span>
+        </div>
+      </div>
+
+      <div class="panel wide">
+        <div class="panel-title"><h2>MEMORYLESSNESS — THE CHANNEL HAS ALREADY BEEN OPEN FOR s</h2><span id="t1MemInfo"></span></div>
+        <div class="grid" style="gap:18px">
+          <div>
+            <canvas id="t1Mem"></canvas>
+            <div class="legend">
+              <span><i style="background:var(--phosphor)"></i>remaining time, openings already longer than s</span>
+              <span><i style="background:var(--amber)"></i>all openings (from dead time)</span>
+            </div>
+          </div>
+          <div>
+            <div class="controls" style="margin-top:0">
+              <label class="toggle">s <input type="range" id="t1S" min="0" max="100" step="1" value="30"><span class="readout" id="t1SR"></span></label>
+            </div>
+            <div class="stats">
+              <div class="section-label">OPENINGS LONGER THAN s</div>
+              <div class="row"><span class="k">how many</span><span class="v" id="t1MemN">—</span></div>
+              <div class="row"><span class="k">mean remaining open time</span><span class="v amber" id="t1MemMean">—</span></div>
+              <div class="row"><span class="k">τ<sub>est</sub> (all openings)</span><span class="v" id="t1MemTau">—</span></div>
+              <div class="row"><span class="k">fraction surviving past s</span><span class="v" id="t1MemFrac">—</span></div>
+            </div>
+            <p class="tab-intro" style="margin-top:14px;font-size:0.86rem">
+              Given that a channel has already stayed open for s, how much longer will it stay open? For an
+              exponential the answer does not depend on s: the remaining time has the same distribution and the
+              same mean τ as a brand-new opening.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 2 ===================== -->
+  <section class="tab" id="tab1">
+    <p class="tab-intro">
+      Many channels have several open or closed states, so dwell times are a <b>sum of exponentials</b> whose time
+      constants can differ by 100-fold. On a linear axis you can see either the fast or the slow component, never
+      both. With logarithmic bins and a square-root ordinate each component becomes a peak located at its own τ.
+      Design a channel, or record from a mystery channel and find out how many components it has.
+    </p>
+    <div class="grid">
+      <div class="panel wide">
+        <div class="panel-title"><h2>CHANNEL</h2><span id="t2Info"></span></div>
+        <div class="controls" style="margin-top:0">
+          <div class="cond-group" id="t2Mode">
+            <button class="cond-btn active" data-m="own">Your channel</button>
+            <button class="cond-btn" data-m="mystery">Mystery channel</button>
+          </div>
+          <span class="label own-only">components</span>
+          <div class="cond-group own-only" id="t2K">
+            <button class="cond-btn" data-k="1">1</button>
+            <button class="cond-btn active" data-k="2">2</button>
+            <button class="cond-btn" data-k="3">3</button>
+          </div>
+          <span class="label">dwell times</span>
+          <div class="cond-group" id="t2N">
+            <button class="cond-btn" data-n="300">300</button>
+            <button class="cond-btn active" data-n="2000">2000</button>
+            <button class="cond-btn" data-n="10000">10 000</button>
+          </div>
+          <button class="primary" id="t2New">Record again</button>
+        </div>
+        <div class="controls own-only" id="t2Sliders"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>LINEAR HISTOGRAM</h2><span id="t2LinInfo"></span></div>
+        <canvas id="t2Lin"></canvas>
+        <div class="controls">
+          <span class="label">time axis</span>
+          <div class="cond-group" id="t2Scale">
+            <button class="cond-btn active" data-s="fast">fast scale</button>
+            <button class="cond-btn" data-s="slow">slow scale</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><h2>LOG-BINNED HISTOGRAM (SIGWORTH &amp; SINE)</h2><span id="t2LogInfo"></span></div>
+        <canvas id="t2Log"></canvas>
+        <div class="controls">
+          <span class="label">bins per decade</span>
+          <div class="cond-group" id="t2Bpd">
+            <button class="cond-btn" data-b="4">4</button>
+            <button class="cond-btn active" data-b="10">10</button>
+            <button class="cond-btn" data-b="20">20</button>
+            <button class="cond-btn" data-b="40">40</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="t2Sqrt" checked> √ ordinate</label>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--amber)"></i>fitted model</span>
+          <span><i style="background:var(--amber);opacity:.5"></i>its components</span>
+          <span class="truth-or-own"><i style="background:var(--paper-dim)"></i>true model</span>
+        </div>
+      </div>
+
+      <div class="panel wide">
+        <div class="panel-title"><h2>MAXIMUM-LIKELIHOOD FIT WITH 1, 2 AND 3 COMPONENTS</h2><span>fitted to the individual dwell times, not to the histogram</span></div>
+        <div class="controls" style="margin-top:0">
+          <button class="primary" id="t2Fit">Fit 1, 2 and 3 components</button>
+          <span class="label">show on histogram</span>
+          <div class="cond-group" id="t2Show">
+            <button class="cond-btn" data-k="1">1</button>
+            <button class="cond-btn active" data-k="2">2</button>
+            <button class="cond-btn" data-k="3">3</button>
+          </div>
+        </div>
+        <div class="table-scroll"><table class="gtable" id="t2Table"></table></div>
+        <p class="tab-intro" style="margin-top:12px;font-size:0.86rem">
+          Adding a component always increases the log-likelihood. Keep it only if the gain is large: under the
+          simpler model, 2·ΔlogL is approximately χ² with 2 degrees of freedom (one extra τ and one extra
+          weight), so 2·ΔlogL &gt; 6 corresponds to p &lt; 0.05.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <details>
+    <summary>How this simulation works</summary>
+    <p>
+      <b>Exponential waiting times.</b> Each opening lasts <code>−τ·ln(U)</code>, with U uniform between 0 and 1,
+      which gives the density <code>f(t) = (1/τ)·e^(−t/τ)</code>. Its mean and SD both equal τ (CV = 1) and its
+      most frequent value is the shortest one. The survivor function, the fraction of openings longer than t,
+      is <code>S(t) = e^(−t/τ)</code>, a straight line of slope −1/τ on a log y-axis. The record at the top
+      shows the first openings of the dataset separated by closed times drawn from a second exponential, with
+      a little current noise; it is a picture of the data, not a filtered recording.
+    </p>
+    <p>
+      <b>Dead time.</b> Openings shorter than the dead time are dropped. Because the exponential is
+      memoryless, the detected openings minus the dead time are again exponential with the same τ, so the
+      maximum-likelihood estimate is simply <code>mean − dead time</code>. The plain mean is biased upwards.
+      The survivor slope and the median are not biased by missed events if the dead time is subtracted, but they
+      are noisier than the maximum-likelihood estimate.
+    </p>
+    <p>
+      <b>Log-binning.</b> With bins of equal width in log t, the expected count in a bin is proportional to
+      <code>t·f(t)</code>, which for each exponential component peaks at <code>t = τ</code>. Plotting
+      √count makes the random scatter roughly the same in every bin (Poisson counts have variance equal to
+      their mean, and the square root stabilizes that variance), so small and large peaks can be judged by eye.
+      Sigworth &amp; Sine (1987, Biophys J 52:1047) recommend about 10 bins per decade; much coarser binning
+      distorts the shape.
+    </p>
+    <p>
+      <b>Fitting.</b> The fit maximizes the likelihood of the individual dwell times (no binning) for a mixture
+      of 1, 2 or 3 exponentials, using the expectation–maximization algorithm. Mystery channels have 2 or 3
+      components with time constants near 0.2–0.6 ms, 2–6 ms and 20–60 ms; these, and the τ of the mystery
+      channel in tab 1, are set by the group code.
+    </p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  // ================= random numbers =================
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function seedFromString(s){
+    let h = 2166136261;
+    for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function gauss(r){ let u = 0; while(u === 0) u = r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r()); }
+  function expo(r, mean){ return -mean*Math.log(1 - r()); }
+  function poissonK(r, mu){ const L = Math.exp(-mu); let k = 0, p = 1; do { k++; p *= r(); } while(p > L); return k - 1; }
+  function hash01(n){
+    n = Math.imul(n ^ (n >>> 16), 0x85ebca6b);
+    n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35);
+    n ^= n >>> 16;
+    return (n >>> 0) / 4294967296;
+  }
+
+  // ================= descriptive statistics =================
+  function mean(a){ let s = 0; for(const v of a) s += v; return s/a.length; }
+  function sumSq(a, m){ let s = 0; for(const v of a){ const d = v - m; s += d*d; } return s; }
+  function sdev(a){ return Math.sqrt(sumSq(a, mean(a))/(a.length - 1)); }
+  function skewness(a){
+    const m = mean(a); let m2 = 0, m3 = 0;
+    for(const v of a){ const d = v - m; m2 += d*d; m3 += d*d*d; }
+    m2 /= a.length; m3 /= a.length;
+    return m3/Math.pow(m2, 1.5);
+  }
+  function quantileSorted(s, p){
+    const h = (s.length - 1)*p, lo = Math.floor(h), hi = Math.ceil(h);
+    return s[lo] + (s[hi] - s[lo])*(h - lo);
+  }
+  function sorted(a){ return Float64Array.from(a).sort(); }
+
+  // ================= special functions =================
+  function gammaln(x){
+    const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+    let y=x, tmp=x+5.5; tmp -= (x+0.5)*Math.log(tmp);
+    let ser=1.000000000190015;
+    for(let j=0;j<6;j++) ser += c[j]/++y;
+    return -tmp + Math.log(2.5066282746310005*ser/x);
+  }
+  function betacf(a,b,x){
+    const FP=1e-300; const qab=a+b, qap=a+1, qam=a-1;
+    let c=1, d=1-qab*x/qap; if(Math.abs(d)<FP) d=FP; d=1/d; let h=d;
+    for(let m=1;m<=300;m++){
+      const m2=2*m;
+      let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+      d=1+aa*d; if(Math.abs(d)<FP) d=FP; c=1+aa/c; if(Math.abs(c)<FP) c=FP; d=1/d; h*=d*c;
+      aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d=1+aa*d; if(Math.abs(d)<FP) d=FP; c=1+aa/c; if(Math.abs(c)<FP) c=FP; d=1/d;
+      const del=d*c; h*=del; if(Math.abs(del-1)<3e-14) break;
+    }
+    return h;
+  }
+  function betai(a,b,x){
+    if(x<=0) return 0; if(x>=1) return 1;
+    const bt=Math.exp(gammaln(a+b)-gammaln(a)-gammaln(b)+a*Math.log(x)+b*Math.log(1-x));
+    return (x<(a+1)/(a+b+2)) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b;
+  }
+  function tTwoSidedP(t, df){ return betai(df/2, 0.5, df/(df + t*t)); }
+  const tcache = {};
+  function tCrit(df){ // two-sided 95%
+    if(tcache[df]) return tcache[df];
+    let lo = 0, hi = 200;
+    for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(tTwoSidedP(m, df) > 0.05) lo = m; else hi = m; }
+    return (tcache[df] = (lo+hi)/2);
+  }
+  function normInv(p){
+    const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+    const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+    const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+    const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+    const pl=0.02425; let q, r;
+    if(p<pl){ q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    if(p>1-pl){ q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    q=p-0.5; r=q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  }
+  function welch(x, y){
+    const n1=x.length, n2=y.length, m1=mean(x), m2=mean(y);
+    const v1=sumSq(x,m1)/(n1-1), v2=sumSq(y,m2)/(n2-1);
+    const a=v1/n1, b=v2/n2, se=Math.sqrt(a+b);
+    const t=(m2-m1)/se;
+    const df=(a+b)*(a+b)/(a*a/(n1-1) + b*b/(n2-1));
+    return {m1, m2, t, df, p: tTwoSidedP(t, df)};
+  }
+
+  // ================= drawing helpers =================
+  const COL = {
+    grid: 'rgba(77,255,160,0.10)', axis: 'rgba(184,174,149,0.55)', text: '#b8ae95',
+    phos: '#4dffa0', phosDim: 'rgba(77,255,160,0.28)', amber: '#e8a53d', amberDim: 'rgba(232,165,61,0.30)',
+    paper: '#f4ecd8', danger: '#d9694f'
+  };
+  const FONT = '11px "JetBrains Mono", monospace';
+
+  function setupCanvas(id, w, h){
+    const c = $(id), dpr = window.devicePixelRatio || 1;
+    c.width = w*dpr; c.height = h*dpr;
+    const ctx = c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {c, ctx, w, h};
+  }
+  function clear(cv){ cv.ctx.fillStyle = '#05130a'; cv.ctx.fillRect(0,0,cv.w,cv.h); }
+  function niceStep(range, target){
+    const raw = range/target, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/mag;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10)*mag;
+  }
+  function linTicks(min, max, target){
+    const s = niceStep(max - min, target || 5), out = [];
+    for(let v = Math.ceil(min/s - 1e-9)*s; v <= max + 1e-9*Math.abs(s); v += s) out.push(+v.toPrecision(12));
+    return out;
+  }
+  function logTicks(min, max){
+    const out = [];
+    for(let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++)
+      for(const m of [1,2,5]){ const v = m*Math.pow(10,e); if(v >= min*0.999 && v <= max*1.001) out.push(v); }
+    return out;
+  }
+  function fmtTick(v){
+    if(v === 0) return '0';
+    const a = Math.abs(v);
+    if(a >= 10000 || a < 0.001) return v.toExponential(0);
+    return String(+v.toPrecision(3));
+  }
+  function emptyMsg(cv, msg){
+    clear(cv);
+    const ctx = cv.ctx; ctx.font = FONT; ctx.fillStyle = COL.text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(msg, cv.w/2, cv.h/2);
+  }
+  // Draw axes and grid; returns mapping functions.
+  function frame(cv, o){
+    clear(cv);
+    const ctx = cv.ctx;
+    const padL = o.padL || 56, padB = o.padB || 44;
+    const P = {x: padL, y: 14, w: cv.w - padL - 16, h: cv.h - 14 - padB};
+    const fx = v => o.logx ? Math.log10(v) : v, fy = v => o.logy ? Math.log10(v) : v;
+    const X = v => P.x + P.w*(fx(v) - fx(o.xmin))/(fx(o.xmax) - fx(o.xmin));
+    const Y = v => P.y + P.h*(1 - (fy(v) - fy(o.ymin))/(fy(o.ymax) - fy(o.ymin)));
+    ctx.font = FONT; ctx.lineWidth = 1;
+    const xt = o.xticks || (o.logx ? logTicks(o.xmin, o.xmax) : linTicks(o.xmin, o.xmax, o.xn || 6));
+    const yt = o.yticks || (o.logy ? logTicks(o.ymin, o.ymax) : linTicks(o.ymin, o.ymax, o.yn || 4));
+    const xf = o.xfmt || fmtTick, yf = o.yfmt || fmtTick;
+    for(const v of yt){
+      const y = Y(v); if(y < P.y - 0.5 || y > P.y + P.h + 0.5) continue;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(P.x, y); ctx.lineTo(P.x + P.w, y); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(yf(v), P.x - 6, y);
+    }
+    for(const v of xt){
+      const x = X(v); if(x < P.x - 0.5 || x > P.x + P.w + 0.5) continue;
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(x, P.y); ctx.lineTo(x, P.y + P.h); ctx.stroke();
+      ctx.fillStyle = COL.text; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(xf(v), x, P.y + P.h + 6);
+    }
+    ctx.strokeStyle = COL.axis;
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x, P.y + P.h); ctx.lineTo(P.x + P.w, P.y + P.h); ctx.stroke();
+    ctx.fillStyle = COL.text;
+    if(o.xlabel){ ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(o.xlabel, P.x + P.w/2, P.y + P.h + 24); }
+    if(o.ylabel){ ctx.save(); ctx.translate(12, P.y + P.h/2); ctx.rotate(-Math.PI/2); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.ylabel, 0, 0); ctx.restore(); }
+    return {ctx, P, X, Y};
+  }
+  function clipped(f, draw){
+    const {ctx, P} = f; ctx.save(); ctx.beginPath(); ctx.rect(P.x, P.y, P.w, P.h); ctx.clip(); draw(); ctx.restore();
+  }
+  function histogram(data, edges){
+    const nb = edges.length - 1, lo = edges[0], w = edges[1] - edges[0], c = new Array(nb).fill(0);
+    for(const v of data){ const b = Math.floor((v - lo)/w); if(b >= 0 && b < nb) c[b]++; }
+    return c;
+  }
+  function makeEdges(lo, hi, nb){ const e = []; for(let i=0;i<=nb;i++) e.push(lo + (hi - lo)*i/nb); return e; }
+  function drawBars(f, edges, counts, fill, stroke){
+    const {ctx, X, Y, P} = f;
+    clipped(f, () => {
+      ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 1;
+      for(let b=0;b<counts.length;b++){
+        if(!counts[b]) continue;
+        const x0 = X(edges[b]), x1 = X(edges[b+1]), y = Y(counts[b]);
+        ctx.fillRect(x0, y, x1 - x0, P.y + P.h - y);
+        ctx.beginPath(); ctx.moveTo(x0, P.y + P.h); ctx.lineTo(x0, y); ctx.lineTo(x1, y); ctx.lineTo(x1, P.y + P.h); ctx.stroke();
+      }
+    });
+  }
+  function drawStep(f, edges, counts, color, width, dash){
+    const {ctx, X, Y} = f;
+    clipped(f, () => {
+      ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+      ctx.beginPath(); ctx.moveTo(X(edges[0]), Y(0));
+      for(let b=0;b<counts.length;b++){ ctx.lineTo(X(edges[b]), Y(counts[b])); ctx.lineTo(X(edges[b+1]), Y(counts[b])); }
+      ctx.lineTo(X(edges[edges.length-1]), Y(0)); ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  function drawCurve(f, xs, ys, color, width, dash){
+    const {ctx, X, Y} = f;
+    clipped(f, () => {
+      ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+      ctx.beginPath(); xs.forEach((x, i) => { if(i === 0) ctx.moveTo(X(x), Y(ys[i])); else ctx.lineTo(X(x), Y(ys[i])); });
+      ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  function vLine(f, x, color, width, dash){
+    const {ctx, X, P} = f; const px = X(x);
+    if(px < P.x || px > P.x + P.w) return;
+    ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(px, P.y); ctx.lineTo(px, P.y + P.h); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function hLine(f, y, color, width, dash){
+    const {ctx, Y, P} = f; const py = Y(y);
+    ctx.strokeStyle = color; ctx.lineWidth = width || 1.5; ctx.setLineDash(dash || []);
+    ctx.beginPath(); ctx.moveTo(P.x, py); ctx.lineTo(P.x + P.w, py); ctx.stroke(); ctx.setLineDash([]);
+  }
+  function dot(ctx, x, y, r, color, fill){
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 2*Math.PI);
+    if(fill){ ctx.fillStyle = color; ctx.fill(); } else { ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke(); }
+  }
+  // dot strip with deterministic vertical jitter around the middle of the plot
+  function strip(f, xs, salt, color){
+    const {ctx, X, P} = f, yc = P.y + P.h*0.5, half = P.h*0.32;
+    const r = xs.length > 200 ? 2 : (xs.length > 30 ? 3.2 : 4.5);
+    clipped(f, () => {
+      xs.forEach((v, i) => dot(ctx, X(v), yc + (hash01(i*31 + salt) - 0.5)*2*half, r, color, xs.length > 200));
+    });
+  }
+  const fmt = (x, d) => (x === null || x === undefined || !isFinite(x)) ? '—' : x.toFixed(d);
+  const pct = x => isFinite(x) ? (100*x).toFixed(1) + ' %' : '—';
+  function setText(id, t){ $(id).textContent = t; }
+  function bindGroup(id, attr, fn){
+    const g = $(id);
+    g.querySelectorAll('.cond-btn').forEach(b => b.addEventListener('click', () => {
+      g.querySelectorAll('.cond-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      fn(b.dataset[attr]);
+    }));
+  }
+  const revealed = () => $('revealToggle').checked;
+
+  // ================= state =================
+  let SEED = 0, seedLabel = '', R = [], truth = {};
+  function tabRng(k){ return mulberry32((SEED ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0); }
+  const cv = {
+    tr: setupCanvas('t1Trace', 1100, 200),
+    h1: setupCanvas('t1Hist', 640, 270), sv: setupCanvas('t1Surv', 640, 270),
+    mem: setupCanvas('t1Mem', 640, 250),
+    lin: setupCanvas('t2Lin', 640, 290), log: setupCanvas('t2Log', 640, 290)
+  };
+  const median = a => quantileSorted(sorted(a), 0.5);
+
+  // ======================================================
+  // TAB 1
+  // ======================================================
+  const T1 = { mode: 'own', n: 300, bins: 40, all: [], det: [], closed: [] };
+  const tauFromSlider = v => 0.5*Math.pow(40, v/100);      // 0.5 – 20 ms
+  function t1Tau(){ return T1.mode === 'own' ? tauFromSlider(+$('t1Tau').value) : truth.tau1; }
+  function t1Td(){ return +$('t1Td').value; }
+  function t1Gen(){
+    const r = R[0], tau = t1Tau();
+    T1.all = Array.from({length: T1.n}, () => expo(r, tau));
+    const tc = Math.max(2*tau, 5);
+    T1.closed = Array.from({length: 40}, () => expo(r, tc));
+    t1Filter();
+  }
+  function t1Filter(){
+    const td = t1Td();
+    T1.det = T1.all.filter(t => t >= td);
+    t1Render();
+  }
+  function t1Estimates(){
+    const d = T1.det, td = t1Td();
+    if(d.length < 2) return null;
+    const m = mean(d), sd = sdev(d);
+    // survivor plot regression: ln S(t) on t, using points with S > 5/N
+    const s = sorted(d), N = s.length;
+    let sx = 0, sy = 0, sxx = 0, sxy = 0, k = 0;
+    for(let i=0;i<N;i++){
+      const S = (N - i)/N; if(S < 5/N) break;
+      const x = s[i], y = Math.log(S);
+      sx += x; sy += y; sxx += x*x; sxy += x*y; k++;
+    }
+    const slope = (k*sxy - sx*sy)/(k*sxx - sx*sx);
+    return {m, sd, cv: sd/m, ml: m - td, surv: -1/slope, med: (quantileSorted(s, 0.5) - td)/Math.LN2, sortedD: s};
+  }
+  function t1DrawTrace(){
+    const c = cv.tr, ctx = c.ctx, td = t1Td();
+    const nOpen = Math.min(16, T1.all.length);
+    let t = T1.closed[0]; const segs = [];
+    for(let i=0;i<nOpen;i++){ segs.push({t0: t, t1: t + T1.all[i], det: T1.all[i] >= td}); t += T1.all[i] + T1.closed[(i+1) % T1.closed.length]; }
+    const tEnd = t;
+    const f = frame(c, {xmin: 0, xmax: tEnd, ymin: -0.8, ymax: 2.8, yticks: [0, 2], xlabel: 'time (ms)', ylabel: 'pA', padB: 40});
+    const ctx2 = f.ctx, P = f.P;
+    // noise via hash per pixel column
+    clipped(f, () => {
+      const cols = Math.floor(P.w);
+      let si = 0;
+      ctx2.lineWidth = 1.2;
+      let prevCol = null;
+      for(let px=0; px<cols; px++){
+        const tm = tEnd*(px + 0.5)/cols;
+        while(si < segs.length && segs[si].t1 < tm - tEnd/cols) si++;
+        // find state at this column (open if any segment covers it)
+        let open = null;
+        for(let j=Math.max(0, si-1); j<Math.min(segs.length, si+2); j++){
+          const sg = segs[j];
+          const c0 = tEnd*px/cols, c1 = tEnd*(px+1)/cols;
+          if(sg.t0 < c1 && sg.t1 > c0) open = sg;
+        }
+        const noise = 0.12*(hash01(px*17 + 3) - 0.5)*2 + 0.08*(hash01(px*29 + 11) - 0.5)*2;
+        const y = (open ? 2 : 0) + noise;
+        const col = open ? (open.det ? COL.phos : COL.danger) : COL.phos;
+        ctx2.strokeStyle = col;
+        ctx2.beginPath();
+        const yPrev = prevCol === null ? y : prevCol;
+        ctx2.moveTo(P.x + px - 0.5, f.Y(yPrev)); ctx2.lineTo(P.x + px + 0.5, f.Y(y)); ctx2.stroke();
+        prevCol = y;
+      }
+    });
+    ctx2.fillStyle = COL.text; ctx2.font = FONT; ctx2.textAlign = 'left'; ctx2.textBaseline = 'top';
+    ctx2.fillText('open', P.x + 6, f.Y(2) - 16); ctx2.fillText('closed', P.x + 6, f.Y(0) + 6);
+  }
+  function t1Render(){
+    const tau = t1Tau(), td = t1Td();
+    setText('t1TauR', T1.mode === 'own' ? tau.toFixed(2) + ' ms' : 'hidden');
+    setText('t1TdR', td.toFixed(2) + ' ms');
+    t1DrawTrace();
+    const e = t1Estimates(), d = T1.det;
+    setText('t1Gen', T1.all.length); setText('t1Det', d.length);
+    const miss = T1.all.length - d.length;
+    setText('t1Miss', `${miss} (${(100*miss/T1.all.length).toFixed(1)} %)`);
+    setText('t1Truth', tau.toFixed(3) + ' ms' + (td > 0 ? `; expected missed fraction ${(100*(1 - Math.exp(-td/tau))).toFixed(1)} %` : ''));
+    if(!e){
+      emptyMsg(cv.h1, 'Too few detected openings'); emptyMsg(cv.sv, ''); emptyMsg(cv.mem, '');
+      ['t1EMean','t1EML','t1ESD','t1ECV','t1ESurv','t1EMed','t1Mode2'].forEach(id => setText(id, '—'));
+      return;
+    }
+    setText('t1EMean', fmt(e.m, 3) + ' ms'); setText('t1EML', fmt(e.ml, 3) + ' ms');
+    setText('t1ESD', fmt(e.sd, 3) + ' ms'); setText('t1ECV', fmt(e.cv, 2));
+    setText('t1ESurv', fmt(e.surv, 3) + ' ms'); setText('t1EMed', fmt(e.med, 3) + ' ms');
+
+    // linear histogram
+    const xmax = td + 5*Math.max(e.ml, 0.05);
+    const edges = makeEdges(0, xmax, T1.bins), h = histogram(d, edges);
+    const F = x => x < td ? 0 : 1 - Math.exp(-(x - td)/e.ml);
+    const ex = h.map((_, b) => d.length*(F(edges[b+1]) - F(edges[b])));
+    const showP = $('t1Pred').checked;
+    const f = frame(cv.h1, {xmin: 0, xmax, ymin: 0, ymax: Math.max(...h, showP ? Math.max(...ex) : 0)*1.12, xlabel: 'open time (ms)', ylabel: 'openings'});
+    if(td > 0) clipped(f, () => { f.ctx.fillStyle = 'rgba(217,105,79,0.12)'; f.ctx.fillRect(f.X(0), f.P.y, f.X(td) - f.X(0), f.P.h); });
+    drawBars(f, edges, h, COL.phosDim, COL.phos);
+    if(showP) drawCurve(f, edges.slice(0, -1).map((x, b) => (x + edges[b+1])/2), ex, COL.amber, 2);
+    let best = 0; h.forEach((v, b) => { if(v > h[best]) best = b; });
+    setText('t1Mode2', `${fmt(edges[best], 2)}–${fmt(edges[best+1], 2)} ms`);
+    const over = d.filter(t => t >= xmax).length;
+    setText('t1HistInfo', over ? `${over} beyond ${xmax.toFixed(1)} ms` : 'all openings shown');
+
+    // survivor plot
+    const s = e.sortedD, N = s.length;
+    const g = frame(cv.sv, {xmin: 0, xmax: s[N-1]*1.02, ymin: Math.max(0.5/N, 1e-5), ymax: 1.2, logy: true, xlabel: 'time t (ms)', ylabel: 'fraction open longer than t',
+      yticks: logTicks(Math.max(0.5/N, 1e-5), 1).filter(v => Math.log10(v) % 1 === 0)});
+    const step = Math.max(1, Math.floor(N/600));
+    clipped(g, () => { for(let i=0;i<N-1;i+=step) dot(g.ctx, g.X(s[i]), g.Y((N - i)/N), 2, COL.phos, true); });
+    const xs = [], ys = [];
+    for(let i=0;i<=100;i++){ const x = s[N-1]*1.02*i/100; xs.push(x); ys.push(x < td ? 1 : Math.exp(-(x - td)/e.ml)); }
+    drawCurve(g, xs, ys, COL.amber, 2);
+    if(td > 0) vLine(g, td, COL.danger, 1, [4,4]);
+
+    // memorylessness
+    const sMax = Math.max(td + 0.1, 3*e.m);
+    const sVal = td + (sMax - td)*(+$('t1S').value)/100;
+    setText('t1SR', sVal.toFixed(2) + ' ms');
+    const rem = d.filter(t => t > sVal).map(t => t - sVal), base = d.map(t => t - td);
+    setText('t1MemN', rem.length);
+    setText('t1MemMean', rem.length ? fmt(mean(rem), 3) + ' ms' : '—');
+    setText('t1MemTau', fmt(e.ml, 3) + ' ms');
+    setText('t1MemFrac', fmt(rem.length/d.length, 3) + `  (e^(−(s−dead time)/τ) = ${fmt(Math.exp(-(sVal - td)/e.ml), 3)})`);
+    setText('t1MemInfo', `s = ${sVal.toFixed(2)} ms`);
+    const mx = 5*e.ml, me = makeEdges(0, mx, 30), bw = me[1] - me[0];
+    const hb = histogram(base, me).map(v => v/(base.length*bw));
+    const hr = rem.length ? histogram(rem, me).map(v => v/(rem.length*bw)) : me.slice(1).map(() => 0);
+    const mf = frame(cv.mem, {xmin: 0, xmax: mx, ymin: 0, ymax: Math.max(...hb, ...hr)*1.12, xlabel: 'time (ms)', ylabel: 'probability density (1/ms)'});
+    if(rem.length) drawBars(mf, me, hr, COL.phosDim, COL.phos);
+    drawStep(mf, me, hb, COL.amber, 2);
+  }
+  bindGroup('t1Mode', 'm', v => { T1.mode = v; $('t1TauWrap').classList.toggle('hidden', v !== 'own'); t1Gen(); });
+  bindGroup('t1N', 'n', v => { T1.n = +v; t1Gen(); });
+  bindGroup('t1Bins', 'b', v => { T1.bins = +v; t1Render(); });
+  $('t1Tau').addEventListener('input', t1Gen);
+  $('t1Td').addEventListener('input', t1Filter);
+  $('t1S').addEventListener('input', t1Render);
+  $('t1Pred').addEventListener('change', t1Render);
+  $('t1New').addEventListener('click', t1Gen);
+
+  // ======================================================
+  // TAB 2
+  // ======================================================
+  const T2 = { mode: 'own', k: 2, n: 2000, bpd: 10, scale: 'fast', data: [], fits: null, show: 2 };
+  const OWN = { tau: [0.5, 10, 100], w: [0.7, 0.3, 0.2] };
+  const TAU_RANGES = [[0.05, 2], [1, 50], [10, 500]];
+  function sliderToTau(j, v){ const [a, b] = TAU_RANGES[j]; return a*Math.pow(b/a, v/100); }
+  function tauToSlider(j, t){ const [a, b] = TAU_RANGES[j]; return Math.round(100*Math.log(t/a)/Math.log(b/a)); }
+  function buildSliders(){
+    let html = '';
+    for(let j=0;j<T2.k;j++){
+      html += `<label class="toggle">τ${j+1} <input type="range" data-j="${j}" class="tauS" min="0" max="100" value="${tauToSlider(j, OWN.tau[j])}"><span class="readout" id="t2TauR${j}"></span></label>`;
+      if(T2.k > 1) html += `<label class="toggle">weight ${j+1} <input type="range" data-j="${j}" class="wS" min="1" max="100" value="${Math.round(100*OWN.w[j])}"><span class="readout" id="t2WR${j}"></span></label>`;
+    }
+    $('t2Sliders').innerHTML = html;
+    $('t2Sliders').querySelectorAll('.tauS').forEach(el => el.addEventListener('input', () => { OWN.tau[+el.dataset.j] = sliderToTau(+el.dataset.j, +el.value); t2Gen(); }));
+    $('t2Sliders').querySelectorAll('.wS').forEach(el => el.addEventListener('input', () => { OWN.w[+el.dataset.j] = (+el.value)/100; t2Gen(); }));
+  }
+  function t2Model(){
+    if(T2.mode === 'mystery') return truth.mix;
+    const k = T2.k, w = OWN.w.slice(0, k), sw = w.reduce((a, b) => a + b, 0);
+    return { tau: OWN.tau.slice(0, k), w: k === 1 ? [1] : w.map(x => x/sw) };
+  }
+  function t2Gen(){
+    const r = R[1], M = t2Model();
+    T2.data = Array.from({length: T2.n}, () => {
+      let u = r(), j = 0;
+      while(j < M.w.length - 1 && u > M.w[j]){ u -= M.w[j]; j++; }
+      return expo(r, M.tau[j]);
+    });
+    T2.fits = null;
+    t2Render();
+  }
+  // EM for a mixture of exponentials
+  function emFit(x, k, init){
+    const s = sorted(x), n = x.length;
+    let tau = [], w = [];
+    if(init){ tau = init.tau.slice(); w = init.w.slice(); }
+    else for(let j=0;j<k;j++){ tau.push(quantileSorted(s, (j + 0.5)/k) / Math.LN2 + 1e-6); w.push(1/k); }
+    const resp = new Float64Array(n*k);
+    let ll = -Infinity;
+    for(let it=0; it<3000; it++){
+      let newLL = 0;
+      for(let i=0;i<n;i++){
+        let tot = 0;
+        for(let j=0;j<k;j++){ const p = w[j]/tau[j]*Math.exp(-x[i]/tau[j]); resp[i*k + j] = p; tot += p; }
+        tot = Math.max(tot, 1e-300);
+        newLL += Math.log(tot);
+        for(let j=0;j<k;j++) resp[i*k + j] /= tot;
+      }
+      for(let j=0;j<k;j++){
+        let sr = 0, st = 0;
+        for(let i=0;i<n;i++){ sr += resp[i*k + j]; st += resp[i*k + j]*x[i]; }
+        w[j] = sr/n; tau[j] = sr > 0 ? st/sr : tau[j];
+      }
+      if(Math.abs(newLL - ll) < 1e-10*Math.abs(newLL)) { ll = newLL; break; }
+      ll = newLL;
+    }
+    const order = tau.map((t, j) => j).sort((a, b) => tau[a] - tau[b]);
+    return { tau: order.map(j => tau[j]), w: order.map(j => w[j]), ll };
+  }
+  function t2Fit(){
+    // fit k components from two starting points (quantiles, and the k−1 fit plus one new slow and one new fast
+    // component) and keep the best, so the likelihood never decreases when a component is added
+    const fits = [];
+    for(let k=1;k<=3;k++){
+      const cands = [emFit(T2.data, k)];
+      if(k > 1){
+        const p = fits[k-2], tmax = p.tau[p.tau.length-1], tmin = p.tau[0];
+        cands.push(emFit(T2.data, k, {tau: p.tau.concat([3*tmax]), w: p.w.map(v => 0.9*v).concat([0.1])}));
+        cands.push(emFit(T2.data, k, {tau: [tmin/3].concat(p.tau), w: [0.1].concat(p.w.map(v => 0.9*v))}));
+      }
+      cands.forEach(c => { const o = c.tau.map((t, j) => j).sort((a, b) => c.tau[a] - c.tau[b]); c.tau = o.map(j => c.tau[j]); c.w = o.map(j => c.w[j]); });
+      fits.push(cands.reduce((a, b) => b.ll > a.ll ? b : a));
+    }
+    T2.fits = fits;
+    t2Render();
+  }
+  function expectedLog(model, edges){
+    return edges.slice(0, -1).map((e0, b) => {
+      const e1 = edges[b+1]; let s = 0;
+      model.tau.forEach((t, j) => { s += model.w[j]*(Math.exp(-e0/t) - Math.exp(-e1/t)); });
+      return T2.data.length*s;
+    });
+  }
+  function t2Render(){
+    const M = t2Model(), x = T2.data, own = T2.mode === 'own', showTrue = own || revealed();
+    document.querySelectorAll('.own-only').forEach(el => el.classList.toggle('hidden', !own));
+    document.querySelectorAll('.truth-or-own').forEach(el => el.classList.toggle('hidden', !showTrue));
+    if(own) for(let j=0;j<T2.k;j++){
+      setText('t2TauR' + j, OWN.tau[j].toFixed(OWN.tau[j] < 1 ? 2 : 1) + ' ms');
+      if(T2.k > 1) setText('t2WR' + j, (100*M.w[j]).toFixed(0) + ' %');
+    }
+    setText('t2Info', showTrue ? M.tau.map((t, j) => `τ${j+1} = ${t.toFixed(2)} ms (${(100*M.w[j]).toFixed(0)} %)`).join(',  ') : 'components hidden');
+
+    // linear histogram
+    const sx = sorted(x);
+    const fastRef = quantileSorted(sx, 0.3), slowRef = quantileSorted(sx, 0.995);
+    const xmax = T2.scale === 'fast' ? Math.max(4*fastRef, 0.05) : slowRef;
+    const le = makeEdges(0, xmax, 50), lh = histogram(x, le);
+    const lf = frame(cv.lin, {xmin: 0, xmax, ymin: 0, ymax: Math.max(...lh)*1.12, xlabel: 'dwell time (ms)', ylabel: 'events'});
+    drawBars(lf, le, lh, COL.phosDim, COL.phos);
+    const beyond = x.filter(t => t >= xmax).length;
+    setText('t2LinInfo', `${beyond} of ${x.length} events beyond ${fmtTick(+xmax.toPrecision(3))} ms`);
+
+    // log-binned histogram
+    const lo = Math.pow(10, Math.floor(Math.log10(quantileSorted(sx, 0.002)))), hi = Math.pow(10, Math.ceil(Math.log10(sx[sx.length-1])));
+    const nd = Math.round(Math.log10(hi/lo)), nb = nd*T2.bpd, edges = [];
+    for(let i=0;i<=nb;i++) edges.push(lo*Math.pow(10, i/T2.bpd));
+    const counts = new Array(nb).fill(0);
+    for(const t of x){ const b = Math.floor(Math.log10(t/lo)*T2.bpd); if(b >= 0 && b < nb) counts[b]++; }
+    const sq = $('t2Sqrt').checked, tr = v => sq ? Math.sqrt(v) : v;
+    const fit = T2.fits ? T2.fits[T2.show - 1] : null;
+    const curves = [];
+    if(showTrue) curves.push(expectedLog(M, edges));
+    if(fit) curves.push(expectedLog(fit, edges));
+    const ymax = Math.max(...counts.map(tr), ...curves.flat().map(tr))*1.12;
+    const xt = []; for(let i=0;i<=nd;i++) xt.push(lo*Math.pow(10, i));
+    const f = frame(cv.log, {xmin: lo, xmax: hi, ymin: 0, ymax, logx: true, xticks: xt, xlabel: 'dwell time (ms), log axis', ylabel: sq ? '√(events per bin)' : 'events per bin'});
+    drawBars(f, edges, counts.map(tr), COL.phosDim, COL.phos);
+    const mids = edges.slice(0, -1).map((e, b) => Math.sqrt(e*edges[b+1]));
+    if(showTrue) drawCurve(f, mids, expectedLog(M, edges).map(tr), COL.text, 1.5, [5,4]);
+    if(fit){
+      if(fit.tau.length > 1) fit.tau.forEach((t, j) => drawCurve(f, mids, expectedLog({tau: [t], w: [fit.w[j]]}, edges).map(tr), 'rgba(232,165,61,0.55)', 1.2, [3,3]));
+      drawCurve(f, mids, expectedLog(fit, edges).map(tr), COL.amber, 2);
+      fit.tau.forEach(t => vLine(f, t, 'rgba(232,165,61,0.35)', 1, [2,3]));
+    }
+    setText('t2LogInfo', `${T2.bpd} bins per decade`);
+
+    // fit table
+    let html = '<tr><th>components</th><th>τ (ms)</th><th>weights</th><th>log-likelihood</th><th>2·ΔlogL vs one fewer</th><th>keep extra component?</th></tr>';
+    if(T2.fits){
+      T2.fits.forEach((ft, i) => {
+        const d2 = i ? Math.max(0, 2*(ft.ll - T2.fits[i-1].ll)) : null;
+        html += `<tr><td>${i+1}</td><td>${ft.tau.map(t => t.toFixed(t < 1 ? 3 : 2)).join(', ')}</td><td>${ft.w.map(w => (100*w).toFixed(1) + ' %').join(', ')}</td>` +
+          `<td>${ft.ll.toFixed(1)}</td><td>${d2 === null ? '—' : d2.toFixed(1)}</td><td>${d2 === null ? '—' : (d2 > 6 ? 'yes (p < 0.05)' : 'no')}</td></tr>`;
+      });
+      if(revealed() || own) html += `<tr><td style="color:var(--amber)">true</td><td style="color:var(--amber)">${M.tau.map(t => t.toFixed(t < 1 ? 3 : 2)).join(', ')}</td><td style="color:var(--amber)">${M.w.map(w => (100*w).toFixed(1) + ' %').join(', ')}</td><td></td><td></td><td></td></tr>`;
+    } else html += '<tr><td colspan="6" style="color:var(--paper-dim)">Press "Fit 1, 2 and 3 components".</td></tr>';
+    $('t2Table').innerHTML = html;
+  }
+  bindGroup('t2Mode', 'm', v => { T2.mode = v; t2Gen(); });
+  bindGroup('t2K', 'k', v => { T2.k = +v; buildSliders(); t2Gen(); });
+  bindGroup('t2N', 'n', v => { T2.n = +v; t2Gen(); });
+  bindGroup('t2Bpd', 'b', v => { T2.bpd = +v; t2Render(); });
+  bindGroup('t2Scale', 's', v => { T2.scale = v; t2Render(); });
+  bindGroup('t2Show', 'k', v => { T2.show = +v; t2Render(); });
+  $('t2Sqrt').addEventListener('change', t2Render);
+  $('t2New').addEventListener('click', t2Gen);
+  $('t2Fit').addEventListener('click', () => { $('t2Fit').textContent = 'Fitting…'; setTimeout(() => { t2Fit(); $('t2Fit').textContent = 'Fit 1, 2 and 3 components'; }, 20); });
+
+  // ======================================================
+  // tabs, seed, reveal, CSV
+  // ======================================================
+  let curTab = 0;
+  const renderers = [t1Render, t2Render];
+  bindGroup('tabGroup', 'tab', v => {
+    curTab = +v;
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === curTab));
+    renderers[curTab]();
+  });
+  $('revealToggle').addEventListener('change', () => {
+    document.querySelectorAll('.truth').forEach(el => el.classList.toggle('hidden', !revealed()));
+    renderers[curTab]();
+  });
+  $('csvBtn').addEventListener('click', () => {
+    const lines = [`# Dwell-time statistics simulator${seedLabel}`];
+    if(curTab === 0){
+      lines.push(`# tab 1, ${T1.mode === 'own' ? 'your channel' : 'mystery channel'}; dead time = ${t1Td()} ms; only detected openings`, 'opening,open_time_ms');
+      T1.det.forEach((t, i) => lines.push(`${i+1},${t.toFixed(5)}`));
+    } else {
+      lines.push(`# tab 2, ${T2.mode === 'own' ? 'your channel' : 'mystery channel'}`, 'event,dwell_time_ms');
+      T2.data.forEach((t, i) => lines.push(`${i+1},${t.toFixed(5)}`));
+    }
+    const blob = new Blob([lines.join('\n')], {type: 'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (curTab ? 'dwell_times_components' : 'open_times') + (seedLabel ? '_group' + $('groupCode').value.trim() : '') + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  function applySeed(){
+    const code = $('groupCode').value.trim();
+    if(code){ SEED = seedFromString('dwell-' + code); seedLabel = ` (group ${code})`; }
+    else { SEED = (Math.random()*4294967296) >>> 0; seedLabel = ''; }
+    R = [0, 1].map(tabRng);
+    const r = mulberry32(SEED);
+    const k = r() < 0.5 ? 2 : 3;
+    const tau = [0.2 + 0.4*r(), 2 + 4*r(), 20 + 40*r()];
+    let w = [0.4 + 0.4*r(), 0.2 + 0.4*r(), 0.1 + 0.2*r()].slice(0, k);
+    const sw = w.reduce((a, b) => a + b, 0);
+    let mtau = tau.slice(0, k);
+    if(k === 2 && r() < 0.5) mtau = [tau[0], tau[2]];
+    truth = { tau1: 1 + 7*r(), mix: { tau: mtau, w: w.map(x => x/sw) } };
+    t1Gen(); t2Gen();
+    renderers[curTab]();
+  }
+  $('applyCode').addEventListener('click', applySeed);
+  $('groupCode').addEventListener('keydown', e => { if(e.key === 'Enter') applySeed(); });
+
+  buildSliders();
+  applySeed();
+})();
+</script>
+<!-- lab-foot:start -->
+<div class="lab-nav lab-nav--foot"><a href="../index.html">Laboratorio de Neurofisiología · USACH</a></div>
+<!-- lab-foot:end -->
+</body>
+</html>

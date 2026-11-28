@@ -49,9 +49,9 @@
 <section>
   <div class="wrap">
     <div class="section-head">
-      <p class="eyebrow">Twelve simulators, one common thread</p>
+      <p class="eyebrow">Sixteen simulators, one common thread</p>
       <h2>From the excitable membrane to synaptic plasticity</h2>
-      <p>The simulations follow the classic path of an electrophysiology course: first the generation and propagation of the action potential, then the single ion channel that makes it possible, and finally synaptic transmission — quantal, central and plastic, both short- and long-term. Each simulator runs directly in the browser.</p>
+      <p>The simulations follow the classic path of an electrophysiology course: first the generation and propagation of the action potential, then the single ion channel that makes it possible and the statistical tools to analyse its recordings, and finally synaptic transmission — quantal, central and plastic, both short- and long-term. Each simulator runs directly in the browser.</p>
     </div>
 
     <div class="grid-3 sim-list">
@@ -91,8 +91,28 @@
       </article>
 
       <article class="card">
+        <h3><a href="../simulations/histograms-noise-simulator.html">Histograms and noise: resolving current levels</a></h3>
+        <p>How bin width and bin position change what a histogram shows (Sturges, Scott and Freedman–Diaconis rules, normalization). A patch with 1–3 channels in Gaussian noise and a low-pass filter: fit Gaussians to the all-points histogram to obtain i and P<sub>o</sub>, and compare the level occupancies with the binomial distribution.</p>
+      </article>
+
+      <article class="card">
+        <h3><a href="../simulations/dwell-time-statistics-simulator.html">Dwell times: exponential distributions and log-binned histograms</a></h3>
+        <p>Channel open times: linear histogram, survivor plot, the memoryless property and the bias from brief events that go undetected (dead time). Channels with several kinetic components: log-binned histogram with a √ ordinate (Sigworth &amp; Sine), and maximum-likelihood fits with 1, 2 or 3 exponentials.</p>
+      </article>
+
+      <article class="card">
+        <h3><a href="../simulations/sampling-statistics-simulator.html">Sampling statistics: from one recording to many</a></h3>
+        <p>Six interactive exercises: estimating the mean and variance (n vs n − 1), SD vs SEM and confidence intervals, the central limit theorem with open times and event counts, why a bar graph can hide the data, the bootstrap, and statistical power (how many cells do I need?).</p>
+      </article>
+
+      <article class="card">
         <h3><a href="../simulations/quantal-transmission-simulator.html">Quantal transmission at the neuromuscular junction</a></h3>
         <p>A replica of the Katz &amp; Miledi / del Castillo &amp; Katz experiments: evoked end-plate potentials, a histogram of quantal amplitudes, and a zero-calcium condition to observe failures and quantal units.</p>
+      </article>
+
+      <article class="card">
+        <h3><a href="../simulations/spontaneous-mepp-poisson-simulator.html">Spontaneous mEPPs and the Poisson process</a></h3>
+        <p>A replica of the Fatt &amp; Katz (1952) experiment: spontaneous miniature potentials at a resting end-plate. Inter-event interval histogram (exponential), counts per time window (Poisson), CV, Fano factor and a χ² test. Three "mystery" junctions to decide which releases at random, which regularly and which in bursts.</p>
       </article>
 
       <article class="card">
